@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 """Validateur déterministe du registre Brain (lecture seule).
 
-Ne modifie jamais les entrées. Catégories : errors / warnings / human_review.
-Contrat schéma : 0.1.1 (approval_scope, resolves).
+Contrat schéma : 0.1.2 (intention / position optionnels ; --require-intention pour générations neuves).
 """
 
 from __future__ import annotations
@@ -25,6 +24,32 @@ ALLOWED_TYPES = {
     "task",
     "open_question",
     "event",
+}
+ALLOWED_INTENTION = {
+    "idea",
+    "suggestion",
+    "preference",
+    "orientation",
+    "question",
+    "decision",
+    "requirement",
+    "convention",
+    "task",
+    "milestone",
+    "observation",
+    "risk",
+    "feedback",
+}
+ALLOWED_POSITION = {
+    "proposed",
+    "exploring",
+    "favorable",
+    "endorsed",
+    "opposed",
+    "selected",
+    "confirmed",
+    "uncertain",
+    None,
 }
 ALLOWED_STATUS = {"extracted"}
 ALLOWED_SPACES = {"atelier", "referentiel", "journal", "pilotage"}
@@ -64,10 +89,18 @@ REQUIRED_FIELDS = {
     "created_at",
     "storage",
 }
-KNOWN_FIELDS = REQUIRED_FIELDS | {"relations", "clickup_ref", "feeds_doc", "tags"}
+KNOWN_FIELDS = REQUIRED_FIELDS | {
+    "intention",
+    "position",
+    "relations",
+    "clickup_ref",
+    "feeds_doc",
+    "tags",
+}
 ID_RE = re.compile(r"^CAP-\d{3,}$")
 CAP_TARGET_RE = re.compile(r"^CAP-\d{3,}$")
 EXPRESS_NOT_APPROVE_TYPES = {"observation", "event", "idea"}
+META_NOISE_TAGS = {"test-noise", "meta-test", "simulation"}
 
 
 def is_iso_datetime(value: str) -> bool:
@@ -132,6 +165,7 @@ def validate_entry(
     line_no: int,
     ids: set[str],
     report: Report,
+    require_intention: bool,
 ) -> None:
     eid = entry.get("id", f"<ligne {line_no}>")
 
@@ -142,6 +176,15 @@ def validate_entry(
     for field in REQUIRED_FIELDS:
         if field not in entry:
             report.error(f"{eid}: champ obligatoire manquant: {field}")
+
+    if require_intention:
+        if "intention" not in entry:
+            report.error(f"{eid}: intention obligatoire (--require-intention).")
+        if "position" not in entry:
+            report.error(
+                f"{eid}: position obligatoire en génération 0.1.2 "
+                f"(valeur null autorisée) (--require-intention)."
+            )
 
     if "id" in entry:
         if not isinstance(entry["id"], str) or not ID_RE.match(entry["id"]):
@@ -163,10 +206,12 @@ def validate_entry(
     check_enum("validation", ALLOWED_VALIDATION)
     check_enum("author", ALLOWED_AUTHOR)
     check_enum("confidence", ALLOWED_CONFIDENCE)
+    check_enum("intention", ALLOWED_INTENTION)
+    if "position" in entry and entry["position"] not in ALLOWED_POSITION:
+        report.error(f"{eid}: position={entry['position']!r} non autorisé.")
 
     if "approved_by" in entry and entry["approved_by"] not in ALLOWED_APPROVED_BY:
         report.error(f"{eid}: approved_by={entry['approved_by']!r} non autorisé (user|null).")
-
     if "approval_scope" in entry and entry["approval_scope"] not in ALLOWED_APPROVAL_SCOPE:
         report.error(
             f"{eid}: approval_scope={entry['approval_scope']!r} non autorisé (item|set|null)."
@@ -177,6 +222,12 @@ def validate_entry(
             report.error(f"{eid}: {text_field} doit être une string.")
         elif text_field in entry and not entry[text_field].strip():
             report.error(f"{eid}: {text_field} ne doit pas être vide.")
+
+    content = entry.get("content")
+    if isinstance(content, str) and 0 < len(content.strip()) < 80:
+        report.review(
+            f"{eid}: content court ({len(content.strip())} car.) — vérifier l'autonomie."
+        )
 
     if entry.get("status") != "extracted":
         report.error(f"{eid}: status doit être 'extracted' pour une capture.")
@@ -194,10 +245,10 @@ def validate_entry(
             if "url" in origin and origin["url"] is not None and not isinstance(origin["url"], str):
                 report.error(f"{eid}: origin.url doit être string ou absent.")
 
-    # author / approved_by / validation / approval_scope coherence
     validation = entry.get("validation")
     approved_by = entry.get("approved_by")
     approval_scope = entry.get("approval_scope")
+    position = entry.get("position") if "position" in entry else None
 
     if validation == "explicit_user_approval":
         if approved_by != "user":
@@ -230,7 +281,15 @@ def validate_entry(
             f"{eid}: validation=implicit (historique) — réexaminer la preuve avant conversion."
         )
 
-    # express ≠ approve soft checks
+    # position ≠ validation formelle
+    if position in ("selected", "confirmed", "endorsed", "favorable") and validation == "none":
+        pass  # expected often
+    if position in ("selected", "confirmed") and validation == "explicit_user_approval":
+        report.review(
+            f"{eid}: position={position} + explicit — vérifier que l'approbation formelle "
+            f"est distincte de la seule posture."
+        )
+
     etype = entry.get("type")
     author = entry.get("author")
     if (
@@ -243,15 +302,24 @@ def validate_entry(
             f"(exprimer ≠ approuver — vérifier)."
         )
 
-    # tags
-    tags = entry.get("tags")
-    if isinstance(tags, list) and "approval_global_partial" in tags:
-        report.review(
-            f"{eid}: tag approval_global_partial — accord global/partiel ; "
-            f"vérifier qu'aucune approbation item/set n'a été forcée."
-        )
+    if etype == "decision" and isinstance(content, str):
+        low = content.lower()
+        if any(x in low for x in ("préfère", "prefere", "b ou c", "pourrait", "peut-être", "peut etre")):
+            if validation == "explicit_user_approval":
+                report.review(
+                    f"{eid}: decision+explicit avec formulation préférentielle/ambiguë — vérifier."
+                )
 
-    # space soft checks
+    tags = entry.get("tags")
+    if isinstance(tags, list):
+        if "approval_global_partial" in tags:
+            report.review(
+                f"{eid}: tag approval_global_partial — accord global/partiel ; "
+                f"vérifier qu'aucune approbation item/set n'a été forcée."
+            )
+        if any(t in META_NOISE_TAGS for t in tags):
+            report.review(f"{eid}: tag bruit/méta de test — vérifier exclusion métier.")
+
     if etype == "task" and entry.get("space") not in ("pilotage", "atelier"):
         report.warn(f"{eid}: type=task habituellement dans pilotage ou atelier.")
     if entry.get("space") == "referentiel" and validation != "explicit_user_approval":
@@ -259,10 +327,10 @@ def validate_entry(
             f"{eid}: space=referentiel sans explicit_user_approval — vérifier le placement."
         )
 
-    # optional fields types
-    if "relations" in entry and entry["relations"] is not None:
-        if not isinstance(entry["relations"], list):
-            report.error(f"{eid}: relations doit être une liste.")
+    if "relations" in entry and entry["relations"] is not None and not isinstance(
+        entry["relations"], list
+    ):
+        report.error(f"{eid}: relations doit être une liste.")
     if "tags" in entry and entry["tags"] is not None and not isinstance(entry["tags"], list):
         report.error(f"{eid}: tags doit être une liste.")
     if "clickup_ref" in entry and entry["clickup_ref"] is not None and not isinstance(
@@ -279,17 +347,12 @@ def _pair_key(a: str, b: str) -> tuple[str, str]:
     return (a, b) if a <= b else (b, a)
 
 
-def validate_relations(
-    entries: list[dict[str, Any]],
-    report: Report,
-) -> None:
+def validate_relations(entries: list[dict[str, Any]], report: Report) -> None:
     by_id = {e["id"]: e for e in entries if isinstance(e.get("id"), str)}
     all_ids = set(by_id)
-
-    # Collect edge sets for cross-checks
     evolves_pairs: set[tuple[str, str]] = set()
     supersedes_pairs: set[tuple[str, str]] = set()
-    resolves_edges: set[tuple[str, str]] = set()  # (from, to)
+    resolves_edges: set[tuple[str, str]] = set()
     conflicts_edges: set[tuple[str, str]] = set()
 
     for entry in entries:
@@ -330,14 +393,12 @@ def validate_relations(
                 if r == "conflicts_with":
                     conflicts_edges.add((eid, to))
 
-    # Interdit : evolves_* et supersedes_candidate sur la même paire
     for pair in evolves_pairs & supersedes_pairs:
         report.error(
             f"{pair[0]}↔{pair[1]}: evolves_* et supersedes_candidate sur la même paire "
             f"(choisir une seule famille)."
         )
 
-    # Warn : conflicts_with alors qu'un resolves existe sur la paire
     for src, dst in resolves_edges:
         if (src, dst) in conflicts_edges or (dst, src) in conflicts_edges:
             report.warn(
@@ -345,7 +406,6 @@ def validate_relations(
                 f"(préférer resolves seul si la tension est close)."
             )
 
-    # soft reciprocal checks
     def has_rel(src: str, rel: str, dst: str) -> bool:
         e = by_id.get(src)
         if not e:
@@ -391,7 +451,7 @@ def validate_relations(
                         )
 
 
-def validate_registry(path: Path) -> Report:
+def validate_registry(path: Path, require_intention: bool = False) -> Report:
     report = Report()
     if not path.exists():
         report.error(f"Fichier introuvable: {path}")
@@ -399,9 +459,12 @@ def validate_registry(path: Path) -> Report:
     entries = load_entries(path, report)
     ids: set[str] = set()
     for i, entry in enumerate(entries, 1):
-        validate_entry(entry, i, ids, report)
+        validate_entry(entry, i, ids, report, require_intention)
     validate_relations(entries, report)
-    report.warn(f"Résumé: {len(entries)} entrées chargées, {len(ids)} ids uniques.")
+    report.warn(
+        f"Résumé: {len(entries)} entrées, {len(ids)} ids uniques"
+        f"{' [require-intention]' if require_intention else ''}."
+    )
     return report
 
 
@@ -449,13 +512,14 @@ def main(argv: list[str] | None = None) -> int:
         default="brain/registry/entries.jsonl",
         help="Chemin vers entries.jsonl",
     )
+    parser.add_argument("--json", action="store_true", help="Sortie JSON")
     parser.add_argument(
-        "--json",
+        "--require-intention",
         action="store_true",
-        help="Sortie JSON machine-readable",
+        help="Exige intention + position (null OK) — générations V0.1.2",
     )
     args = parser.parse_args(argv)
-    report = validate_registry(Path(args.path))
+    report = validate_registry(Path(args.path), require_intention=args.require_intention)
     print_report(report, args.json)
     return 0 if report.ok else 1
 

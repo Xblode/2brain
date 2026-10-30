@@ -1,74 +1,39 @@
-# Protocole de test reproductible — `/brain-capture`
+# Protocole de test — `/brain-capture` 0.1.2
 
-## Source de référence
+## Échantillons
 
-Conversation ayant produit les 69 captures initiales :
+| Échantillon | Fichier | Rôle |
+| --- | --- | --- |
+| 1 | `brain/sources/conversation-reference-1.txt` | Référence principale de comparaison |
+| 2 | `brain/sources/conversation-reference-2.txt` | Suite de conception (présent dans le dépôt) — **indépendant** ; hors comparaison principale 0.1.2 |
 
-| Propriété | Valeur |
-| --- | --- |
-| Fichier local (origine) | `conversation-référence-1.txt` |
-| Copie dépôt | `brain/sources/conversation-reference-1.txt` |
-| Origin registre | `chatgpt-share` / `https://chatgpt.com/share/6ae3fb90-b6bc-83ed-b432-22f8963f96d8` |
-| Nom stable | `conversation-reference-1.txt` |
+Ne pas créer de fichier source vide. Ne pas mélanger les deux échantillons.
 
-Ne jamais utiliser `entries.jsonl` comme source de re-capture.
+## Référence sémantique
 
-## Mode registre (forcé pour la référence)
+Comparaison principale vs : `brain/registry/_test-runs/20261030-061941/`
 
-Au démarrage de `/brain-capture`, choisir explicitement la cible :
+Ne **pas** utiliser `20261030-045232` (transformation, pas re-capture).
 
-| Mode | Cible |
-| --- | --- |
-| `production` | `brain/registry/entries.jsonl` |
-| `test-run` | Nouveau dossier `brain/registry/_test-runs/YYYYMMDD-HHMMSS/` |
+## Procédure (échantillon 1)
 
-**Règle forcée** : si la source est `brain/sources/conversation-reference-1.txt` (ou équivalent référence), **toujours** `test-run`. Ne jamais écrire une génération comparative dans le registre de production.
+1. Mode **test-run** forcé ; créer `brain/registry/_test-runs/YYYYMMDD-HHMMSS/`.
+2. Capturer depuis `conversation-reference-1.txt` avec fenêtres (~5 échanges) + 4 passes + mémoire globale.
+3. Ne pas copier / transformer d’anciens JSONL.
+4. Valider :
+   `python .cursor/skills/brain-capture/scripts/validate-registry.py <cible>/entries.jsonl --require-intention`
+5. Rédiger `COMPARISON.md` avec **grille de traçabilité** (messages → infos → CAP → manques).
+6. Archiver ; ne pas écraser les runs précédents ni la production.
 
-Le validateur s'exécute sur le **chemin de la cible choisie**, jamais un chemin hardcodé.
+## Grille de traçabilité (obligatoire dans COMPARISON.md)
 
-## Procédure (chaque version du Skill)
+Colonnes minimales :
 
-1. Utiliser **exactement** la même source (`conversation-reference-1.txt`).
-2. Créer un emplacement temporaire isolé :
-   `brain/registry/_test-runs/YYYYMMDD-HHMMSS/`
-3. Y placer `entries.jsonl` vide + copie de `SCHEMA.md`.
-4. Lancer `/brain-capture` en mode `test-run` avec cette source et ce registre.
-5. **Ne jamais** écraser `brain/registry/entries.jsonl` ni les archives `_test-runs/` précédentes (ex. `20261030-042859` = archive 0.1.0).
-6. Valider :
-   `python .cursor/skills/brain-capture/scripts/validate-registry.py <chemin-temporaire>/entries.jsonl`
-7. Rédiger `COMPARISON.md` **factuel** (counts, répartition `approval_scope`, tags `approval_global_partial`, relations `resolves`, écarts connus vs génération précédente) — **sans** scores subjectifs non vérifiés ni auto-notes « pertes faibles » non prouvées.
+| Zone source / thème | Info pertinente | CAP(s) | Statut | Manque / remarque |
+| --- | --- | --- | --- | --- |
 
-## Critères d'évaluation
+Couvrir au minimum les scénarios A–H (autonomie B/C, portées d’approbation, 6 couches roadmap, ClickUp convention vs observation, Review, sous-tâches, 7 sujets cadrage individuels, bruit de test).
 
-- couverture des informations utiles ;
-- attribution auteur correcte ;
-- validations justifiées (exprimer ≠ approuver) ;
-- `approval_scope` cohérent (`item` / `set` / `null`) ;
-- pas d'approbation héritée d'un accord global partiel sans tag ;
-- questions restées ouvertes ;
-- doublons potentiels (non fusionnés) ;
-- relations pertinentes (`resolves` vs `conflicts_with` actif ; pas de double evolves+supersedes) ;
-- préservation des évolutions ;
-- fidélité des preuves ;
-- cohérence des métadonnées (validateur vert).
+## Critères
 
-**Ne pas** chercher à reproduire exactement 69 entrées. Qualité et fidélité > nombre.
-
-## Checklist test manuel
-
-```text
-[ ] Source = brain/sources/conversation-reference-1.txt
-[ ] Mode = test-run (forcé pour cette source)
-[ ] Registre de sortie = dossier _test-runs/ isolé (pas le registre vivant)
-[ ] Invoker /brain-capture avec ces chemins explicites
-[ ] Exécuter validate-registry.py sur le résultat
-[ ] Rédiger COMPARISON.md factuel (approval_scope, resolves, écarts)
-[ ] Archiver à côté de la génération ; ne pas écraser les runs antérieurs
-```
-
-## Commande validateur
-
-```bash
-python .cursor/skills/brain-capture/scripts/validate-registry.py brain/registry/entries.jsonl
-python .cursor/skills/brain-capture/scripts/validate-registry.py path/to/test/entries.jsonl --json
-```
+Fidélité ; couverture ; autonomie ; attribution ; nuances ; actionable ; relations ; métadonnées ; validité technique. Qualité > nombre d’entrées.
