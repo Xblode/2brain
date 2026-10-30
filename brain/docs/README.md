@@ -1,12 +1,15 @@
 ---
 id: DOC-STD-001
-title: Standardisation documentaire Brain
+name: Standardisation documentaire Brain
+description: Catalogue et règles du socle documentaire universel Brain (docs obligatoires, facultatifs, métadonnées, responsabilités).
 type: documentation-standard
 status: proposed
 version: 1.0.0
 created_at: 2026-10-30
 updated_at: 2026-10-30
 update_sources: []
+# locked: false = modifiable | true = lecture seule (ne pas modifier ce fichier)
+locked: false
 ---
 # Standardisation documentaire Brain
 
@@ -126,13 +129,15 @@ Exemple de structure :
 ```
 ---
 id: DOC-STD-001
-title: Standardisation documentaire Brain
+name: Standardisation documentaire Brain
+description: Catalogue et règles du socle documentaire universel Brain (docs obligatoires, facultatifs, métadonnées, responsabilités).
 type: documentation-standard
 status: proposed
 version: 1.0.0
 created_at: 2026-10-30
 updated_at: 2026-10-30
 update_sources: []
+locked: false
 ---
 
 # Requirements
@@ -147,6 +152,11 @@ update_sources: []
 
 Les sections peuvent être adaptées selon le document.
 
+Champ `locked` (métadonnée) :
+
+- `locked: false` — document modifiable (défaut).
+- `locked: true` — document verrouillé : les agents ne doivent pas le modifier tant que le champ n’est pas repassé à `false`.
+
 Règles :
 
 - Pas de remplissage artificiel.
@@ -155,6 +165,7 @@ Règles :
 - Références vers les éléments sources.
 - Sections extensibles selon les besoins.
 - Découpage en fichiers distincts lorsque les responsabilités deviennent trop importantes.
+- Respecter `locked: true` : aucune modification du corps ni des métadonnées hors déverrouillage explicite demandé par l’humain.
 
 ## 5. Gestion des fonctionnalités
 
