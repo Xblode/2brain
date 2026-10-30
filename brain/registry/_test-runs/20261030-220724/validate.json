@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "schema_contract": "0.1.3",
+  "layer": "technical_validation",
+  "errors": [],
+  "warnings": [
+    "Résumé: 56 entrées, 56 ids uniques [require-intention]."
+  ],
+  "human_review": [
+    "CAP-001: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-003: position=confirmed + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-005: space=referentiel sans explicit_user_approval — vérifier le placement.",
+    "CAP-007: space=referentiel sans explicit_user_approval — vérifier le placement.",
+    "CAP-021: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-022: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-023: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-024: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-025: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-026: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-027: position=confirmed + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-029: tag bruit/méta de test — vérifier exclusion métier.",
+    "CAP-042: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-047: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-048: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-050: space=referentiel sans explicit_user_approval — vérifier le placement.",
+    "CAP-053: space=referentiel sans explicit_user_approval — vérifier le placement.",
+    "CAP-055: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-056: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture."
+  ]
+}

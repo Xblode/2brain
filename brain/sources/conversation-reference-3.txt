@@ -1,0 +1,2296 @@
+Ok maintenant je pense qu'on es prêt pour la 0.1.2 je veux que tu me fasse un prompt que je vais donner a Cursor pour qu'il modifie correctement toute les news
+En plus je vais ajouter une nouvelle sources de conversation qui sera la suite de conversation-reference-1.txt avec tout ce qu'on s'est dit cette session
+On va continuer de test sur notre échantillion 1 pour comparer mais on aura un deuxieme échantillon test pour plus tard et comme ca ca va nous permettre de le pas perdre tous ce qui a été dit ici
+
+
+
+Voici le prompt pour Cursor. Il reprend les décisions de conception de cette session et demande une véritable évolution du Skill vers la V0.1.2, avec une attention particulière à la fidélité des captures, à la couverture de la conversation et à la préservation du contexte.
+
+J'ai également intégré la gestion des deux échantillons : le premier reste notre référence pour comparer les versions, le second devient une nouvelle source de test à conserver pour les évaluations futures.
+
+# Évolution de Brain Capture — V0.1.2
+
+## 1. Objectif
+
+Faire évoluer le Skill Cursor `/brain-capture` de sa version actuelle vers la V0.1.2.
+
+Cette évolution doit améliorer la fidélité sémantique, la couverture des conversations, la conservation du contexte et la qualité des entrées produites.
+
+Il ne s'agit pas de refaire l'architecture globale de Second Brain, mais de consolider Brain Capture à partir des audits et des décisions de conception décrites ci-dessous.
+
+**Priorité absolue : ne perdre aucune information utile lors de la transformation d'une conversation en registre structuré.**
+
+Brain Capture doit constituer une mémoire fidèle et exploitable. Il ne doit pas chercher à décider prématurément de ce qui mérite d'être conservé ou validé.
+
+## 2. Périmètre
+
+Travailler exclusivement sur le Skill `/brain-capture` et les fichiers directement nécessaires à son fonctionnement :
+
+- Instructions principales du Skill.
+- Références et règles de capture.
+- Schéma du registre.
+- Scripts de validation et de génération, si nécessaires.
+- Protocole de test et documentation associée.
+
+Ne pas développer Brain Review, Brain Sync, Brain Search ou d'autres agents.
+
+Ne pas entreprendre de refonte générale de Second Brain.
+
+Ne pas modifier les registres métier existants sans nécessité démontrée.
+
+Avant toute modification :
+
+1. Examiner la structure actuelle du dépôt.
+2. Lire intégralement le Skill et ses références.
+3. Identifier les règles contradictoires ou obsolètes.
+4. Vérifier la compatibilité avec le schéma actuel.
+5. Construire un plan de modifications cohérent.
+
+Ne pas simplement ajouter des règles à la suite des anciennes : consolider les instructions pour éviter les contradictions et les doublons.
+
+## 3. Philosophie fondamentale de Brain Capture
+
+Brain Capture intervient avant la consolidation et la validation.
+
+Ses responsabilités sont :
+
+- Collecter les informations pertinentes au fil de la conversation.
+- Conserver les idées, propositions, préférences, questions, décisions, observations et contraintes.
+- Identifier correctement leur auteur.
+- Préserver suffisamment de contexte pour comprendre chaque information indépendamment de sa conversation d'origine.
+- Séparer les informations distinctes.
+- Conserver les relations entre les informations.
+- Ne pas perdre les détails opérationnels.
+- Ne pas transformer une proposition en décision.
+- Ne pas exiger de validation utilisateur pour enregistrer une information.
+
+Une information non validée reste une information utile à conserver.
+
+Une proposition de l'assistant peut être pertinente et mérite d'être enregistrée, même si l'utilisateur ne l'a pas encore approuvée.
+
+Une idée explorée par l'utilisateur mérite également d'être conservée.
+
+**La capture n'est pas une sélection des meilleures idées. C'est une collecte structurée et fidèle de la matière utile au projet.**
+
+## 4. Capture progressive des conversations
+
+Modifier fondamentalement la méthode de lecture des conversations.
+
+### 4.1 Traitement par fenêtres
+
+L'agent doit traiter la conversation progressivement, par fenêtres d'environ cinq échanges utilisateur/assistant.
+
+Fonctionnement attendu :
+
+1. Lire les cinq premiers échanges.
+2. Extraire toutes les informations pertinentes.
+3. Créer les captures correspondantes.
+4. Identifier les relations entre les captures.
+5. Conserver le contexte nécessaire pour la fenêtre suivante.
+6. Passer automatiquement aux cinq échanges suivants.
+7. Continuer jusqu'à la fin de la conversation.
+8. Effectuer un contrôle global de couverture.
+
+L'utilisateur ne doit pas intervenir entre les fenêtres.
+
+Il s'agit toujours du même agent, de la même conversation et du même contexte général.
+
+Les fenêtres sont une méthode de traitement, pas des conversations indépendantes.
+
+### 4.2 Continuité contextuelle
+
+L'agent doit conserver une mémoire de travail pendant toute la capture :
+
+- Sujets déjà identifiés.
+- Informations précédemment capturées.
+- Questions ouvertes.
+- Propositions de l'utilisateur et de l'assistant.
+- Relations entre les différentes informations.
+- Décisions et préférences exprimées.
+- Informations ambiguës.
+- Évolutions et corrections.
+
+Prévoir un chevauchement contextuel entre les fenêtres pour ne pas séparer artificiellement une proposition de sa réponse.
+
+Ne jamais perdre le contexte global en passant d'une fenêtre à l'autre.
+
+### 4.3 Extraction multi-passes
+
+Pour chaque fenêtre, examiner les informations selon plusieurs angles :
+
+**Passe 1 — Informations**
+
+- Idées.
+- Suggestions.
+- Préférences.
+- Orientations.
+- Décisions.
+- Observations.
+- Questions ouvertes.
+- Contraintes et exigences.
+
+**Passe 2 — Informations actionnables**
+
+- Tâches.
+- Jalons.
+- Objectifs.
+- Sujets de cadrage.
+- Éléments de roadmap.
+- Détails opérationnels.
+- Prochaines étapes.
+
+**Passe 3 — Relations**
+
+- Réponses.
+- Corrections.
+- Précisions.
+- Contradictions.
+- Évolutions.
+- Approbations partielles.
+- Rejets.
+
+**Passe 4 — Contexte**
+
+- Explications nécessaires à la compréhension autonome.
+- Alternatives évoquées.
+- Raisons et justifications.
+- Exceptions.
+- Conditions.
+- Incertitudes.
+
+Il s'agit de plusieurs passes du même agent, pas de plusieurs agents autonomes.
+
+Ne pas créer artificiellement quatre captures pour chaque information. Les passes servent à vérifier la couverture.
+
+## 5. Couverture et fidélité
+
+Ajouter un véritable mécanisme de contrôle de couverture.
+
+La qualité de la capture ne doit pas être évaluée uniquement par la validité du JSONL et la présence des champs obligatoires.
+
+L'agent doit vérifier que les informations utiles de la source ont effectivement été conservées.
+
+Contrôles obligatoires :
+
+- Tous les messages pertinents ont-ils été examinés ?
+- Les propositions de l'assistant ont-elles été conservées ?
+- Les idées exprimées par l'utilisateur ont-elles été conservées ?
+- Les réponses et corrections ont-elles été correctement reliées ?
+- Les informations distinctes ont-elles été séparées ?
+- Les sujets de cadrage ont-ils été détaillés individuellement ?
+- Les tâches et jalons potentiels ont-ils été identifiés ?
+- Les contraintes et règles opérationnelles ont-elles été conservées ?
+- Les nuances et incertitudes sont-elles préservées ?
+- Le contexte est-il suffisant pour comprendre les captures sans consulter la source ?
+
+### Règle importante
+
+Ne pas simplement enregistrer qu'une liste de sept sujets existe.
+
+Si la conversation contient les sept sujets, les sept sujets doivent pouvoir être retrouvés individuellement dans le registre.
+
+Ne pas remplacer le contenu d'une information par une simple référence à son existence.
+
+Le nombre de captures n'est pas un objectif en soi. Il faut privilégier la couverture utile, la fidélité et l'absence de pertes.
+
+## 6. Intentions standardisées
+
+Mettre en place une taxonomie d'intentions stable.
+
+Une capture doit avoir une intention principale pour faciliter les recherches et les automatisations.
+
+Proposition initiale :
+
+| Intention     | Signification                                         |
+| ------------- | ----------------------------------------------------- |
+| `idea`        | Idée explorée ou possibilité                          |
+| `suggestion`  | Proposition formulée par l'utilisateur ou l'assistant |
+| `preference`  | Préférence exprimée                                   |
+| `orientation` | Direction envisagée ou retenue provisoirement         |
+| `question`    | Question ouverte                                      |
+| `decision`    | Choix explicitement effectué                          |
+| `requirement` | Besoin ou contrainte à respecter                      |
+| `convention`  | Règle de fonctionnement                               |
+| `task`        | Action à réaliser                                     |
+| `milestone`   | Étape ou objectif structurant                         |
+| `observation` | Information factuelle ou constat                      |
+| `risk`        | Risque identifié                                      |
+| `feedback`    | Retour, critique ou correction                        |
+
+Les valeurs doivent être documentées et utilisées de manière cohérente.
+
+Ne pas inventer librement de nouvelles intentions à chaque capture.
+
+### 6.1 Position de l'auteur
+
+Distinguer l'intention de la position exprimée par l'auteur.
+
+Valeurs proposées :
+
+| Position    | Signification                  |
+| ----------- | ------------------------------ |
+| `proposed`  | Proposition formulée           |
+| `exploring` | Piste explorée                 |
+| `favorable` | Avis favorable                 |
+| `endorsed`  | Considéré comme une bonne base |
+| `opposed`   | Opposition exprimée            |
+| `selected`  | Option explicitement choisie   |
+| `confirmed` | Information ou règle confirmée |
+| `uncertain` | Hésitation ou incertitude      |
+
+La position ne doit pas être déduite abusivement.
+
+### 6.2 Validation distincte
+
+Ne pas confondre :
+
+- Intention.
+- Position.
+- Validation.
+- Statut opérationnel.
+
+Une idée peut être favorablement accueillie sans être validée.
+
+Une proposition peut être conservée sans être adoptée.
+
+Une information peut être pré-organisée sans devenir une décision définitive.
+
+Ne pas convertir automatiquement `favorable`, `endorsed` ou `selected` en validation définitive sans preuve explicite.
+
+## 7. Captures multi-informations et certitudes différentes
+
+Une même intervention peut contenir plusieurs informations de natures différentes.
+
+Exemple :
+
+L'utilisateur explore une architecture, approuve une partie de la proposition et exprime une réserve sur une autre partie.
+
+Ne pas fusionner ces informations dans une seule capture si elles n'ont pas la même intention, la même position ou le même niveau de certitude.
+
+Créer plusieurs captures liées lorsque cela améliore la précision.
+
+Chaque capture doit avoir :
+
+- Une intention principale.
+- Une position identifiable si elle est exprimée.
+- Son propre niveau de confiance.
+- Son propre contenu compréhensible.
+- Ses relations avec les autres captures.
+
+Ne pas multiplier inutilement les entrées lorsque plusieurs détails appartiennent réellement à une même information.
+
+## 8. Compréhension autonome des captures
+
+Une capture doit pouvoir être comprise dans une conversation future sans accès à la source originale.
+
+Éviter les titres et contenus trop courts ou dépendants du contexte.
+
+Exemple insuffisant :
+
+« Mode B/C : commandes + validation du cadrage. »
+
+Exemple attendu :
+
+« Le mode B/C désigne deux modes de fonctionnement précédemment comparés pour les commandes et la validation du cadrage. Le fonctionnement envisagé consiste à valider le cadrage plutôt que chaque expérimentation. Les différences exactes entre les modes B et C doivent être documentées afin de pouvoir identifier précisément les comportements de chacun. »
+
+Cet exemple illustre le niveau de contexte attendu, mais ne doit pas être repris comme une règle métier universelle.
+
+### Règles
+
+- Expliquer les acronymes et références lorsqu'ils sont connus.
+- Décrire les alternatives évoquées lorsqu'elles sont utiles.
+- Conserver les raisons et justifications.
+- Décrire les conditions et exceptions.
+- Ne pas inventer les informations manquantes.
+- Signaler explicitement les éléments encore inconnus.
+- Conserver les références vers les captures complémentaires.
+
+La capture doit être suffisamment explicite pour être retrouvée par une commande telle que `/brain-search Modules` plusieurs mois plus tard.
+
+## 9. Attribution des auteurs et citations
+
+L'agent doit distinguer l'auteur initial d'une information de la personne qui la commente ou la cite.
+
+Ordre de priorité :
+
+1. Métadonnées de rôle disponibles dans la source.
+2. Structure et séparateurs de la conversation.
+3. Indices rédactionnels.
+4. Incertitude explicite si l'attribution ne peut pas être déterminée.
+
+Le style rédactionnel peut servir d'indice secondaire.
+
+Dans les conversations de l'utilisateur :
+
+- Les messages sont souvent spontanés.
+- Les phrases peuvent s'enchaîner sans ponctuation.
+- Les formulations peuvent contenir des fautes de frappe.
+- Les messages sont souvent moins structurés que ceux de l'assistant.
+
+Les réponses de l'assistant sont généralement plus structurées.
+
+Ne jamais utiliser ces indices stylistiques pour contredire des métadonnées fiables.
+
+### Citations
+
+Une citation ne constitue pas une nouvelle approbation de son contenu.
+
+Lorsqu'un utilisateur colle un ancien message de l'assistant entre guillemets, il faut distinguer :
+
+- L'auteur initial de la proposition.
+- Le contenu cité.
+- Le commentaire actuel de l'utilisateur.
+
+Conserver cette distinction dans les captures et les relations.
+
+Ne pas transformer une proposition de l'assistant citée par l'utilisateur en décision utilisateur.
+
+## 10. Approbations partielles et pré-approbation
+
+Conserver le mécanisme `approval_global_partial`.
+
+Il représente un signal de confiance sur un segment de conversation.
+
+Exemple :
+
+L'utilisateur indique qu'il a lu une partie de la conversation, qu'il est globalement d'accord avec son contenu et qu'il souhaite conserver les idées et suggestions qui y figurent.
+
+Interprétation :
+
+- Les informations de ce segment sont considérées comme pertinentes.
+- La confiance dans leur pertinence peut augmenter.
+- Les suggestions restent des suggestions.
+- Les idées restent des idées.
+- Les questions restent ouvertes.
+- Aucune décision définitive n'est créée automatiquement.
+
+L'approbation partielle doit être rattachée au bon segment et aux bonnes captures.
+
+Ne pas étendre arbitrairement sa portée aux messages précédents ou suivants.
+
+Conserver les mécanismes de scope déjà présents dans la version actuelle, notamment `approval_scope`, et vérifier leur cohérence.
+
+## 11. Distinction entre informations métier et instructions de capture
+
+Brain Capture doit être générique.
+
+Il doit distinguer :
+
+1. Une information sur le projet.
+2. Une instruction sur la manière dont Brain Capture doit fonctionner.
+3. Un commentaire concernant un test ou une génération.
+
+Ne pas transformer les commentaires de test en connaissances métier.
+
+Ne pas utiliser les exemples contenus dans une conversation source pour créer des règles particulières au Skill.
+
+Les règles du Skill doivent être généralisables à d'autres projets et à d'autres conversations.
+
+Les instructions de capture peuvent être conservées dans le registre uniquement si elles constituent une véritable préférence ou instruction durable de l'utilisateur concernant le fonctionnement de Second Brain.
+
+Les commentaires temporaires sur un test ne doivent pas polluer la mémoire métier.
+
+## 12. Relations entre captures
+
+Améliorer la détection et la représentation des relations.
+
+Conserver les relations déjà supportées et documenter précisément leur signification.
+
+L'agent doit notamment pouvoir représenter :
+
+- Une réponse à une question.
+- Une précision apportée à une information.
+- Une correction.
+- Une proposition liée à une autre.
+- Deux idées complémentaires.
+- Deux propositions concurrentes.
+- Une évolution d'une orientation.
+- Une information qui complète une capture antérieure.
+
+Ne pas créer une relation simplement parce que deux captures parlent du même thème.
+
+Ne pas fusionner automatiquement les informations similaires.
+
+Préserver les nuances, les auteurs et les origines.
+
+Les relations doivent faciliter le travail futur de Brain Review et les recherches thématiques.
+
+## 13. Roadmap et informations actionnables
+
+Brain Capture doit reconnaître les informations susceptibles de devenir :
+
+- Des tâches.
+- Des jalons.
+- Des objectifs.
+- Des sujets de cadrage.
+- Des éléments de roadmap.
+
+Il ne doit pas attendre une validation définitive pour les conserver.
+
+Une information peut être capturée comme `milestone` ou `task` sans être considérée comme une tâche officiellement créée ou un jalon confirmé.
+
+Brain Capture ne doit pas créer directement des objets ClickUp.
+
+La pré-organisation dans la roadmap et les registres de travail relève de Brain Review.
+
+Le Skill doit cependant capturer suffisamment d'informations pour permettre à Brain Review d'identifier ces possibilités.
+
+## 14. Architecture des registres : compatibilité future
+
+Le fonctionnement cible de Second Brain prévoit plusieurs registres spécialisés.
+
+Proposition :
+
+- `entries.jsonl` : captures originales.
+- `decisions.jsonl` : décisions confirmées.
+- `tasks.jsonl` : tâches.
+- `roadmap.jsonl` : jalons et initiatives.
+- `conventions.jsonl` : conventions.
+- `knowledge.jsonl` : connaissances consolidées.
+- `archive/` : archives chronologiques.
+- `archive-index.jsonl` : index des captures archivées.
+
+Cette architecture est une orientation de conception, pas une demande de développement complet dans cette version.
+
+Pour V0.1.2 :
+
+- Conserver la compatibilité avec le registre actuel.
+- Ne pas déplacer automatiquement les entrées.
+- Ne pas créer artificiellement tous les registres spécialisés si les agents correspondants ne sont pas encore implémentés.
+- Préserver les identifiants CAP.
+- Préserver les références vers les sources.
+- Prévoir que les futures entrées puissent être retrouvées dans plusieurs registres sans perdre leur provenance.
+
+`entries.jsonl` reste le registre de capture de référence.
+
+Les archives futures ne devront jamais supprimer les informations originales.
+
+## 15. Contrôle final et validation technique
+
+Améliorer les contrôles existants.
+
+Vérifier notamment :
+
+- Validité JSONL.
+- Unicité des identifiants.
+- Présence des champs obligatoires.
+- Validité des types et valeurs autorisées.
+- Validité des relations.
+- Cohérence des références.
+- Cohérence des auteurs.
+- Cohérence des approbations.
+- Présence des informations de provenance.
+- Cohérence des chemins de stockage.
+- Absence de perte d'informations lors des transformations.
+
+Ajouter un contrôle de couverture sémantique si cela peut être fait de manière fiable.
+
+Ne pas déclarer un test réussi uniquement parce que le JSONL est valide.
+
+Documenter clairement les limites d'une vérification automatique.
+
+## 16. Gestion des échantillons de test
+
+Deux échantillons de conversation sont prévus.
+
+### Échantillon 1 — Référence de comparaison
+
+Source existante :
+
+`brain/sources/conversation-reference-1.txt`
+
+Il s'agit de la source déjà utilisée pour les précédents tests.
+
+Elle doit rester la référence principale pour évaluer l'évolution de Brain Capture.
+
+Le test précédent réellement frais est :
+
+`20261030-061941`
+
+Ne plus utiliser `20261030-045232` comme référence de comparaison sémantique : il s'agissait d'une transformation des anciennes données, et non d'une recapture indépendante.
+
+Pour V0.1.2 :
+
+- Effectuer une véritable nouvelle capture depuis `conversation-reference-1.txt`.
+- Ne pas copier les anciennes entrées.
+- Ne pas appliquer les règles V0.1.2 sur les anciennes données pour simuler une nouvelle génération.
+- Générer de nouveaux identifiants selon les règles du test.
+- Conserver les résultats précédents.
+- Comparer la nouvelle génération à `20261030-061941`.
+- Identifier les améliorations, régressions, pertes et nouvelles erreurs.
+
+La comparaison doit porter sur la qualité sémantique, pas uniquement sur les identifiants ou le nombre d'entrées.
+
+### Échantillon 2 — Nouvelle source de référence
+
+Une nouvelle source sera ajoutée au dossier :
+
+`brain/sources/`
+
+Elle constituera la suite de `conversation-reference-1.txt` et contiendra la présente session de conception.
+
+Nom attendu :
+
+`conversation-reference-2.txt`
+
+Si le fichier n'est pas encore présent, ne pas le créer artificiellement et ne pas inventer son contenu.
+
+Lorsqu'il sera disponible :
+
+- Le conserver comme second échantillon indépendant.
+- Ne pas mélanger ses messages à l'échantillon 1.
+- Ne pas l'utiliser dans la comparaison principale V0.1.2 sur l'échantillon 1.
+- Documenter son existence et son rôle dans le protocole de test.
+- Le réserver à de futures évaluations sur une conversation différente.
+
+L'objectif est de construire progressivement un ensemble de tests représentatif de conversations réelles.
+
+### 16.1 Comparaison obligatoire
+
+Produire un rapport de comparaison lisible contenant :
+
+- Nombre de captures.
+- Répartition des intentions.
+- Répartition des auteurs.
+- Répartition des positions et validations.
+- Nombre et qualité des relations.
+- Informations actionnables détectées.
+- Couverture des sujets de la source.
+- Captures autonomes et compréhensibles.
+- Informations oubliées.
+- Erreurs d'attribution.
+- Faux positifs.
+- Doublons.
+- Informations fusionnées à tort.
+- Améliorations par rapport à V0.1.1.
+- Régressions éventuelles.
+
+Créer les fichiers de rapport prévus par le protocole actuel, notamment `COMPARISON.md` et les résultats détaillés de validation.
+
+Ne pas se contenter d'une note auto-rédigée par le Skill.
+
+## 17. Scénarios prioritaires à vérifier sur l'échantillon 1
+
+Reprendre les problèmes identifiés lors de l'audit du test `20261030-061941`.
+
+### A. CAP-008 / CAP-009 — Compréhension autonome
+
+Vérifier que les modes B et C sont suffisamment expliqués pour être compris sans la conversation source.
+
+Ne pas inventer les différences manquantes.
+
+### B. CAP-014 / CAP-016 / CAP-018 — Portée d'une approbation
+
+Vérifier que l'approbation partielle est correctement rattachée au contenu concerné.
+
+Prendre en compte les citations et les références contextuelles.
+
+Ne pas rattacher automatiquement un commentaire à toutes les captures précédentes.
+
+### C. CAP-038 — Roadmap
+
+Vérifier que les six couches évoquées sont conservées individuellement et que leur potentiel de jalons est identifiable.
+
+Ne pas transformer une première base de roadmap en validation définitive.
+
+### D. CAP-039 — Convention ClickUp
+
+Distinguer la description d'une organisation existante de son adoption comme convention.
+
+Conserver les informations qui permettront de documenter cette convention.
+
+### E. CAP-047 — Brain Review
+
+Conserver la distinction entre :
+
+- Consolidation.
+- Déduplication.
+- Transformation en tâches et documents.
+- Validation de certains éléments.
+
+Ne pas attribuer à Review un pouvoir de validation plus large que ce qui est exprimé.
+
+### F. CAP-050 — Roadmap et sous-tâches
+
+Conserver les détails opérationnels de la proposition, sans la transformer en décision définitive.
+
+### G. Les sept sujets de cadrage
+
+Vérifier que les sept sujets peuvent être retrouvés individuellement dans le registre, et pas seulement via une entrée indiquant leur existence.
+
+### H. CAP-069 — Bruit de test
+
+Vérifier que les commentaires sur la simulation ne deviennent pas des connaissances métier.
+
+## 18. Exigences de qualité
+
+La V0.1.2 doit être évaluée selon ces priorités :
+
+1. Fidélité à la source.
+2. Couverture des informations pertinentes.
+3. Compréhension autonome des captures.
+4. Attribution correcte des auteurs.
+5. Conservation des nuances et incertitudes.
+6. Extraction des informations actionnables.
+7. Qualité des relations.
+8. Cohérence des métadonnées.
+9. Validité technique.
+
+Ne pas chercher à augmenter artificiellement le nombre d'entrées.
+
+Ne pas sur-segmenter les informations.
+
+Ne pas transformer les explorations en décisions.
+
+Ne pas supprimer les idées de l'assistant simplement parce qu'elles n'ont pas été approuvées.
+
+Ne pas résumer excessivement les messages au point de perdre les détails nécessaires à leur compréhension.
+
+## 19. Livrables attendus
+
+À la fin du travail, fournir :
+
+1. Le Skill `/brain-capture` en V0.1.2.
+2. Les références et règles mises à jour.
+3. Le schéma actualisé si nécessaire.
+4. Les scripts de validation mis à jour si nécessaire.
+5. Le protocole de test actualisé.
+6. Une nouvelle génération indépendante sur l'échantillon 1.
+7. Un rapport de comparaison avec `20261030-061941`.
+8. Un rapport des problèmes restant à résoudre.
+9. Une documentation claire des changements apportés.
+
+Ne pas modifier les données historiques des anciens tests.
+
+Ne pas faire de commit ni de push.
+
+## 20. Consigne finale
+
+Avant de considérer la V0.1.2 terminée, effectuer un audit critique de ta propre implémentation.
+
+Vérifier que les nouvelles règles ne se contredisent pas, que les champs sont cohérents et que les scripts appliquent réellement les règles documentées.
+
+Ne pas déclarer la V0.1.2 réussie si les améliorations sont uniquement documentaires et ne se reflètent pas dans la génération.
+
+Le résultat attendu est un Brain Capture capable de parcourir une conversation progressivement, de conserver sa richesse sémantique, de produire des captures autonomes et de ne pas perdre les informations qui seront nécessaires à Brain Review, Brain Search et aux futurs agents de Second Brain.
+
+## Avant de lancer Cursor : deux précautions
+
+1. Ajoute `conversation-reference-2.txt` dans `brain/sources/`, en conservant bien le premier fichier intact. Le prompt prévoit son absence éventuelle, mais il vaut mieux que Cursor puisse identifier les deux sources.
+2. Demande à Cursor de faire d'abord son audit du Skill actuel avant de modifier les fichiers. Il doit adapter le schéma existant plutôt que créer une nouvelle structure incompatible.
+
+Ce que nous cherchons à mesurer avec la V0.1.2 : non pas si elle sait produire davantage de captures, mais si elle sait conserver davantage de sens, de contexte et de détails utiles sans déformer la conversation.
+
+
+
+
+
+Voila le plan que cursor me propose : Plan `/brain-capture` V0.1.2
+
+## Contexte (audit Skill actuel)
+
+État actuel : Skill **0.1.1**, contrat schéma cohérent, validateur strict sur `KNOWN_FIELDS`, test frais de référence `[20261030-061941](brain/registry/_test-runs/20261030-061941/)`. Lacunes principales : pas de fenêtrage, pas de multi-passes, pas de couverture sémantique, `type` surchargé (pas d’`intention`/`position`), contenus souvent non autonomes, `approval_scope: set` documenté mais jamais produit, tension « sans surcapturer » vs « ne rien perdre ».
+
+**Décision d’architecture** : étendre le contrat 0.1.1 — ne pas remplacer `entries.jsonl`, ni les enums `type` / `validation` / `approved_by` / `approval_scope`, ni le vocabulaire de relations.
+```mermaid
+flowchart TD
+  src[Source conversation] --> win[Fenêtres ~5 échanges + overlap]
+  win --> p1[Passe infos]
+  win --> p2[Passe actionable]
+  win --> p3[Passe relations]
+  win --> p4[Passe contexte autonomie]
+  p1 --> draft[Captures brouillon]
+  p2 --> draft
+  p3 --> draft
+  p4 --> draft
+  draft --> cover[Contrôle couverture]
+  cover --> val[validate-registry.py cible]
+  val --> out[Append test-run isolé]
+```
+
+## 1. Consolider la documentation Skill (sans doublons)
+
+Fichiers : `[.cursor/skills/brain-capture/SKILL.md](.cursor/skills/brain-capture/SKILL.md)`, `[references/capture-rules.md](.cursor/skills/brain-capture/references/capture-rules.md)`, `[references/test-protocol.md](.cursor/skills/brain-capture/references/test-protocol.md)`.
+
+- Bump `version: 0.1.2`.
+- **SKILL.md** = orchestration uniquement : mode prod/test-run ; lecture par fenêtres (\~5 échanges user/assistant) avec chevauchement ; 4 passes ; mémoire de travail inter-fenêtres ; checklist couverture ; bilan enrichi ; validateur sur chemin cible.
+- **capture-rules.md** = règles sémantiques uniques (retirer les tableaux d’approbation dupliqués du SKILL).
+- Remplacer « sans surcapturer » par : **capturer large** les infos projet utiles ; **exclure** bruit de test, commentaires de génération, et instructions temporaires de test ; conserver les préférences durables sur Second Brain si clairement exprimées.
+- Philosophie explicite : capture ≠ sélection / ≠ validation ; propositions assistant non approuvées = à conserver ; `favorable`/`endorsed` ≠ `explicit_user_approval`.
+
+## 2. Adapter le schéma (extension compatible)
+
+Fichiers : `[brain/registry/SCHEMA.md](brain/registry/SCHEMA.md)`, `[references/registry-schema.md](.cursor/skills/brain-capture/references/registry-schema.md)`.
+
+Nouveaux champs **optionnels** (rétrocompat entries existantes) :
+
+|   |
+| - |
+
+Champ
+
+|   |
+| - |
+
+Valeurs
+
+|   |
+| - |
+
+Rôle
+
+|   |
+| - |
+
+`intention`
+
+|   |
+| - |
+
+`idea` | `suggestion` | `preference` | `orientation` | `question` | `decision` | `requirement` | `convention` | `task` | `milestone` | `observation` | `risk` | `feedback`
+
+|   |
+| - |
+
+Intention principale (recherche / automatisation)
+
+|   |
+| - |
+
+`position`
+
+|   |
+| - |
+
+`proposed` | `exploring` | `favorable` | `endorsed` | `opposed` | `selected` | `confirmed` | `uncertain` | `null`
+
+|   |
+| - |
+
+Posture de l’auteur ; ne pas déduire abusivement
+
+Règles verrouillées :
+
+- Conserver `type` (enum 0.1.1) ; documenter un **mapping indicatif** `type` ↔ `intention` (ex. `proposition`→`suggestion`, `open_question`→`question`) sans fusion des champs.
+- Nouvelles captures 0.1.2 : Skill **exige** `intention` ; `position` si exprimée, sinon `null`.
+- Entrées historiques sans ces champs : restent valides.
+- Ne pas créer `decisions.jsonl` / `tasks.jsonl` / etc. en 0.1.2 — seulement une note d’orientation future dans SCHEMA (compatibilité), `entries.jsonl` reste le registre de capture.
+- Contenu autonome : règle qualitative (expliquer options A/B/C, raisons, conditions ; signaler l’inconnu ; ne pas inventer) — pas de champ `window_id` obligatoire (évite bruit schéma) ; la mémoire de fenêtres reste process agent.
+
+Approbations : conserver `approval_scope` / `approval_global_partial` ; activer l’usage réel de `set` quand un bloc est cité et délimité ; ne pas étendre la portée hors segment.
+
+Relations : documenter plus précisément (précision, correction, concurrence) **avec le vocabulaire existant** (`related`, `evolves_*`, `answers`/`answered_by`, `conflicts_with`, `resolves`, `supersedes_candidate`) — pas de nouvelle relation sauf nécessité démontrée après audit (défaut : aucune nouvelle `rel`).
+
+## 3. Validateur
+
+Fichier : `[scripts/validate-registry.py](.cursor/skills/brain-capture/scripts/validate-registry.py)`.
+
+- Ajouter `intention` / `position` à `KNOWN_FIELDS` (optionnels).
+- Enums + soft checks en `human_review` : content très court ; `decision`+formulation préférentielle ambiguë ; tag bruit/méta ; `explicit` sans `item`/`set` (déjà erreur) ; absence d’`intention` sur capture **nouvelle** non bloquante si champ manquant historique.
+- Ne pas prétendre valider la couverture sémantique automatiquement — documenter la limite ; la couverture reste checklist agent + rapport COMPARISON.
+
+## 4. Protocole de test
+
+Fichier : `[references/test-protocol.md](.cursor/skills/brain-capture/references/test-protocol.md)`.
+
+- Référence sémantique principale : **`20261030-061941`** (pas `045232`).
+- Échantillon 1 : `[brain/sources/conversation-reference-1.txt](brain/sources/conversation-reference-1.txt)` → toujours `test-run`.
+- Échantillon 2 : documenter `[brain/sources/conversation-reference-2.txt](brain/sources/conversation-reference-2.txt)` s’il existe (présent selon audit) comme suite indépendante — **hors** comparaison principale 0.1.2.
+- Comparaison obligatoire : qualité sémantique (intentions, autonomie, couverture 7 sujets, actionable, attributions, faux positifs) + counts — grille scénarios A–H du cahier.
+- Interdiction : copier/transformer d’anciens JSONL pour simuler une génération.
+
+## 5. Génération et livrables (après doc/validateur)
+
+1. Créer `brain/registry/_test-runs/<timestamp>/` vide + SCHEMA.
+2. Exécuter un **vrai** `/brain-capture` 0.1.2 sur l’échantillon 1 (fenêtres + multi-passes + couverture) → écrire uniquement dans ce dossier.
+3. Valider le JSONL cible.
+4. Rédiger `COMPARISON.md` factuel vs `20261030-061941` + `ISSUES.md` (problèmes restants).
+5. `CHANGELOG-0.1.2.md` court dans le Skill ou `_test-runs/<timestamp>/` listant les changements.
+
+**Ne pas** modifier `brain/registry/entries.jsonl` (prod) ni les archives `_test-runs` antérieures. **Pas de commit/push.**
+
+## 6. Critères de done
+
+- Version Skill `0.1.2` ; règles consolidées sans contradiction « surcapturer vs couverture ».
+- Schéma étendu ; validateur accepte les nouveaux champs ; anciennes entries toujours OK.
+- Nouvelle génération indépendante sur sample 1 ; comparaison vs `061941` ; scénarios A–H adressés ou listés comme dettes explicites.
+- Auto-audit final : les règles sont appliquées dans la génération, pas seulement dans la doc.
+
+## Hors scope
+
+Brain Review / Sync / Search ; registres spécialisés ; ClickUp ; docs métier ; commit/push ; modification des tests historiques.
+
+
+
+Le plan de Cursor est globalement très bon. Il respecte la philosophie qu'on vient de définir et, surtout, il évite une erreur importante : vouloir développer dès maintenant toute l'architecture future de Second Brain alors qu'on travaille uniquement sur `/brain-capture`.
+
+Je valide son orientation générale, mais je ferais 5 ajustements avant de lui donner le feu vert.
+
+## 1. Ce que je valide sans réserve
+
+- Fenêtres de cinq échanges avec chevauchement.
+- Quatre passes d'extraction par le même agent.
+- Mémoire de travail entre les fenêtres.
+- Contrôle de couverture sémantique.
+- Ajout de `intention` et `position` sans casser les anciens registres.
+- Conservation des champs `type`, `validation`, `approved_by` et `approval_scope`.
+- Conservation de `approval_global_partial`.
+- Échantillon 1 comme référence de comparaison.
+- Échantillon 2 conservé comme source indépendante.
+- Aucun changement des anciennes générations.
+- Aucun changement du registre de production.
+- Aucun commit ni push.
+
+Le choix de ne pas créer immédiatement `tasks.jsonl`, `roadmap.jsonl` et les autres registres est également correct : ce travail appartient à une étape ultérieure.
+
+## 2. Les cinq ajustements que je demanderais
+
+### Ajustement 1 — Clarifier les fenêtres de capture
+
+Cursor écrit « environ cinq échanges utilisateur/assistant ».
+
+Je voudrais verrouiller précisément le fonctionnement :
+
+- Une fenêtre contient jusqu'à 5 messages utilisateur et leurs 5 réponses assistant correspondantes.
+- Les messages sont lus dans l'ordre chronologique.
+- Les échanges incomplets en fin de conversation sont conservés.
+- Un chevauchement permet de reprendre le contexte de la fenêtre précédente.
+- Les captures communes aux fenêtres ne doivent pas être dupliquées.
+
+Surtout, les fenêtres ne doivent pas être une limite de contexte : l'agent doit conserver sa mémoire de travail globale.
+
+### Ajustement 2 — Bien définir `intention` et `position`
+
+Le choix des deux champs est bon, mais il faut empêcher les confusions.
+
+Exemple :
+
+| Information                               | Intention     | Position    | Validation                                      |
+| ----------------------------------------- | ------------- | ----------- | ----------------------------------------------- |
+| L'assistant propose un orchestrateur      | `suggestion`  | `proposed`  | `none`                                          |
+| Tu explores plusieurs agents              | `idea`        | `exploring` | `none`                                          |
+| Tu trouves une architecture intéressante  | `orientation` | `favorable` | `none`                                          |
+| Tu choisis explicitement une architecture | `decision`    | `selected`  | À déterminer selon la portée de ton approbation |
+
+Je ferais particulièrement attention à `selected` et `confirmed` : ils ne doivent pas automatiquement déclencher une validation formelle.
+
+Je demanderais également que chaque intention soit accompagnée d'une définition et d'exemples positifs et négatifs dans `capture-rules.md`.
+
+### Ajustement 3 — Ne pas mal interpréter `approval_scope: set`
+
+C'est le point sur lequel je suis le plus vigilant.
+
+Cursor prévoit d'activer réellement `set` lorsqu'un bloc est cité et délimité.
+
+Mais attention : citer un bloc de conversation ne signifie pas approuver ce bloc.
+
+Il faut distinguer :
+
+- Un bloc cité pour être analysé.
+- Un bloc cité pour être corrigé.
+- Un bloc cité auquel l'utilisateur exprime son accord.
+- Un bloc cité auquel l'utilisateur exprime un accord partiel.
+
+`set` doit uniquement représenter une approbation dont la portée est explicitement identifiable.
+
+### Ajustement 4 — Rendre l'obligation d'intention réellement vérifiable
+
+Cursor indique que `intention` sera obligatoire pour les nouvelles captures, mais que le validateur ne bloquera pas son absence.
+
+Je modifierais cela.
+
+Je recommande :
+
+- Anciennes entrées : toujours acceptées sans `intention`.
+- Nouvelles générations V0.1.2 : `intention` obligatoire.
+- `position` : facultatif ou `null` lorsqu'aucune position n'est identifiable.
+
+Le validateur devrait pouvoir fonctionner avec un mode spécifique, par exemple `--require-intention`, pour vérifier les nouvelles générations sans casser la rétrocompatibilité.
+
+Sinon, on documente une obligation que le validateur ne fait jamais respecter.
+
+### Ajustement 5 — Renforcer la preuve de couverture
+
+Le contrôle de couverture est le cœur de cette version.
+
+Je voudrais que `COMPARISON.md` contienne également une grille de traçabilité :
+
+| Message source | Information pertinente     | Capture produite | Résultat  |
+| -------------- | -------------------------- | ---------------- | --------- |
+| Message 12     | Proposition d'architecture | CAP-XXX          | Conservée |
+| Message 13     | Préférence utilisateur     | CAP-XXX          | Conservée |
+| Message 14     | Question ouverte           | CAP-XXX          | Conservée |
+| Message 15     | Détail opérationnel        | —                | Manquante |
+
+Il faut pouvoir repérer concrètement les informations oubliées.
+
+L'agent ne doit pas se contenter de déclarer que sa couverture est bonne.
+
+Cette vérification doit aussi contrôler que le contenu des captures reste fidèle à la source et ne contient pas d'explications inventées.
+
+## 3. Un dernier point : l'échantillon 2
+
+Cursor indique que `conversation-reference-2.txt` est présent selon son audit.
+
+Or, dans notre conception, tu prévoyais de l'ajouter.
+
+Je lui demanderais simplement de vérifier son existence réelle et son contenu avant de l'intégrer au protocole. Il ne doit ni supposer qu'il existe ni créer un fichier vide.
+
+Il doit rester indépendant de l'échantillon 1.
+
+## 4. Message à transmettre à Cursor
+
+Voici les corrections à lui demander avant l'exécution :
+
+Ton plan est validé dans son architecture générale. Avant de commencer, intègre les précisions suivantes :
+
+1. **Fenêtrage :** une fenêtre correspond à environ 5 échanges utilisateur/assistant, soit jusqu'à 5 messages utilisateur et leurs réponses. Conserve un chevauchement et une mémoire de travail globale. Les fenêtres ne sont pas des traitements indépendants. Évite les captures dupliquées entre fenêtres.
+2. **Intention et position :** documente précisément chaque valeur avec des exemples. `selected` et `confirmed` ne doivent pas automatiquement déclencher une validation formelle. Intention, position et validation restent trois dimensions distinctes.
+3. **Approval scope :** une citation ou un bloc délimité ne constitue pas automatiquement une approbation. `set` doit être utilisé uniquement lorsqu'une approbation explicite porte sur un ensemble identifiable de captures. Distingue citation, analyse, correction, approbation partielle et approbation explicite.
+4. **Validateur :** rends `intention` obligatoire pour les nouvelles générations V0.1.2, tout en conservant la compatibilité des anciennes entrées. Prévois un mode de validation spécifique, par exemple `--require-intention`. `position` peut être null si aucune position n'est identifiable.
+5. **Couverture :** ajoute dans COMPARISON.md une grille de traçabilité entre les messages sources, les informations pertinentes, les CAP produits et les éventuelles informations manquantes. Le rapport doit permettre de vérifier concrètement la couverture, pas seulement annoncer un résultat.
+6. **Échantillon 2 :** vérifie que `conversation-reference-2.txt` existe réellement avant de le référencer dans le protocole. Ne crée pas de fichier vide et ne mélange pas les deux échantillons.
+
+Conserve le reste du plan : extension compatible du schéma, quatre passes, capture large, autonomie des entrées, relations, test indépendant sur l'échantillon 1, comparaison avec 20261030-061941, rapports et absence de modification des données de production.
+
+Tu peux maintenant actualiser ton plan avec ces précisions et procéder à l'implémentation V0.1.2.
+
+Ne fais aucun commit ni push.
+
+## Mon verdict
+
+Feu vert après ajustements
+
+Plan V0.1.2
+
+Je pense que cette version peut réellement faire progresser Brain Capture.
+
+Le changement le plus important n'est pas l'ajout des deux champs. C'est le passage d'un agent qui lit une conversation et en extrait des informations à un agent qui parcourt progressivement une conversation, construit une mémoire structurée et vérifie qu'il n'a rien perdu.
+
+C'est précisément le comportement qu'il faudra ensuite transmettre à Brain Review et Brain Search.
+
+
+
+
+J'ai push la 0.1.2 et fait un test lit le repo et fait un audit
+
+
+
+
+
+Le dépôt est bien à jour : le dernier commit est 6dddde5, intitulé Ship brain-capture 0.1.2 with intention/position and a fresh fenestrated test-run.
+
+Le test indépendant est présent dans brain/registry/_test-runs/20261030-180454/, avec ses rapports COMPARISON.md et ISSUES.md. Les deux sources de conversation sont également présentes. Je vais auditer à la fois le fonctionnement réel du Skill, la qualité des captures et la solidité des preuves de validation — pas seulement vérifier que les fichiers existent.
+Audit Brain Capture 0.1.2
+Structure améliorée
+Validation sémantique nécessaire
+Test non reproductible
+
+Verdict : 0.1.2 est une vraie progression par rapport à 0.1.1, mais je ne considérerais pas encore le Skill comme validé pour une utilisation fiable en production.
+
+Les améliorations de structure sont réelles. Le problème principal est ailleurs : le test ne démontre pas encore que l'agent sait réellement exécuter le processus de capture décrit dans le Skill.
+1. Résultats quantitatifs
+77
+Captures générées
+
+77/77
+Intention renseignée
+
+22
+Approbations explicites déclarées
+
+0
+Relations vers des IDs inexistants
+
+
+
+Répartition des intentions
+suggestion
+
+18
+
+
+
+
+milestone
+
+13
+
+
+
+
+decision
+
+13
+
+
+
+
+convention
+
+11
+
+
+
+
+observation
+
+9
+
+
+
+
+question
+
+5
+
+
+
+
+autres
+
+8
+
+
+
+
+
+Indicateur  0.1.1 0.1.2
+Captures 69 77
+Intentions  Non renseignées   77
+Jalons roadmap individuels 1 agrégat   6
+Sujets de cadrage individuels 0  7
+Approbations set  0  0
+
+Les points positifs :
+- Les deux nouveaux champs sont bien intégrés.
+- Les positions ne sont pas confondues systématiquement avec les validations.
+- Les six couches de roadmap et les sept sujets de cadrage sont individualisés.
+- Les relations présentes pointent toutes vers des captures existantes.
+- Les approbations partielles sont conservées sans être converties en approbations d'ensemble.
+- Le registre de production n'a pas été modifié.
+2. Problèmes identifiés
+P1 — Bloquant
+ Le test ne prouve pas le fonctionnement réel du Skill
+C'est le problème le plus important de cet audit.
+
+J'ai inspecté _gen.py, le script qui produit les 77 captures.
+
+Il contient directement les appels add(...) avec les titres, contenus, auteurs, intentions et preuves déjà rédigés. Il ne lit pas le fichier conversation-reference-1.txt pour extraire les informations. Il ne met pas en œuvre un moteur de fenêtrage ou les quatre passes.
+
+Autrement dit :
+- Le résultat est une extraction rédigée et matérialisée dans un script.
+- Le script peut régénérer le même registre.
+- Mais il ne permet pas de vérifier que le Skill, exécuté par un agent, sait produire ce résultat à partir de la conversation.
+C'est une distinction fondamentale.
+
+Le test montre que 77 captures ont été constituées selon les règles 0.1.2. Il ne démontre pas que /brain-capture 0.1.2 sait les constituer de manière autonome.
+
+Deuxième problème : le dépôt ne contient pas de validate.json pour ce test-run. Le rapport affirme que le validateur a réussi, mais le résultat détaillé n'est pas archivé.
+
+Correction nécessaire : faire un véritable test d'exécution du Skill dans Cursor, depuis la source brute, sans script prérempli. Archiver la sortie du validateur.
+P1 — Bloquant
+ Deux approbations discutables
+J'ai extrait les 22 captures déclarées explicit_user_approval et vérifié leurs preuves.
+
+Deux cas contredisent les précautions définies dans les règles.
+Capture  Problème
+CAP-009  L'utilisateur dit « B ou C ». La capture reconnaît que le choix exact reste indéterminé, mais lui attribue une approbation explicite.
+CAP-047  L'utilisateur demande de « valider certaines choses », mais la portée de cette validation est explicitement décrite comme ambiguë. Pourtant, la capture reçoit explicit_user_approval.
+
+Dans les deux cas, la capture devrait préserver la position exprimée sans affirmer une validation formelle de l'élément.
+
+Je recommande de repasser ces deux entrées à validation: none, avec approved_by: null et approval_scope: null, tout en conservant leur position et leurs tags d'ambiguïté.
+
+Le validateur actuel ne détecte pas ces cas : il contrôle la cohérence des champs, pas la fidélité de l'interprétation.
+P2 — Important
+ La traçabilité n'est pas assez précise
+La grille COMPARISON.md est une bonne amélioration, mais elle ne correspond pas encore complètement à une véritable grille de traçabilité.
+
+Elle contient des thèmes comme « Q1 rôle A/B/C » ou « réponse ClickUp », mais pas les identifiants des messages sources, ni les lignes ou plages de la conversation.
+
+Conséquence : un auditeur ne peut pas facilement retrouver l'endroit exact d'où vient une information.
+
+Je recommande d'ajouter, à terme, un localisateur source :
+- Identifiant du message si disponible.
+- Sinon, numéro de ligne ou plage de lignes.
+- Identifiant de la fenêtre de capture.
+- Auteur du message source.
+La provenance actuelle identifie le fichier, mais pas précisément l'emplacement de l'information.
+P2 — Important
+ La confiance est trop souvent élevée
+73 captures sur 77 ont une confiance high.
+
+Or plusieurs entrées reconnaissent explicitement une incertitude :
+- CAP-009 : B ou C non tranché.
+- CAP-047 : portée de validation ambiguë.
+- Plusieurs propositions assistant ne sont pas encore adoptées.
+- Certaines informations sont des orientations provisoires.
+La confiance devrait mesurer la solidité de l'interprétation et de son attribution, pas simplement la présence d'une phrase dans la source.
+
+Je recommande de réserver high aux informations clairement attribuées et correctement interprétées. Les captures dont le sens reste partiellement incertain devraient être medium.
+3. Couverture : les progrès et les oublis
+La comparaison identifie correctement quatre pertes par rapport à la référence précédente :
+Information État
+Taxonomie Core / Module / Instance / Agent / Skill / Rule / Template / Workflow  Manquante
+Mapping espaces logiques ↔ local ↔ ClickUp   Manquant
+Consultation ClickUp : Inbox et documents vides Manquante
+Liste documentaire initiale complète   Partielle
+
+Ce n'est pas forcément une mauvaise chose qu'une nouvelle extraction ne reproduise pas exactement l'ancienne.
+
+Mais ces différences doivent être expliquées : est-ce une information oubliée, absorbée dans une autre capture, ou volontairement écartée ?
+
+La grille actuelle commence à le faire. Il faut conserver cette discipline.
+4. Audit du validateur
+Le validateur est globalement bien conçu pour vérifier la structure.
+
+Il contrôle notamment :
+- Les champs obligatoires.
+- Les énumérations.
+- Les identifiants uniques.
+- Les relations et leurs cibles.
+- La cohérence entre validation, approbateur et portée.
+- Les champs intention et position avec --require-intention.
+Il reste néanmoins quelques limites.
+
+A. Un fichier vide passe comme valide.
+
+load_entries() ajoute un avertissement, mais aucune erreur. Le rapport peut donc afficher ok: true avec zéro capture.
+
+Pour un test de génération, c'est dangereux : un agent pourrait produire un fichier vide et obtenir une validation technique positive.
+
+B. Le validateur ne vérifie pas la qualité sémantique.
+
+C'est normal qu'un script Python ne puisse pas entièrement juger le sens d'une conversation. Mais les cas connus doivent alimenter une checklist de revue humaine.
+
+C. Les champs de provenance sont peu contrôlés.
+
+Le validateur vérifie la présence de origin.source, mais pas sa non-vacuité ni l'existence réelle du fichier source.
+
+D. Le contrôle de couverture reste extérieur au validateur.
+
+C'est logique : le script ne dispose pas de la conversation source. Il faut donc garder un processus de vérification séparé.
+
+5. Ce que je retiens de la conception 0.1.2
+Il y a trois évolutions particulièrement importantes.
+
+1. Intention, position et validation sont séparées.
+
+C'est une excellente décision d'architecture. Elle permet de stocker une proposition, de savoir si son auteur y est favorable et de savoir si elle a été officiellement approuvée sans confondre ces informations.
+
+2. Les propositions assistant ont leur place dans la mémoire.
+
+C'est essentiel pour ton projet. Une idée n'a pas besoin d'être adoptée pour être conservée et retrouvée.
+
+3. La capture devient plus orientée vers les informations actionnables.
+
+Les jalons et les sujets de cadrage individualisés constituent un vrai progrès. Cela prépare le travail de Brain Review sans que Capture ait besoin de prendre des décisions définitives.
+6. Ce que je ferais pour la 0.1.3
+Je ne ferais pas une nouvelle refonte du Skill. Je consoliderais ce qui existe.
+Priorité Travail  Objectif
+P0 Véritable exécution du Skill  Prouver que l'agent sait capturer sans script prérempli
+P0 Corriger CAP-009 et CAP-047   Fiabiliser les validations
+P1 Ajouter des localisateurs de source Retrouver précisément chaque information
+P1 Durcir le validateur Refuser les fichiers vides en mode test
+P1 Revoir la calibration de confiance  Réduire les high injustifiés
+P2 Compléter les informations manquantes  Vérifier la couverture réelle
+
+Je ne créerais pas encore de nouveaux registres, d'agents ou de commandes. Ce serait prématuré tant que la qualité de Capture n'est pas démontrée.
+
+7. Verdict final
+Brain Capture 0.1.2
+Prometteur, pas encore validé en conditions réelles
+Qualité du schéma : bonne.
+
+Qualité de la documentation : bonne.
+
+Qualité des captures : en progrès, avec quelques erreurs sémantiques.
+
+Fiabilité du test : insuffisamment démontrée.
+
+Prêt pour production : pas encore.
+
+Le point le plus important : ne confonds pas la qualité du registre généré avec la qualité de l'agent qui est censé le générer.
+
+Tu as maintenant un bon contrat documentaire et un registre plus riche. La prochaine étape doit prouver que le Skill peut respecter ce contrat sur une conversation inconnue, sans script préparé, sans perte d'information et sans validation inventée.
+
+C'est cette preuve qui permettra de considérer Brain Capture comme une fondation fiable pour les autres composants du Second Brain.
+
+Je peux préparer un prompt Cursor ciblé pour une phase de consolidation 0.1.3, avec les corrections prioritaires et surtout un protocole de test qui vérifie réellement l'exécution du Skill, pas seulement le contenu d'un JSONL.
+
+
+
+
+Ok je viens de push une nouvelle update, j'ai fait un nouveau test regarde le cette fois il devrais utiliser notre systeme donc refait l'audit
+
+
+
+
+# Audit du nouveau test Brain Capture 0.1.2
+
+Vrai progrès méthodologique
+
+Quelques erreurs sémantiques restantes
+
+Cette fois, le test est nettement plus convaincant.
+
+J'ai retrouvé le nouveau run `20261030-184105` et vérifié sa structure : 80 captures, aucun script `_gen.py`, une capture annoncée comme exécutée directement avec le Skill, et une grille de comparaison détaillée.
+
+C'est précisément le changement que nous cherchions après le test précédent. Le run `20261030-180454` doit bien rester exclu : celui-ci est une meilleure preuve de fonctionnement, même si certaines limites de vérification subsistent.
+
+## 1. Vérification de la méthode
+
+Ancien test : 180454
+
+À exclure
+
+Générateur `_gen.py` contenant les captures rédigées à l'avance.
+
+Nouveau test : 184105
+
+Méthode corrigée
+
+Aucun script de génération dans le dossier. Le registre contient 80 entrées et les rapports décrivent une lecture progressive, des fenêtres et quatre passes.
+
+Le nouveau commit `956e6f7` ajoute uniquement les trois rapports et le registre du nouveau test. Il ne modifie pas le Skill ni le registre de production.
+
+C'est positif : le test est isolé et n'a pas pollué les données de production.
+
+Une réserve : l'absence de `_gen.py` ne prouve pas à elle seule que le Skill a été exécuté comme décrit. Il manque une trace technique indépendante de l'exécution et le fichier `validate.json` qui archiverait le résultat du validateur. Je considère donc la méthode comme crédible, mais pas entièrement reproductible.
+
+## 2. Résultats quantitatifs
+
+# 80
+
+Captures
+
+# 80/80
+
+Intentions renseignées
+
+# 22
+
+Approbations explicites
+
+# 7
+
+Endossements partiels
+
+Répartition des positions
+
+| Position  | Nombre |
+| --------- | ------ |
+| proposed  | 37     |
+| selected  | 15     |
+| confirmed | 7      |
+| endorsed  | 5      |
+| exploring | 3      |
+| favorable | 2      |
+| uncertain | 1      |
+| null      | 10     |
+
+Confiance
+
+75 high
+
+5 medium
+
+Les progrès sont visibles :
+
+- Les six couches de roadmap sont individualisées.
+- Les sept sujets de cadrage sont individualisés.
+- Les propositions de l'assistant sont conservées.
+- Les réponses et évolutions sont reliées.
+- Les ambiguïtés sont parfois explicitement documentées.
+- Les huit scénarios A à H du protocole sont couverts selon la grille de comparaison.
+
+Le passage de 69 à 80 captures ne signifie pas à lui seul une meilleure qualité. Ce qui compte, c'est que les informations auparavant regroupées ou oubliées deviennent retrouvables individuellement.
+
+## 3. Les problèmes sémantiques restants
+
+### P1 Deux validations explicites injustifiées
+
+C'est le problème que nous avions déjà identifié et qui n'est pas entièrement corrigé.
+
+CAP-009 — Orientation B ou C
+
+La capture explique correctement que tu n'as pas tranché entre les modes B et C. Pourtant :
+
+```
+intention: orientation
+position: selected
+validation: explicit_user_approval
+approval_scope: item
+```
+
+Il y a une contradiction : une orientation qui reconnaît une alternative non tranchée ne devrait pas être déclarée formellement approuvée.
+
+CAP-049 — Review
+
+La capture reconnaît que la portée de « valider certaines choses » n'est pas définie. Pourtant, elle utilise également `explicit_user_approval`.
+
+Même correction : `validation: none`, `approved_by: null`, `approval_scope: null`.
+
+Ces deux erreurs montrent que le Skill sait désormais identifier les ambiguïtés, mais ne les répercute pas toujours correctement dans les métadonnées de validation.
+
+### Corrigé Les approbations partielles
+
+Cette partie est bien meilleure.
+
+Les propositions CAP-014, CAP-016, CAP-018, CAP-026 et CAP-027 conservent leur auteur assistant, leur position `endorsed` et leur validation `none`.
+
+Le principe est bon : tu peux reconnaître qu'un ensemble de propositions constitue une bonne base sans approuver chaque détail individuellement.
+
+CAP-047 applique également cette logique à ton accord global sur le workflow.
+
+Je conserverais cette approche.
+
+### P2 La confiance reste trop élevée
+
+75 captures sur 80 ont `confidence: high`.
+
+C'est encore beaucoup, notamment pour des propositions assistant, des orientations provisoires et des sujets explicitement ambigus.
+
+Je ne demanderais pas de réduire artificiellement ce chiffre. En revanche, je demanderais au Skill de mieux distinguer :
+
+- La certitude de l'attribution.
+- La certitude du sens extrait.
+- Le degré d'adoption de l'information.
+
+Une proposition assistant peut avoir une attribution certaine et une pertinence incertaine. Un seul champ `confidence` ne représente pas parfaitement ces dimensions.
+
+Pour l'instant, conserver le champ unique est acceptable, mais ses règles doivent être plus strictes.
+
+## 4. Audit de la couverture
+
+La grille de comparaison est nettement meilleure que celle du précédent test.
+
+Elle couvre les grands scénarios et identifie les captures associées.
+
+Quelques points restent perfectibles.
+
+A. Traçabilité des messages
+
+La grille indique les thèmes et les CAP correspondants, mais pas les identifiants précis des messages ou les lignes de la source.
+
+Cela rend la vérification manuelle difficile.
+
+B. Couverture déclarée
+
+Les huit scénarios sont tous indiqués comme couverts. Mais une grille de thèmes ne prouve pas que tous les messages pertinents ont été examinés.
+
+Il faut pouvoir distinguer :
+
+- Information capturée.
+- Information fusionnée dans une autre capture.
+- Information volontairement exclue.
+- Information oubliée.
+
+C. Généralisation
+
+Le test utilise toujours `conversation-reference-1.txt`, qui a déjà servi aux versions précédentes.
+
+C'est utile pour comparer les progrès, mais ce n'est pas encore une preuve que le Skill fonctionne sur une conversation inconnue.
+
+Il faudra ensuite tester `conversation-reference-2.txt` indépendamment, sans réutiliser les résultats du premier échantillon.
+
+## 5. Le validateur
+
+Le contrôle structurel est correct dans l'ensemble.
+
+J'ai toutefois vérifié que le problème du fichier vide, signalé au précédent audit, est toujours présent.
+
+Actuellement, un fichier vide produit un avertissement :
+
+```
+if not text.strip():    report.warn("Fichier vide.")    return entries
+```
+
+Or `Report.ok` renvoie vrai tant qu'il n'y a aucune erreur.
+
+Donc un registre vide peut encore obtenir un résultat techniquement positif.
+
+Je recommande de corriger cela : un fichier vide doit être bloquant en mode `--require-intention`.
+
+Autre limite : le validateur contrôle la cohérence des métadonnées, mais ne peut pas vérifier si l'utilisateur a réellement approuvé une proposition. C'est une limite normale d'un validateur déterministe ; la revue sémantique doit rester distincte.
+
+## 6. Comparaison avec le précédent audit
+
+| Critère                             | 180454                        | 184105                   |
+| ----------------------------------- | ----------------------------- | ------------------------ |
+| Exécution du Skill                  | Non démontrée, script préparé | Méthode directe déclarée |
+| Génération indépendante             | Non                           | Oui, selon le run        |
+| Intentions                          | Oui                           | Oui                      |
+| Fenêtrage et quatre passes          | Non démontrés                 | Déclarés dans le run     |
+| Granularité roadmap                 | Bonne                         | Bonne                    |
+| Sujets de cadrage                   | Bonne                         | Bonne                    |
+| Gestion des approbations partielles | Partielle                     | Meilleure                |
+| Traçabilité                         | Moyenne                       | Améliorée                |
+| Validation technique archivée       | Non                           | Non                      |
+| Validation sémantique               | Quelques erreurs              | Deux erreurs importantes |
+
+Mon appréciation : le nouveau test apporte une amélioration substantielle. Le problème du générateur prérempli est résolu au niveau du protocole de test. Le principal défaut restant concerne la cohérence entre les ambiguïtés détectées et les validations attribuées.
+
+## 7. Ce que je recommande maintenant
+
+Je ne lancerais pas une refonte 0.1.3.
+
+Je ferais une petite consolidation de la 0.1.2, puis un test indépendant sur le deuxième échantillon.
+
+| Priorité | Action                                                                    |
+| -------- | ------------------------------------------------------------------------- |
+| P0       | Corriger CAP-009 et CAP-049 dans le test                                  |
+| P0       | Rendre un registre vide invalide en mode test                             |
+| P1       | Archiver `validate.json` pour chaque test                                 |
+| P1       | Ajouter des localisateurs de messages sources                             |
+| P1       | Renforcer les critères de confiance                                       |
+| P2       | Tester `conversation-reference-2.txt` sans réutiliser le premier résultat |
+
+## Verdict final
+
+# 0.1.2 — deuxième test
+
+Validation méthodologique encourageante
+
+Architecture du Skill : bonne.
+
+Qualité d'extraction : bonne progression.
+
+Granularité : bonne.
+
+Gestion des approbations : encore deux erreurs.
+
+Validateur : correct, mais incomplet.
+
+Reproductibilité : à renforcer.
+
+Prêt pour un test sur une nouvelle source : oui.
+
+### Mon avis sur la suite
+
+Je pense qu'il faut maintenant arrêter de chercher à perfectionner le Skill uniquement sur le premier échantillon.
+
+On a atteint un stade où les règles principales sont cohérentes et où le nouveau test est suffisamment encourageant pour passer à une autre source.
+
+Le prochain test doit répondre à une question différente :
+
+Est-ce que Brain Capture sait comprendre et structurer une conversation qu'il n'a jamais vue, avec des idées qui évoluent, des propositions contradictoires, des décisions partielles et des informations réparties sur plusieurs échanges ?
+
+C'est ce test qui permettra de savoir si on a construit un véritable système de capture conversationnelle, et pas seulement un Skill bien adapté à une conversation de référence.
+
+
+
+
+
+Nouveau push, Audit le test-run 20261030-194948
+
+
+
+
+
+Audit du test-run 20261030-194948
+Test indépendant réussi sur le plan structurel
+Quelques points sémantiques à corriger
+
+Ce test est particulièrement important : il utilise enfin conversation-reference-2.txt, sans mélanger les deux échantillons et sans script de génération.
+
+C'est le premier test qui permet réellement d'évaluer si Brain Capture généralise ses règles à une autre conversation.
+
+J'ai vérifié les 62 entrées du JSONL, les règles du Skill, le protocole, la grille de traçabilité et le validateur.
+
+Premier constat : le registre est propre techniquement. Les problèmes sont maintenant davantage liés à la qualité de l'interprétation qu'à la structure du système.
+1. Résultats techniques
+62
+Captures produites
+
+62/62
+IDs uniques et champs attendus
+
+42
+Relations enregistrées
+
+0
+Références CAP inexistantes
+
+
+
+Répartition des intentions
+Intention   Nombre
+suggestion  17
+orientation 6
+observation 6
+question 5
+milestone   5
+convention  7
+decision 4
+risk  6
+autres   6
+
+
+Validation et confiance
+Indicateur  Nombre
+none  51
+explicit_user_approval  11
+confidence: high  34
+confidence: medium   28
+confidence: low   0
+
+
+Les contrôles que j'ai pu effectuer directement sur le JSONL donnent :
+- Aucun identifiant dupliqué.
+- Aucun champ essentiel manquant.
+- Aucune intention ou position invalide.
+- Aucune relation vers un CAP inexistant.
+- Aucune entrée vide.
+- Aucun doublon exact de titre.
+- Les relations parent_of et child_of sont correctement réciproques pour les cinq jalons.
+La qualité structurelle est bonne.
+Comparaison avec le run précédent
+Indicateur  184105   194948
+Captures 80 62
+Confiance high 75 34
+Confiance medium  5  28
+Intentions renseignées  80 62
+Approbations explicites 22 11
+Échantillon indépendant Non   Oui
+
+La baisse du nombre de captures n'est pas une régression.
+
+En revanche, la répartition de la confiance est intéressante : le nouveau test utilise beaucoup plus medium. C'est une meilleure calibration que les 75 high du précédent run.
+2. Qualité de l'extraction
+Ce qui fonctionne particulièrement bien
+A. Les risques sont correctement séparés
+
+CAP-005 à CAP-010 isolent six risques :
+- Dette technique de la mémoire.
+- Déformation des intentions par l'IA.
+- Orchestration excessive.
+- Maintenance du moteur.
+- Contraintes sur la création.
+- Dépendance aux outils et modèles.
+Chaque risque est compréhensible individuellement. C'est exactement le niveau de granularité utile pour une recherche ultérieure.
+
+B. Les cinq étapes de construction sont individualisées
+CAP-012 — Cinq étapes
+Structure correcte
+
+1. CAP-013 — Fiabiliser la capture
+2. CAP-014 — Exploiter intelligemment la mémoire
+3. CAP-015 — Construire le processus de consolidation
+4. CAP-016 — Connecter réflexion et exécution
+5. CAP-017 — Tester sur plusieurs projets réels
+CAP-012 est le parent des cinq jalons. Les relations sont correctement enregistrées dans les deux sens.
+
+C'est une bonne démonstration de la capture d'une proposition globale et de sa décomposition en éléments actionnables.
+
+C. Les orientations provisoires sont bien représentées
+
+Quelques bons exemples :
+- CAP-023 : orchestrateur et agents spécialisés peuvent coexister sans décision définitive.
+- CAP-024 : pré-organisation de la roadmap sans verrouillage.
+- CAP-046 : architecture des registres encore exploratoire.
+- CAP-056 : question ouverte sur la modification des entrées originales.
+Le Skill ne transforme pas systématiquement les discussions en décisions. C'est un progrès important.
+
+D. L'architecture future est bien conservée
+
+CAP-046 à CAP-056 forment une bonne chaîne de conception :
+- Historique permanent.
+- Une intention principale par capture.
+- Review local.
+- Sync ClickUp contrôlé.
+- Archivage hybride.
+- Conservation des entrées originales.
+Les réponses utilisateur sont reliées aux questions précédentes. Les propositions assistant restent des propositions.
+3. Problèmes sémantiques
+Il reste quelques défauts, mais ils sont plus ciblés que lors des audits précédents.
+P1
+ CAP-031 : approbation trop large
+C'est l'erreur la plus claire du nouveau run.
+
+CAP-031 regroupe deux informations différentes :
+1. Tu confirmes que ton organisation ClickUp doit être documentée dans clickup.md.
+2. Tu demandes où placer ce document et proposes éventuellement brain-main/convention/.
+La première information est confirmée. La deuxième reste ouverte.
+
+Pourtant, toute la capture est marquée :
+validation: explicit_user_approval
+approved_by: user
+approval_scope: item
+
+
+Le problème n'est pas que l'approbation soit fausse pour la convention ClickUp. C'est que la capture mélange une information approuvée et une question non résolue.
+
+Correction recommandée :
+- Conserver une capture validée pour la convention clickup.md.
+- Conserver séparément la question d'emplacement.
+- Relier la proposition assistant CAP-042 à cette question.
+- Ne pas attribuer à l'utilisateur la validation de brain/conventions/clickup.md.
+C'est un bon cas de test pour vérifier que Brain Capture sait séparer les niveaux de certitude au sein d'un même message.
+P2
+ CAP-022 : deux exigences regroupées
+CAP-022 mélange :
+- L'autonomie du contenu d'une capture.
+- La segmentation de plusieurs informations de certitudes différentes.
+Les deux sont pertinentes, mais ce sont deux exigences distinctes qui pourraient être recherchées et exploitées séparément.
+
+Je recommande deux captures liées.
+P2
+ CAP-028 : trois validations dans une seule entrée
+CAP-028 regroupe trois axes approuvés :
+- Capture multi-informations.
+- Couverture sémantique.
+- Vérification humaine ciblée après capture.
+Ces trois principes concernent le fonctionnement du Skill, mais ils ne sont pas identiques.
+
+Il serait plus utile de les séparer en trois captures liées, surtout pour les recherches et les automatisations futures.
+CAP-016 : contenu un peu court
+Le contenu est autonome, mais il pourrait mieux détailler ce que signifie connecter réflexion et exécution : préparation, regroupement, transmission aux agents et vérification des résultats.
+
+Ce n'est pas bloquant, puisque CAP-012 apporte le contexte global.
+4. Attribution des auteurs : point méthodologique important
+Le registre contient :
+- 26 entrées attribuées à l'utilisateur.
+- 36 entrées attribuées à l'assistant.
+Les attributions semblent globalement cohérentes avec le contenu.
+
+Mais il y a une limite importante : conversation-reference-2.txt est un texte de 1 705 lignes sans métadonnées explicites de rôle sur chaque message.
+
+Les preuves du JSONL indiquent User : ou Assistant :, mais ces indications sont ajoutées par l'extraction. Elles ne constituent pas une preuve indépendante de l'auteur.
+
+Le Skill indique correctement qu'il faut utiliser les métadonnées, la structure, puis le style. Cependant, sur cette source, il ne dispose pas de la première garantie.
+
+Ma recommandation : ne change pas le schéma pour le moment. En revanche, le Skill doit pouvoir reconnaître un niveau d'incertitude d'attribution. Si l'export ne permet pas de distinguer les rôles, il ne doit pas transformer une simple impression stylistique en certitude.
+
+Ton style d'écriture reste un très bon indice secondaire.
+5. Audit de la couverture
+C'est ici que le nouveau test montre ses limites les plus intéressantes.
+
+La grille COMPARISON.md est utile et honnête : elle identifie les informations partielles et les éléments manquants.
+
+Voici mon propre contrôle de quelques points importants.
+Information de la source   Résultat Mon avis
+Six risques à long terme   CAP-005 à 010  Complet
+Cinq étapes de construction   CAP-012 à 017  Complet
+Indicateurs de succès   CAP-018  Complet
+Démontrer un cycle complet avant les fonctionnalités  CAP-019  Complet
+Question sur le rôle humain face à l'IA   CAP-020  Complet
+Tableau aujourd'hui vs Second Brain CAP-011  Partiel
+Historique et archivage CAP-046, 050, 054 Complet
+Review local / Sync ClickUp   CAP-049, 052   Complet
+Question sur la modification des entrées  CAP-056  Complet
+
+Le tableau « Aujourd'hui vs Second Brain »
+La capture CAP-011 résume bien l'idée générale, mais perd les sept dimensions du tableau initial :
+- Brainstorming.
+- Cadrage.
+- Documentation.
+- Développement.
+- Décisions.
+- Maintenance.
+- Nouveaux projets.
+Ces dimensions sont utiles individuellement pour définir les bénéfices attendus de Second Brain.
+
+Je conserverais donc une capture parent et sept sous-éléments, ou une capture structurée contenant explicitement les sept lignes.
+Les détails d'onboarding et de gestion des doublons
+La grille signale deux manques :
+- Détails de l'agent d'onboarding.
+- Différence entre doublons certains et éléments simplement similaires.
+Ces éléments apparaissent dans les audits précédents intégrés à la source. Leur exclusion du métier peut être justifiée s'ils sont purement liés à l'évaluation du test.
+
+Mais attention : il ne faut pas exclure automatiquement tout ce qui apparaît dans un audit précédent. Certaines recommandations d'audit deviennent des exigences de conception durables.
+
+Le bon critère est leur valeur pour le projet, pas leur emplacement dans la conversation.
+Le bruit de test
+CAP-057 et CAP-058 sont conservés dans le registre, mais correctement marqués test-noise et meta-test.
+
+C'est acceptable : l'agent conserve la trace de ce qui s'est passé sans transformer ces informations en connaissances métier.
+
+Je préfère cette solution à une suppression totale des traces de test.
+6. Problèmes de protocole et de validation technique
+Deux problèmes restent présents.
+A. Le résultat du validateur n'est pas archivé
+CAPTURE_NOTE.md indique :
+Validateur : OK bloquant avec --require-intention
+
+Mais le dossier ne contient pas de validate.json.
+
+Il manque donc le résultat vérifiable du contrôle, notamment le nombre d'erreurs, d'avertissements et de points à revoir.
+
+Le compte rendu ne respecte pas non plus intégralement le bilan obligatoire défini dans SKILL.md.
+
+Il manque notamment :
+- Les IDs ajoutés.
+- Le nombre de relations.
+- Le nombre de positions nulles.
+- Le détail complet des intentions.
+- Les ambiguïtés détectées.
+- Le bilan détaillé des scénarios de couverture.
+Correction P1 : imposer le bilan standard exact et archiver le résultat JSON du validateur dans chaque test-run.
+B. Le validateur accepte encore les fichiers vides
+La fonction load_entries() utilise toujours un simple avertissement lorsqu'un fichier est vide.
+
+Or Report.ok considère qu'un registre est valide dès lors qu'il ne contient aucune erreur.
+
+Un fichier vide peut donc toujours passer comme valide.
+
+C'est un défaut technique qui n'a pas été corrigé depuis le précédent audit.
+
+Correction P1 : en mode --require-intention, un fichier vide doit être bloquant.
+
+7. Bilan des corrections recommandées
+Je ne recommande pas de modifier l'architecture du Skill. La version actuelle est cohérente.
+
+Voici les ajustements que je ferais avant de considérer la 0.1.2 comme suffisamment éprouvée :
+Priorité Correction  Motif
+P1 Scinder CAP-031   Approbation trop large
+P1 Bilan standard + validate.json   Reproductibilité
+P1 Refuser les registres vides   Validateur
+P1 Renforcer l'incertitude d'auteur Source sans rôles explicites
+P2 Scinder CAP-022   Deux exigences distinctes
+P2 Scinder CAP-028   Trois exigences distinctes
+P2 Compléter CAP-011 Préserver les sept dimensions
+P2 Affiner le filtrage des audits   Préserver les enseignements durables
+
+8. Verdict
+Brain Capture 0.1.2
+Test indépendant encourageant
+Domaine  Évaluation
+Exécution indépendante  Bonne preuve
+Structure JSONL   Très bonne
+Intentions et positions Bonne
+Gestion des validations Bonne, une erreur claire
+Attribution des auteurs À fiabiliser
+Granularité Bonne, quelques regroupements
+Couverture  Bonne, quelques pertes
+Reproductibilité  À améliorer
+
+
+Ma conclusion
+Le test 194948 est une réussite importante.
+
+Le point le plus intéressant n'est pas simplement qu'il ait réussi sur une deuxième conversation. C'est qu'il a conservé des informations très différentes :
+- Des risques.
+- Des propositions assistant.
+- Des exigences utilisateur.
+- Des décisions explicites.
+- Des questions ouvertes.
+- Des orientations exploratoires.
+- Des jalons.
+- Des règles d'archivage.
+Et il a réussi à les relier sans transformer systématiquement les propositions en décisions.
+
+Nous avons maintenant une preuve encourageante que le système fonctionne au-delà de son premier échantillon.
+
+Je ne passerais cependant pas directement en production. Je ferais une dernière consolidation ciblée de la 0.1.2, notamment sur CAP-031 et le contrôle de couverture.
+
+Le prochain véritable objectif devrait être de tester la capacité du Skill à traiter une conversation plus longue et moins structurée, avec davantage de changements de sujet, de citations et de corrections successives.
+
+C'est ce qui permettra de tester sa robustesse réelle, plutôt que sa capacité à traiter une conversation de conception relativement cohérente.
+
+
+
+
+P1 CAP-031 : approbation trop large : effectivement c'est un bonne exemple de probleme car ce genre de choses risque d'arriver régulièrement, Relier les proposition serait le top et c'est la ou brain-review deviendra central, car on aura surement plusieur entrée sur le sujets de la convention clickup que ca soit prochainement ou dans deux mois et brain-review devra justement tout relié ensemble pour garder de la cohérance, il pourra voir ce qui a déja été fais et ce qu'il reste a faire, il pourra relié de nouvelle entrée a ce sujet
+Es que tu pense que notre architecture actuelle pourrait justement permettre de relier différente entrée sur un meme sujets ? puis par la suite des sujets sur des fonctionnalité plus globale ? car je pense que c'est la ou ca va devenir tres fort pour ne plus rien perdre
+
+P2 CAP-022 : deux exigences regroupées, ici aussi c'est un bonne exemple je veux que les principalement que toute les idées soit noté et brain-review lui va distinguer les deux et voir si il peut prendre une décision ou si il faut me demander
+
+P2 CAP-028 : trois validations dans une seule entrée : Oui il faut séparer. c'est aussi similaire a l'exemple du dessus il vaut mieux dans la capture avoir différent élément qu'on relie plutot que mélanger des informations
+
+CAP-016 : contenu un peu court : si Cap 012 donne le contexte global ca va c'est ce qu'on veut mais par contre on pourrais justement avoir une nouvelle regles pour ce genre de choses
+Par exemple, si on a une entrée un peu flou il faut le noté, dans notre exemple il faut surtout vérifié si dans la sources il y avait déja les détails, si c'est le cas il faut surtout faire en sorte d'éviter d'avoir un contenu trop court seulement si nécessaire
+On pourrais ajouter un audit automatique a la fin du brain-capture pour relire tout ce qui a été fais et etre sur qu'on a récupérer suffisament de détails
+Par contre si l'entrée manque juste de détails la on pourra en demander + quand on fait le brain-review. ca te parrait cohérant ?
+
+4. Attribution des auteurs : point méthodologique important : La on va dire que je te fais travailler sur une sources brut car je copie et colle les messages dans un txt sans distinction entre l'auteur
+Par la suite on utilisera ca directement dans le chatbot que j'utilise il aura donc access au conversation ou alors je pourrais donner le lien d'une conversation chatgpt, claude ou autre et la tu aura surement plus de précision
+Mais pour le moment je pense qu'on va garder ca comme ca, si tu as bien mit les regles dont on avait parler dans le skill je suis sur qu'il peut retrouver facilement qui a fait quoi
+Je met jamais de point je fais des fautes d'orthographe tres souvent, le seul moment ou ca peut etre chiant c'est sur les message court et la transition etre un message user et assitant mais on pourrait esseyer d'améliorer ca par la suite mais apres c'est pas si grave en soit car on veut récuperer tout ce qui a été dit que ca soit par l'un ou l'autre
+En plus je crois que les chatbot comme claude, gpt ect ajoute des signature dans les messages pour savoir si c'est de l'IA ou pas tu pourrais ajouter ce qui différencie ca dans notre skill pour améliorer la reconnaisance
+
+5. Audit de la couverture : Ici tu parle de comparaison, mais j'espere que tu compare pas l'ancien test au nouveau car la sources est différente donc pas vraiment comparable sur le contenu CAP-001 dans sources 1 et CAP-001 dans sources 2 seront forcement différent
+
+Pour le prochain test je vais essayer de faire un brain-capture sur une conversation différentes et directement sur la conversation plutot que sur une sources, j'avais déja fait un test de second cerveau mais j'étais trop perdu donc j'ai recommencer ici
+On pars du principe que les deux sources de conversations (1 et 2) sont les conversation officiel pour le moment
+Ce qu'on va faire c'est prépare un nouveau test pour faire ce qu'on viens de dire dans une nouvelle conversation directement, il faudra installer le skill en User temporairement, lancer la commande brain-capture sur toute une conversation sur le même sujets mais avec une avancer completement différentes avec peut etre des décision qui seront différente
+C'est la ou on va aussi tester la force du projets
+Es qu'il est capable de comprendre tout, de capturer les info nécessaires sans en écrasser d'autre et justement apres avec un brain-review on pourras voir les différence, faire des choix ect
+Avant de lancer le test je veux que tu me dise ce que tu en pense et que tu me pose des question pour ajuster ce que tu vas préparer pour le test
+Le test sera fait sur Cursor, dans un autre Workspace que celui que j'utilise pour le projets mais le sujets sera le même
+Es que ca te va ?
+
+
+
+
+Oui. Et ce que tu viens de décrire confirme un point important : Brain Capture ne doit pas essayer de produire une mémoire parfaitement organisée. Il doit produire une matière première suffisamment riche, précise et reliée pour que Brain Review puisse ensuite construire une mémoire cohérente.
+
+Le prochain test est particulièrement intéressant parce qu'il va enfin permettre de tester cette séparation sur un cas réel : deux conversations qui parlent du même projet, mais qui peuvent contenir des avancées, des choix et des orientations différents.
+
+Je pense qu'il faut préparer ce test avec soin, car il pourra révéler des problèmes architecturaux que les tests précédents ne pouvaient pas détecter.
+
+## 1. Sur tes retours concernant l'architecture
+
+### A. Relier plusieurs entrées sur un même sujet : oui, et c'est central
+
+L'architecture actuelle le permet déjà en partie grâce aux identifiants uniques et aux relations entre captures (`related`, `answers`, `answered_by`, `parent_of`, etc.).
+
+Mais je pense qu'il faut aller plus loin dans la conception de Brain Review.
+
+Prenons ton exemple de la convention ClickUp :
+
+Exemple : convention ClickUp
+
+CAP-031
+
+Convention ClickUp souhaitée, mais emplacement encore incertain.
+
+CAP-042
+
+Proposition de créer `brain/conventions/clickup.md`.
+
+Nouvelles captures futures
+
+Précisions, nouvelles propositions, corrections, décisions et tâches concernant cette convention.
+
+Brain Review : sujet consolidé
+
+- Toutes les captures liées.
+- Historique des propositions.
+- Éléments déjà réalisés.
+- Éléments restant à traiter.
+- Questions encore ouvertes.
+- État actuel de la convention.
+
+Il y a une distinction architecturale importante à préserver :
+
+- Les captures conservent les informations originales.
+- Les relations indiquent comment ces informations se connectent.
+- Les sujets consolidés regroupent plusieurs captures autour d'un même thème.
+- Les fonctionnalités peuvent regrouper plusieurs sujets.
+- Les projets peuvent regrouper plusieurs fonctionnalités.
+
+Cela donne une organisation hiérarchique, mais aussi transversale : une capture peut être liée à plusieurs sujets si nécessaire.
+
+Je recommande que Brain Review construise progressivement un graphe de connaissances, plutôt qu'une simple arborescence de documents.
+
+Et surtout : une nouvelle capture ne doit jamais écraser une ancienne. Si deux informations se contredisent, Brain Review doit conserver les deux, identifier la contradiction et déterminer si elle correspond à une évolution, une décision ou un désaccord encore ouvert.
+
+### B. Capturer plusieurs idées sans les mélanger
+
+Je suis d'accord avec ton raisonnement sur CAP-022 et CAP-028.
+
+Je modifierais légèrement notre principe de capture :
+
+Une capture = un élément d'information identifiable et exploitable indépendamment.
+
+Cela ne signifie pas qu'il faut obligatoirement faire une entrée pour chaque phrase.
+
+Par exemple :
+
+- Une idée et ses explications peuvent rester ensemble.
+- Deux exigences distinctes doivent être séparées.
+- Trois validations différentes doivent devenir trois captures.
+- Les captures doivent être reliées lorsque leur contexte est commun.
+
+Brain Review pourra ensuite déterminer si deux entrées doivent être réunies dans un même sujet, si elles sont complémentaires ou si elles sont contradictoires.
+
+C'est exactement la séparation des responsabilités que nous recherchons.
+
+### C. Audit automatique de fin de capture
+
+Ta proposition est cohérente. Je recommande même d'en faire une étape obligatoire du Skill.
+
+Je distinguerais trois situations :
+
+| Situation                                                   | Comportement de Brain Capture                                  |
+| ----------------------------------------------------------- | -------------------------------------------------------------- |
+| Information suffisamment détaillée                          | Capture autonome et complète                                   |
+| Information courte, mais contexte disponible dans la source | Enrichir la capture avec les détails présents dans la source   |
+| Information réellement incomplète dans la source            | Conserver l'incertitude et signaler le besoin de clarification |
+
+L'audit final devrait notamment vérifier :
+
+1. Chaque fenêtre a bien été traitée.
+2. Les idées, propositions, décisions, questions et exigences pertinentes ont été récupérées.
+3. Les informations importantes n'ont pas été excessivement résumées.
+4. Les captures sont suffisamment autonomes.
+5. Les éléments qui doivent être séparés le sont.
+6. Les relations entre captures sont cohérentes.
+7. Les contradictions et incertitudes sont conservées.
+8. Aucune information n'a été inventée pour compléter une capture.
+
+Point important : Brain Capture ne doit pas demander de précisions à l'utilisateur pendant cette phase. Il doit simplement signaler les informations à clarifier. Brain Review pourra ensuite poser les bonnes questions.
+
+### D. Reconnaissance de l'auteur et signatures des chatbots
+
+Ton approche est adaptée au fonctionnement actuel.
+
+Je recommande une hiérarchie de détection :
+
+1. Métadonnées explicites de rôle lorsqu'elles existent.
+2. Structure de l'export et séparateurs de messages.
+3. Signatures ou marqueurs propres à la plateforme.
+4. Analyse stylistique comme indice secondaire.
+5. Attribution incertaine lorsque les éléments ne suffisent pas.
+
+Pour les plateformes, on pourra prévoir des références documentaires spécifiques :
+
+- ChatGPT : structure des exports et métadonnées de conversation.
+- Claude : structure des exports et métadonnées de conversation.
+- Cursor : structure des conversations et messages d'agents.
+- Autres chatbots : règles génériques et adaptateurs éventuels.
+
+Attention : les signatures ne sont pas nécessairement présentes dans un texte copié-collé. Il ne faudra donc jamais considérer leur absence comme une preuve d'auteur.
+
+Et je suis d'accord sur le fait que l'attribution imparfaite n'est pas catastrophique pour le moment : la priorité reste la récupération de l'information, avec une incertitude correctement signalée.
+
+### E. Audit de couverture et comparaison
+
+Tu as raison de soulever ce point.
+
+Il faut distinguer deux opérations :
+
+- Audit de couverture : comparer les captures avec leur propre source pour détecter les informations perdues.
+- Comparaison entre tests : comparer la qualité de deux exécutions, leurs méthodes, leurs défauts et leurs résultats structurels.
+
+On ne doit jamais comparer CAP-001 de la source 1 avec CAP-001 de la source 2 comme s'il s'agissait du même élément.
+
+Les sources 1 et 2 deviennent nos deux références officielles. Elles serviront à évaluer le comportement du Skill sur deux corpus différents, mais pas à comparer leurs contenus capture par capture.
+
+## 2. Le prochain test : ce que je propose
+
+Objectif validé sur le principe
+
+Je propose un test que l'on pourrait appeler Brain Capture – Cross-Conversation Test.
+
+Configuration du test
+
+1. Workspace Cursor indépendant
+
+   Nouveau Workspace, distinct du dépôt de développement de Second Brain.
+2. Installation temporaire du Skill en User
+
+   Le Skill sera accessible dans ce Workspace sans modifier le dépôt principal.
+3. Nouvelle conversation
+
+   Une conversation sur Second Brain, avec un historique et une progression différents des deux sources officielles.
+4. Brain Capture sur toute la conversation
+
+   Capture progressive de l'intégralité de la conversation, sans résumé préalable ni sélection manuelle.
+5. Audit du registre produit
+
+   Vérification de la couverture, de la qualité des captures, des relations, des auteurs et des incertitudes.
+6. Brain Review ultérieur
+
+   Comparaison des trois corpus, rapprochement des sujets, identification des divergences et préparation de décisions.
+
+### Ce que ce test doit réellement éprouver
+
+Je retiens six objectifs :
+
+| Objectif              | Ce que l'on veut vérifier                                                                |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| Compréhension         | L'agent comprend-il le projet et son contexte ?                                          |
+| Exhaustivité          | Capture-t-il les informations pertinentes sans pertes ?                                  |
+| Non-destruction       | Préserve-t-il les idées anciennes même si de nouvelles les contredisent ?                |
+| Granularité           | Sépare-t-il correctement les éléments indépendants ?                                     |
+| Relations             | Identifie-t-il les sujets communs et les liens entre captures ?                          |
+| Préparation de Review | Les captures permettent-elles de reconstruire l'historique et de prendre des décisions ? |
+
+Un scénario particulièrement intéressant serait que la nouvelle conversation propose une architecture différente de celle des deux premières.
+
+Brain Capture ne doit pas chercher à déterminer laquelle est meilleure. Il doit conserver les deux orientations, leur contexte, leur provenance et leur état.
+
+Brain Review devra ensuite être capable de dire :
+
+- Voici les orientations initiales.
+- Voici les évolutions proposées.
+- Voici les éléments compatibles.
+- Voici les contradictions.
+- Voici ce qui a déjà été réalisé.
+- Voici ce qui reste à décider.
+
+C'est là que nous pourrons réellement mesurer la valeur du système.
+
+## 3. Les questions à régler avant de préparer le test
+
+Je voudrais clarifier cinq points. Ils auront un impact direct sur le protocole et sur le prompt Cursor.
+
+1\. Comment Cursor accédera-t-il à la conversation ?
+
+Conversation directement dans Cursor (historique accessible à l'agent)
+
+Export ou fichier contenant la conversation complète
+
+Lien vers une conversation ChatGPT, Claude ou autre
+
+Plusieurs sources, selon ce qui est disponible
+
+2\. Quelle portion de conversation faut-il capturer ?
+
+Toute la conversation, du premier au dernier message
+
+Toute la conversation, mais avec exclusion du bruit sans valeur durable
+
+Une portion précise que je désignerai
+
+3\. Comment isoler le test du projet principal ?
+
+Workspace indépendant avec un dossier de test et le Skill User temporaire
+
+Copie complète du dépôt Second Brain dans le nouveau Workspace
+
+Uniquement le Skill et les fichiers indispensables au test
+
+4\. Jusqu'où doit aller le test ?
+
+Brain Capture uniquement, puis audit manuel des résultats
+
+Capture, puis véritable test de Brain Review dans un second temps
+
+Préparer dès maintenant les deux phases, mais les exécuter séparément
+
+5\. Comment traiter une contradiction entre deux conversations ?
+
+Tout préserver, relier les éléments et laisser Brain Review analyser
+
+Identifier une évolution si une nouvelle conversation semble remplacer une ancienne orientation, sans supprimer l'ancienne
+
+Signaler systématiquement les contradictions pour me demander de trancher
+
+Précisions supplémentaires (facultatif)
+
+Valider ces choix
+
+Ma recommandation : ne pas modifier le Skill principal avant ce test. Préparer un environnement temporaire avec la version actuelle, puis identifier les améliorations nécessaires à partir des résultats. Cela nous permettra de mesurer la vraie qualité de la version testée, sans fausser l'expérience en changeant les règles pendant l'évaluation.
+
+
+
+
+
+L'exemple que tu as proposer pour la convention ClickUp est excelente, consolidé des sujets ca sera vrm le but de review
+
+Je valide ca : Il y a une distinction architecturale importante à préserver :
+
+- Les captures conservent les informations originales.
+- Les relations indiquent comment ces informations se connectent.
+- Les sujets consolidés regroupent plusieurs captures autour d'un même thème.
+- Les fonctionnalités peuvent regrouper plusieurs sujets.
+- Les projets peuvent regrouper plusieurs fonctionnalités.
+
+
+
+C'est complétement le genre de logique qui permettra de regrouper les avancement et les idées dans le chat et pouvoir faire un suivie spécifique sur chaqu'un d'entre eux, "Brain Review construise progressivement un graphe de connaissances, plutôt qu'une simple arborescence de documents" c'est un grand OUI
+
+
+
+Avant de faire le test je voudrais qu'on fasse une 0.1.3 avec tout ce qu'on a retenu et pour préparer correctement le prochain test
+
+
+
+Pour répondre a tes question
+
+1. Pour le test oui ca sera une conversation sur Cursor (Il faudra test les autre option aussi car ca pourrait etre cool de coller le lien d'une conversation et pouvoir brain-capture dessus on testera ca avec cette conversation qui contient les meme donnée que le fichier source 1 et 2 comme ca on pourra comparer)
+2. Toute la conversation, du premier au dernier message, le brain-capture doit faire la différences entre le bruit et ce qui est important
+3. Le workspace indépendant avec un dossier de test et le skill user temportaire
+4. Brain capture uniquement, je rajouterais le dossier de test dans le repo pour que tu puisse faire l'audit
+5. Tout préserver, relier les éléments et laisser brain review analyser, sachant que pour le moment on aura pas encore de registry unifier vu qu'on utilise encore le run test, mais par la suite on utilisera surtout les liens des conversations dans le projets en cours, la je veux d'abord test dans des conditions similaire avec beaucoup de conversation et hors de mon espace (donc juste avec skills) pour que ca soit solide pour récuperer peu importe la conversation des informations et les relier, enfaite tout ca ca prépare des sources pour brain-review apres et voir ci il arrive a bien tout centralisé, comprendre le contexte des différentes conv ect
+
+
+
+
+
+Je valide cette direction. On a maintenant une vision beaucoup plus claire de ce que Second Brain doit devenir : un système capable de transformer des conversations dispersées en connaissances reliées, évolutives et exploitables.
+
+Et je pense que la version 0.1.3 doit justement consolider cette philosophie avant de passer au test suivant.
+
+# 1. Une distinction fondamentale pour la suite
+
+Je veux insister sur un point : il ne faut pas demander à Brain Capture de faire le travail de Brain Review.
+
+On doit construire deux niveaux complémentaires.
+
+Niveau 1 · Brain Capture
+
+Collecter et préserver
+
+- Récupérer les informations pertinentes d'une conversation.
+- Distinguer les auteurs, intentions et positions.
+- Séparer les éléments indépendants.
+- Préserver les détails, nuances et incertitudes.
+- Identifier les relations directes entre captures.
+- Signaler les informations manquantes et ambiguïtés.
+
+Niveau 2 · Brain Review
+
+Comprendre et consolider
+
+- Regrouper les captures par sujet.
+- Identifier les sujets communs entre conversations.
+- Relier les sujets aux fonctionnalités et aux projets.
+- Reconstituer l'historique et les évolutions.
+- Identifier les contradictions et les décisions.
+- Suivre ce qui est fait, proposé ou encore à traiter.
+- Préparer les registres organisés.
+
+Le graphe de connaissances appartient principalement à Brain Review.
+
+Brain Capture doit néanmoins fournir les bonnes informations pour le construire : des captures suffisamment riches, des identifiants stables et des relations pertinentes.
+
+Je ne créerais donc pas encore de véritables objets « sujets consolidés » dans Brain Capture. Ce serait prématuré et risquerait de mélanger collecte et organisation.
+
+# 2. Ce que doit apporter Brain Capture 0.1.3
+
+Je propose de structurer les évolutions en six axes.
+
+| Priorité | Axe                | Évolution                                                                          |
+| -------- | ------------------ | ---------------------------------------------------------------------------------- |
+| P0       | Atomicité          | Séparer les informations indépendantes, sans perdre leurs liens                    |
+| P0       | Richesse           | Enrichir les captures avec les détails disponibles dans la source                  |
+| P0       | Audit final        | Vérifier systématiquement la couverture et la qualité des captures                 |
+| P0       | Relations          | Améliorer les liens entre captures, notamment les propositions et leurs évolutions |
+| P1       | Attribution        | Renforcer la reconnaissance des auteurs et des plateformes                         |
+| P1       | Préparation Review | Produire des captures autonomes, traçables et facilement consolidables             |
+
+### A. Atomicité et conservation
+
+Nouvelle règle centrale :
+
+Mieux vaut plusieurs captures précises et reliées qu'une capture qui mélange plusieurs informations.
+
+Mais attention à ne pas tomber dans l'excès inverse : on ne veut pas une capture par phrase.
+
+Il faut conserver ensemble les explications nécessaires à la compréhension d'une idée, et séparer les éléments qui peuvent évoluer indépendamment.
+
+### B. Richesse et autonomie
+
+Une capture courte n'est pas forcément mauvaise.
+
+En revanche, avant de la considérer comme suffisante, Brain Capture doit vérifier si les informations nécessaires existent ailleurs dans la source.
+
+Si elles existent, il doit enrichir la capture.
+
+Si elles n'existent pas, il doit signaler le manque sans inventer de contexte.
+
+### C. Audit final obligatoire
+
+Je veux que cette étape soit une véritable passe de contrôle, pas simplement un résumé de ce qui a été fait.
+
+Elle doit notamment confronter les captures à l'ensemble de la conversation :
+
+- Couverture des informations pertinentes.
+- Détails perdus ou excessivement résumés.
+- Captures trop courtes ou ambiguës.
+- Éléments indépendants encore mélangés.
+- Relations manquantes ou discutables.
+- Attribution incertaine.
+- Informations contradictoires.
+- Questions qui devront être reprises par Brain Review.
+
+Le rapport devra indiquer ce qui a été corrigé et ce qui reste incertain.
+
+### D. Relations entre captures
+
+Il faudra renforcer les relations pour préserver les liens entre :
+
+- Une proposition et sa réponse.
+- Une idée et ses précisions.
+- Une décision et ses justifications.
+- Une orientation initiale et son évolution.
+- Deux propositions complémentaires.
+- Deux informations contradictoires.
+
+Il faut éviter de transformer automatiquement une relation en approbation ou en décision.
+
+### E. Reconnaissance des plateformes
+
+Pour 0.1.3, je propose de documenter les signatures et structures connues des conversations :
+
+- Cursor.
+- ChatGPT.
+- Claude.
+- Exports génériques.
+
+On pourra progressivement créer des adaptateurs de sources, sans rendre le Skill dépendant d'une plateforme particulière.
+
+### F. Préparation de Brain Review
+
+Chaque capture devra être exploitable indépendamment, tout en conservant sa provenance.
+
+Je souhaite également que le Skill distingue clairement :
+
+- Ce qui est explicitement présent dans la source.
+- Ce qui est interprété.
+- Ce qui est incertain.
+- Ce qui est déduit d'une relation entre plusieurs messages.
+
+Cela sera très important pour éviter que Brain Review construise des conclusions sur des interprétations présentées comme des faits.
+
+# 3. Préparation du prochain protocole de test
+
+Je retiens deux expériences distinctes.
+
+Test A — Nouvelle conversation Cursor
+
+Test principal de 0.1.3
+
+Objectif : tester la robustesse de la capture sur une progression différente.
+
+- Workspace indépendant.
+- Skill installé temporairement au niveau User.
+- Aucun autre composant de Second Brain nécessaire.
+- Conversation complète sur Second Brain.
+- Progression différente des sources 1 et 2.
+- Possibilité de décisions différentes ou contradictoires.
+- Capture intégrale, avec distinction entre bruit et informations pertinentes.
+- Résultats conservés dans un dossier de test.
+- Audit du dossier après intégration au dépôt principal.
+
+  Test B — Accès à une conversation par lien
+
+Test d'un mode d'entrée supplémentaire
+
+Objectif : vérifier si Brain Capture peut exploiter directement une conversation hébergée.
+
+- Utiliser une conversation dont le contenu correspond aux sources officielles 1 et 2.
+- Essayer l'accès via lien.
+- Vérifier si l'agent récupère réellement l'intégralité des messages.
+- Comparer la couverture avec celle des fichiers sources.
+- Identifier les éventuelles pertes liées à l'accès ou à l'export.
+
+Il faudra garder les résultats des deux tests séparés.
+
+Pour le test A, on mesure la qualité de capture sur un nouveau contenu.
+
+Pour le test B, on mesure la capacité à récupérer et traiter un contenu déjà connu par un autre moyen.
+
+Cela permettra de distinguer les problèmes de compréhension des problèmes d'accès aux sources.
+
+# 4. Ce que je veux absolument préserver pendant les tests
+
+Il y a quatre règles que je considère désormais comme fondamentales :
+
+1. Aucune destruction d'information : une nouvelle proposition ne remplace jamais silencieusement une ancienne.
+2. Aucune validation implicite : une information capturée ne devient pas une décision simplement parce qu'elle est répétée ou reliée.
+3. Aucune consolidation prématurée : les captures restent des unités de mémoire indépendantes.
+4. Aucune perte de provenance : chaque information doit pouvoir être retracée jusqu'à sa conversation d'origine et, lorsque possible, jusqu'à son emplacement précis.
+
+# 5. Comment je propose de procéder maintenant
+
+Je ferais les choses dans cet ordre :
+
+1. Conception de Brain Capture 0.1.3 : mettre à jour les règles, le schéma, les relations et le protocole d'audit.
+2. Plan Cursor : faire examiner les fichiers concernés et préparer un plan d'implémentation ciblé.
+3. Implémentation 0.1.3 : uniquement dans le périmètre Brain Capture.
+4. Validation technique : validateur, documentation, rapports et tests.
+5. Installation User temporaire : préparer le Workspace indépendant.
+6. Test A, puis audit.
+7. Test B lorsque nous aurons choisi la conversation et vérifié les possibilités d'accès.
+
+Une précaution : le test A doit être réalisé avec une version figée de 0.1.3. On ne corrigera pas le Skill pendant l'exécution, sinon on ne saura plus exactement quelle version a produit les résultats.
+
+Mon avis : cette version doit être une version de consolidation de la fiabilité de capture, pas une version qui commence déjà à implémenter Brain Review. C'est en gardant cette séparation qu'on pourra ensuite construire un véritable graphe de connaissances sans perdre l'historique ni mélanger les niveaux d'information.
+
+La prochaine étape logique est de préparer le cahier des modifications 0.1.3, puis de le confronter au Skill actuel avant de donner le feu vert à Cursor.

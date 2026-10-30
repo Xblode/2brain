@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Validateur déterministe du registre Brain (lecture seule).
+"""Validateur déterministe du registre Brain (lecture seule, mécanique uniquement).
 
-Contrat schéma : 0.1.2 (intention / position optionnels ; --require-intention pour générations neuves).
+Contrat schéma : 0.1.3
+- Hors --require-intention : rétrocompat 0.1.2 (intention/position/locators optionnels).
+- Avec --require-intention : générations neuves 0.1.3 (vide = ERROR ; champs 0.1.3 exigés).
+
+Couche 1 seulement (validation technique). Ne juge pas la fidélité sémantique.
 """
 
 from __future__ import annotations
@@ -58,6 +62,15 @@ ALLOWED_AUTHOR = {"user", "assistant"}
 ALLOWED_APPROVED_BY = {"user", None}
 ALLOWED_APPROVAL_SCOPE = {"item", "set", None}
 ALLOWED_CONFIDENCE = {"high", "medium", "low"}
+ALLOWED_AUTHOR_CONFIDENCE = {"high", "medium", "low", "uncertain"}
+ALLOWED_GROUNDING = {
+    "source_explicit",
+    "source_contextual",
+    "source_interpreted",
+    "uncertain",
+}
+ALLOWED_LOCATOR_KIND = {"lines", "window", "offset"}
+ALLOWED_LOCATOR_ROLE = {"user", "assistant", "unknown"}
 ALLOWED_REL = {
     "related",
     "evolves_from",
@@ -69,6 +82,10 @@ ALLOWED_REL = {
     "supersedes_candidate",
     "parent_of",
     "child_of",
+    "clarifies",
+    "clarified_by",
+    "contradicts",
+    "contradicted_by",
 }
 FORBIDDEN_REL = {"feeds_doc", "refers_clickup"}
 REQUIRED_FIELDS = {
@@ -92,6 +109,11 @@ REQUIRED_FIELDS = {
 KNOWN_FIELDS = REQUIRED_FIELDS | {
     "intention",
     "position",
+    "author_confidence",
+    "grounding",
+    "run_id",
+    "capture_ref",
+    "uid",
     "relations",
     "clickup_ref",
     "feeds_doc",
@@ -101,6 +123,7 @@ ID_RE = re.compile(r"^CAP-\d{3,}$")
 CAP_TARGET_RE = re.compile(r"^CAP-\d{3,}$")
 EXPRESS_NOT_APPROVE_TYPES = {"observation", "event", "idea"}
 META_NOISE_TAGS = {"test-noise", "meta-test", "simulation"}
+AMBIGUOUS_TAGS = {"ambiguous", "ambiguous_orientation", "ambiguous-approval"}
 
 
 def is_iso_datetime(value: str) -> bool:
@@ -137,12 +160,29 @@ class Report:
     def ok(self) -> bool:
         return not self.errors
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "ok": self.ok,
+            "schema_contract": "0.1.3",
+            "layer": "technical_validation",
+            "errors": self.errors,
+            "warnings": self.warnings,
+            "human_review": self.human_review,
+        }
 
-def load_entries(path: Path, report: Report) -> list[dict[str, Any]]:
+
+def load_entries(
+    path: Path, report: Report, require_intention: bool
+) -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
     text = path.read_text(encoding="utf-8")
     if not text.strip():
-        report.warn("Fichier vide.")
+        if require_intention:
+            report.error(
+                "Fichier vide (0 entrée) — interdit sous --require-intention (génération 0.1.3)."
+            )
+        else:
+            report.warn("Fichier vide.")
         return entries
     for i, line in enumerate(text.splitlines(), 1):
         if not line.strip():
@@ -157,7 +197,46 @@ def load_entries(path: Path, report: Report) -> list[dict[str, Any]]:
             report.error(f"Ligne {i}: l'entrée doit être un objet JSON.")
             continue
         entries.append(obj)
+    if require_intention and not entries and not report.errors:
+        report.error(
+            "0 entrée valide — interdit sous --require-intention (génération 0.1.3)."
+        )
     return entries
+
+
+def validate_locator(eid: str, idx: int, loc: Any, report: Report) -> None:
+    prefix = f"{eid}: origin.locators[{idx}]"
+    if not isinstance(loc, dict):
+        report.error(f"{prefix}: doit être un objet.")
+        return
+    kind = loc.get("kind")
+    if kind not in ALLOWED_LOCATOR_KIND:
+        report.error(f"{prefix}: kind={kind!r} non autorisé (lines|window|offset).")
+        return
+    if kind in ("lines", "offset"):
+        start, end = loc.get("start"), loc.get("end")
+        if not isinstance(start, int) or isinstance(start, bool):
+            report.error(f"{prefix}: start (int) obligatoire pour kind={kind}.")
+        if not isinstance(end, int) or isinstance(end, bool):
+            report.error(f"{prefix}: end (int) obligatoire pour kind={kind}.")
+        if (
+            isinstance(start, int)
+            and not isinstance(start, bool)
+            and isinstance(end, int)
+            and not isinstance(end, bool)
+            and end < start
+        ):
+            report.error(f"{prefix}: end ({end}) < start ({start}).")
+    elif kind == "window":
+        wid = loc.get("window_id")
+        if not isinstance(wid, str) or not wid.strip():
+            report.error(f"{prefix}: window_id (string non vide) obligatoire pour kind=window.")
+    role = loc.get("role")
+    if role is not None and role not in ALLOWED_LOCATOR_ROLE:
+        report.error(f"{prefix}: role={role!r} non autorisé (user|assistant|unknown).")
+    note = loc.get("note")
+    if note is not None and not isinstance(note, str):
+        report.error(f"{prefix}: note doit être string ou absent.")
 
 
 def validate_entry(
@@ -178,13 +257,18 @@ def validate_entry(
             report.error(f"{eid}: champ obligatoire manquant: {field}")
 
     if require_intention:
-        if "intention" not in entry:
-            report.error(f"{eid}: intention obligatoire (--require-intention).")
-        if "position" not in entry:
-            report.error(
-                f"{eid}: position obligatoire en génération 0.1.2 "
-                f"(valeur null autorisée) (--require-intention)."
-            )
+        for field in (
+            "intention",
+            "position",
+            "author_confidence",
+            "grounding",
+            "run_id",
+            "capture_ref",
+        ):
+            if field not in entry:
+                report.error(
+                    f"{eid}: {field} obligatoire en génération 0.1.3 (--require-intention)."
+                )
 
     if "id" in entry:
         if not isinstance(entry["id"], str) or not ID_RE.match(entry["id"]):
@@ -207,6 +291,8 @@ def validate_entry(
     check_enum("author", ALLOWED_AUTHOR)
     check_enum("confidence", ALLOWED_CONFIDENCE)
     check_enum("intention", ALLOWED_INTENTION)
+    check_enum("author_confidence", ALLOWED_AUTHOR_CONFIDENCE)
+    check_enum("grounding", ALLOWED_GROUNDING)
     if "position" in entry and entry["position"] not in ALLOWED_POSITION:
         report.error(f"{eid}: position={entry['position']!r} non autorisé.")
 
@@ -216,6 +302,28 @@ def validate_entry(
         report.error(
             f"{eid}: approval_scope={entry['approval_scope']!r} non autorisé (item|set|null)."
         )
+
+    if "run_id" in entry:
+        rid = entry["run_id"]
+        if not isinstance(rid, str) or not rid.strip():
+            report.error(f"{eid}: run_id doit être une string non vide.")
+
+    if "capture_ref" in entry:
+        cref = entry["capture_ref"]
+        if not isinstance(cref, str) or not cref.strip():
+            report.error(f"{eid}: capture_ref doit être une string non vide.")
+        else:
+            rid = entry.get("run_id")
+            iid = entry.get("id")
+            if isinstance(rid, str) and isinstance(iid, str):
+                expected = f"{rid}:{iid}"
+                if cref != expected:
+                    report.error(
+                        f"{eid}: capture_ref={cref!r} ≠ attendu {expected!r}."
+                    )
+
+    if "uid" in entry and entry["uid"] is not None and not isinstance(entry["uid"], str):
+        report.error(f"{eid}: uid doit être string ou absent.")
 
     for text_field in ("title", "content", "evidence", "project", "storage"):
         if text_field in entry and not isinstance(entry[text_field], str):
@@ -242,13 +350,36 @@ def validate_entry(
         else:
             if "source" not in origin or not isinstance(origin.get("source"), str):
                 report.error(f"{eid}: origin.source (string) obligatoire.")
-            if "url" in origin and origin["url"] is not None and not isinstance(origin["url"], str):
+            if "url" in origin and origin["url"] is not None and not isinstance(
+                origin["url"], str
+            ):
                 report.error(f"{eid}: origin.url doit être string ou absent.")
+            if "locator" in origin:
+                report.error(
+                    f"{eid}: origin.locator (singulier) interdit — utiliser origin.locators[]."
+                )
+            locators = origin.get("locators")
+            if require_intention:
+                if not isinstance(locators, list) or len(locators) == 0:
+                    report.error(
+                        f"{eid}: origin.locators (tableau non vide) obligatoire "
+                        f"en génération 0.1.3 (--require-intention)."
+                    )
+                elif isinstance(locators, list):
+                    for i, loc in enumerate(locators):
+                        validate_locator(eid, i, loc, report)
+            elif locators is not None:
+                if not isinstance(locators, list):
+                    report.error(f"{eid}: origin.locators doit être une liste.")
+                else:
+                    for i, loc in enumerate(locators):
+                        validate_locator(eid, i, loc, report)
 
     validation = entry.get("validation")
     approved_by = entry.get("approved_by")
     approval_scope = entry.get("approval_scope")
     position = entry.get("position") if "position" in entry else None
+    intention = entry.get("intention")
 
     if validation == "explicit_user_approval":
         if approved_by != "user":
@@ -281,13 +412,35 @@ def validate_entry(
             f"{eid}: validation=implicit (historique) — réexaminer la preuve avant conversion."
         )
 
-    # position ≠ validation formelle
-    if position in ("selected", "confirmed", "endorsed", "favorable") and validation == "none":
-        pass  # expected often
     if position in ("selected", "confirmed") and validation == "explicit_user_approval":
         report.review(
             f"{eid}: position={position} + explicit — vérifier que l'approbation formelle "
             f"est distincte de la seule posture."
+        )
+
+    # Soft REVIEW: orientation ambiguë / partial + explicit (anti-faux-explicit)
+    tags = entry.get("tags") if isinstance(entry.get("tags"), list) else []
+    if intention == "orientation" and validation == "explicit_user_approval":
+        report.review(
+            f"{eid}: intention=orientation + explicit — vérifier anti-faux-explicit "
+            f"(orientation souvent non tranchée → none)."
+        )
+    if any(t in AMBIGUOUS_TAGS for t in tags) and validation == "explicit_user_approval":
+        report.review(
+            f"{eid}: tag ambigu + explicit_user_approval — suspect anti-faux-explicit."
+        )
+    if "approval_global_partial" in tags and validation == "explicit_user_approval":
+        report.review(
+            f"{eid}: approval_global_partial + explicit — partial doit rester validation none."
+        )
+    if (
+        entry.get("grounding") == "source_explicit"
+        and validation == "explicit_user_approval"
+        and intention in ("orientation", "suggestion", "idea")
+    ):
+        report.review(
+            f"{eid}: grounding=source_explicit + explicit sur intention={intention} — "
+            f"vérifier que l'approbation formelle est bien dans la source."
         )
 
     etype = entry.get("type")
@@ -304,13 +457,22 @@ def validate_entry(
 
     if etype == "decision" and isinstance(content, str):
         low = content.lower()
-        if any(x in low for x in ("préfère", "prefere", "b ou c", "pourrait", "peut-être", "peut etre")):
+        if any(
+            x in low
+            for x in (
+                "préfère",
+                "prefere",
+                "b ou c",
+                "pourrait",
+                "peut-être",
+                "peut etre",
+            )
+        ):
             if validation == "explicit_user_approval":
                 report.review(
                     f"{eid}: decision+explicit avec formulation préférentielle/ambiguë — vérifier."
                 )
 
-    tags = entry.get("tags")
     if isinstance(tags, list):
         if "approval_global_partial" in tags:
             report.review(
@@ -422,6 +584,10 @@ def validate_relations(entries: list[dict[str, Any]], report: Report) -> None:
         ("evolves_to", "evolves_from"),
         ("parent_of", "child_of"),
         ("child_of", "parent_of"),
+        ("clarifies", "clarified_by"),
+        ("clarified_by", "clarifies"),
+        ("contradicts", "contradicted_by"),
+        ("contradicted_by", "contradicts"),
     ]
     seen: set[tuple[str, str, str]] = set()
     for entry in entries:
@@ -456,7 +622,7 @@ def validate_registry(path: Path, require_intention: bool = False) -> Report:
     if not path.exists():
         report.error(f"Fichier introuvable: {path}")
         return report
-    entries = load_entries(path, report)
+    entries = load_entries(path, report, require_intention)
     ids: set[str] = set()
     for i, entry in enumerate(entries, 1):
         validate_entry(entry, i, ids, report, require_intention)
@@ -470,20 +636,10 @@ def validate_registry(path: Path, require_intention: bool = False) -> Report:
 
 def print_report(report: Report, as_json: bool) -> None:
     if as_json:
-        print(
-            json.dumps(
-                {
-                    "ok": report.ok,
-                    "errors": report.errors,
-                    "warnings": report.warnings,
-                    "human_review": report.human_review,
-                },
-                ensure_ascii=False,
-                indent=2,
-            )
-        )
+        print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
         return
-    print("=== Validateur registre Brain (lecture seule) ===")
+    print("=== Validateur registre Brain (lecture seule, mécanique) ===")
+    print(f"Contrat: 0.1.3 | Couche: validation technique uniquement")
     print(f"OK bloquant: {'oui' if report.ok else 'non'}")
     print(f"\nErreurs bloquantes ({len(report.errors)}):")
     for m in report.errors:
@@ -504,7 +660,10 @@ def print_report(report: Report, as_json: bool) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Valide entries.jsonl sans modification (mode lecture seule)."
+        description=(
+            "Valide entries.jsonl sans modification (mode lecture seule, mécanique). "
+            "OK technique ≠ qualité sémantique."
+        )
     )
     parser.add_argument(
         "path",
@@ -512,14 +671,29 @@ def main(argv: list[str] | None = None) -> int:
         default="brain/registry/entries.jsonl",
         help="Chemin vers entries.jsonl",
     )
-    parser.add_argument("--json", action="store_true", help="Sortie JSON")
+    parser.add_argument("--json", action="store_true", help="Sortie JSON sur stdout")
+    parser.add_argument(
+        "--json-out",
+        metavar="FILE",
+        help="Écrit le rapport JSON dans FILE (artefact validate.json)",
+    )
     parser.add_argument(
         "--require-intention",
         action="store_true",
-        help="Exige intention + position (null OK) — générations V0.1.2",
+        help=(
+            "Exige champs 0.1.3 (intention, position, author_confidence, grounding, "
+            "run_id, capture_ref, origin.locators non vide) ; fichier vide = ERROR"
+        ),
     )
     args = parser.parse_args(argv)
     report = validate_registry(Path(args.path), require_intention=args.require_intention)
+    if args.json_out:
+        out_path = Path(args.json_out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(
+            json.dumps(report.to_dict(), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
     print_report(report, args.json)
     return 0 if report.ok else 1
 

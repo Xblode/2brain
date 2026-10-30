@@ -1,6 +1,6 @@
 # Schéma du registre Brain (`entries.jsonl`)
 
-Chaque ligne de `entries.jsonl` est un objet JSON unique. Contrat **0.1.2** (extension compatible de 0.1.1).
+Chaque ligne de `entries.jsonl` est un objet JSON unique. Contrat **0.1.3** (extension compatible de 0.1.2).
 
 `entries.jsonl` reste le registre de **capture**. D’autres registres spécialisés (décisions, tâches, roadmap…) sont une orientation future — non créés automatiquement ici.
 
@@ -8,34 +8,82 @@ Chaque ligne de `entries.jsonl` est un objet JSON unique. Contrat **0.1.2** (ext
 
 | Champ | Obligatoire | Description |
 | --- | --- | --- |
-| `id` | oui | Identifiant unique (`CAP-NNN`) |
+| `id` | oui | Identifiant local au registre (`CAP-NNN`) |
+| `run_id` | oui en génération **0.1.3** ; absent OK sur historiques | Identifiant du run / registre (ex. `20261030-194948`, `production`) |
+| `capture_ref` | oui en 0.1.3 ; absent OK sur historiques | Référence composite : `"{run_id}:{id}"` (ex. `20261030-194948:CAP-031`) |
+| `uid` | non | UUID optionnel à la création ; ne remplace pas `capture_ref` |
 | `type` | oui | Nature 0.1.1 : `idea` \| `observation` \| `proposition` \| `decision` \| `convention` \| `task` \| `open_question` \| `event` |
-| `intention` | oui en génération **0.1.2** ; absent OK sur historiques | `idea` \| `suggestion` \| `preference` \| `orientation` \| `question` \| `decision` \| `requirement` \| `convention` \| `task` \| `milestone` \| `observation` \| `risk` \| `feedback` |
-| `position` | oui en 0.1.2 (valeur `null` autorisée) ; absent OK sur historiques | `proposed` \| `exploring` \| `favorable` \| `endorsed` \| `opposed` \| `selected` \| `confirmed` \| `uncertain` \| `null` |
+| `intention` | oui en génération **0.1.3** ; absent OK sur historiques | `idea` \| `suggestion` \| `preference` \| `orientation` \| `question` \| `decision` \| `requirement` \| `convention` \| `task` \| `milestone` \| `observation` \| `risk` \| `feedback` |
+| `position` | oui en 0.1.3 (valeur `null` autorisée) ; absent OK sur historiques | `proposed` \| `exploring` \| `favorable` \| `endorsed` \| `opposed` \| `selected` \| `confirmed` \| `uncertain` \| `null` |
 | `status` | oui | En capture : toujours `extracted` |
 | `space` | oui | `atelier` \| `referentiel` \| `journal` \| `pilotage` |
 | `validation` | oui | `none` \| `implicit` \| `explicit_user_approval` |
-| `author` | oui | `user` \| `assistant` |
+| `author` | oui | Auteur **principal** : `user` \| `assistant` |
+| `author_confidence` | oui en 0.1.3 ; absent OK sur historiques | `high` \| `medium` \| `low` \| `uncertain` |
 | `approved_by` | oui | `user` \| `null` |
 | `approval_scope` | oui | `item` \| `set` \| `null` |
 | `title` | oui | Titre court |
 | `content` | oui | Synthèse **autonome** (compréhensible hors source) |
-| `evidence` | oui | Preuve / citation |
-| `confidence` | oui | `high` \| `medium` \| `low` |
-| `origin` | oui | Provenance (`source`, `url` optionnel) |
+| `evidence` | oui | Preuve / citation (peut mentionner contributions) |
+| `confidence` | oui | Confiance dans l’extraction du contenu : `high` \| `medium` \| `low` |
+| `grounding` | oui en 0.1.3 ; absent OK sur historiques | `source_explicit` \| `source_contextual` \| `source_interpreted` \| `uncertain` |
+| `origin` | oui | Provenance (voir ci-dessous) |
 | `project` | oui | Ex. `2brain` |
 | `created_at` | oui | ISO de capture |
 | `storage` | oui | Chemin du registre cible |
 | `relations` | non | `{ "rel", "to" }` → `CAP-NNN` |
 | `clickup_ref` | non | Réf. ClickUp ou `null` |
 | `feeds_doc` | non | Doc ou `null` |
-| `tags` | non | Tags (ex. `approval_global_partial`, `potential`) |
+| `tags` | non | Tags (ex. `approval_global_partial`, `potential`, `ambiguous`) |
 
-### Intention, position, validation
+### `origin` (étendu 0.1.3)
 
-Trois dimensions distinctes. `selected` / `confirmed` / `endorsed` / `favorable` **ne déclenchent pas** automatiquement `explicit_user_approval`.
+```json
+{
+  "source": "brain/sources/conversation-reference-3.txt",
+  "url": null,
+  "locators": [
+    {
+      "kind": "lines",
+      "start": 120,
+      "end": 125,
+      "role": "user",
+      "note": "idée initiale"
+    },
+    {
+      "kind": "lines",
+      "start": 210,
+      "end": 214,
+      "role": "user",
+      "note": "contrainte ajoutée"
+    }
+  ]
+}
+```
 
-Détail des valeurs et exemples : Skill `references/capture-rules.md`.
+- `source` : chemin ou identifiant de source (obligatoire).
+- `url` : optionnel (string ou absent/`null`).
+- `locators` : **tableau** (1..N) obligatoire non vide en génération 0.1.3 (`--require-intention`).
+- Chaque item : `kind` ∈ `lines` \| `window` \| `offset` ; pour `lines`/`offset` : `start`/`end` numériques ; pour `window` : `window_id` ; `role` optionnel (`user`\|`assistant`\|`unknown`) ; `note` optionnelle.
+- Rétrocompat : anciennes entrées sans `locators` OK hors `--require-intention`. Pas d’ancien champ unique `locator`.
+
+### Identité inter-runs
+
+- `id` reste local au fichier (`CAP-NNN` réutilisable entre runs).
+- `capture_ref` = `"{run_id}:{id}"` est la référence stable pour un Review futur.
+- Cohérence mécanique : `capture_ref` doit égaler `run_id + ":" + id`.
+
+### Attribution
+
+- `author` = auteur principal ; contributions via `evidence` / `origin.locators[].role` — **pas** de tableau `contributors`.
+- `author_confidence` distinct de `confidence` (extraction) et `grounding` (ancrage).
+- Idées indépendantes user/assistant → deux CAP liées.
+
+### Intention, position, validation, grounding
+
+Quatre dimensions distinctes. `selected` / `confirmed` / `endorsed` / `favorable` **ne déclenchent pas** automatiquement `explicit_user_approval`.
+
+Détail : Skill `references/capture-rules.md` et `references/source-attribution.md`.
 
 ### Approbation
 
@@ -47,22 +95,36 @@ Détail des valeurs et exemples : Skill `references/capture-rules.md`.
 
 ### Relations
 
-`related`, `evolves_from`, `evolves_to`, `answers`, `answered_by`, `conflicts_with` (tension active), `resolves`, `supersedes_candidate`, `parent_of`, `child_of`
+`related`, `evolves_from`, `evolves_to`, `answers`, `answered_by`, `conflicts_with` (tension active), `resolves`, `supersedes_candidate`, `parent_of`, `child_of`, `clarifies`, `clarified_by`, `contradicts`, `contradicted_by`
 
-Docs → `feeds_doc` ; ClickUp → `clickup_ref`. Pas de double evolves+supersedes sur la même paire.
+- `conflicts_with` = tension active ; `contradicts` = incompatibilité affirmée étayée (Capture ne tranche pas).
+- Docs → `feeds_doc` ; ClickUp → `clickup_ref`. Pas de double evolves+supersedes sur la même paire.
+
+## Trois couches de résultat
+
+1. **Validation technique** — validateur mécanique uniquement.
+2. **Audit de capture** — `AUDIT.md` (couverture, atomicité, richesse).
+3. **Évaluation humaine** — hors validateur.
+
+« OK » validateur ≠ qualité sémantique.
 
 ## Validateur
 
 ```bash
 python .cursor/skills/brain-capture/scripts/validate-registry.py brain/registry/entries.jsonl
 python .cursor/skills/brain-capture/scripts/validate-registry.py path/test/entries.jsonl --require-intention
+python .cursor/skills/brain-capture/scripts/validate-registry.py path/test/entries.jsonl --require-intention --json-out validate.json
 ```
 
-## Exemple minimal (0.1.2)
+Sous `--require-intention` (générations 0.1.3) : fichier vide = **ERROR** ; exige `intention`, `position`, `author_confidence`, `grounding`, `run_id`, `capture_ref`, `origin.locators` non vide.
+
+## Exemple minimal (0.1.3)
 
 ```json
 {
   "id": "CAP-001",
+  "run_id": "20261030-220000",
+  "capture_ref": "20261030-220000:CAP-001",
   "type": "idea",
   "intention": "idea",
   "position": "exploring",
@@ -70,19 +132,24 @@ python .cursor/skills/brain-capture/scripts/validate-registry.py path/test/entri
   "space": "atelier",
   "validation": "none",
   "author": "user",
+  "author_confidence": "high",
   "approved_by": null,
   "approval_scope": null,
   "title": "...",
   "content": "...",
   "evidence": "...",
   "confidence": "high",
+  "grounding": "source_explicit",
   "origin": {
-    "source": "brain/sources/conversation-reference-1.txt",
-    "url": "https://chatgpt.com/share/6ae3fb90-b6bc-83ed-b432-22f8963f96d8"
+    "source": "brain/sources/conversation-reference-3.txt",
+    "url": null,
+    "locators": [
+      {"kind": "lines", "start": 10, "end": 14, "role": "user"}
+    ]
   },
   "project": "2brain",
-  "created_at": "2026-10-30T00:00:00Z",
-  "storage": "brain/registry/entries.jsonl",
+  "created_at": "2026-10-30T22:00:00Z",
+  "storage": "brain/registry/_test-runs/20261030-220000/entries.jsonl",
   "relations": [],
   "clickup_ref": null,
   "feeds_doc": null,
