@@ -38,39 +38,46 @@ Capture conversationnelle → registre Brain (production ou test-run isolé).
 
 ## Workflow
 
-1. Identifier la source exacte.
-2. Choisir le mode ; créer le dossier test-run si besoin ; fixer `run_id`.
-3. Lire schéma + registre cible.
-4. Comprendre le contexte projet.
-5. **Découper en fenêtres** (~5 échanges user/assistant). Chevauchement contextuel. **Même agent / même conversation / mémoire de travail globale**. Éviter les doublons inter-fenêtres.
-6. Pour chaque fenêtre, enchaîner **4 passes** (même agent) :
-   - Passe 1 — informations (idées, suggestions, préférences, orientations, décisions, observations, questions, contraintes)
-   - Passe 2 — actionable (tâches, jalons, objectifs, cadrage, roadmap, détails opérationnels)
-   - Passe 3 — relations (réponses, corrections, précisions, contradictions, évolutions, approbations partielles, rejets)
-   - Passe 4 — contexte d'autonomie (explications, alternatives, raisons, exceptions, incertitudes)
-7. **Atomicité** : un élément identifiable par CAP ; lier plutôt que fusionner (voir capture-rules).
-8. Attribuer `author` (principal) + **`author_confidence`**, `type`, **`intention`**, `position` (`null` si non identifiable).
-9. Renseigner **`grounding`** (4 valeurs) et **`origin.locators[]`** pour tous les passages utilisés.
-10. Fixer `capture_ref` = `"{run_id}:{id}"` (et `uid` optionnel).
-11. Déterminer `validation` / `approved_by` / `approval_scope` **uniquement** sur preuves — anti-faux-explicit (orientations ambiguës → `none`).
-12. Contenu autonome : enrichir depuis la source si besoin ; ne pas inventer ; signaler l'inconnu.
-13. Relations utiles (`clarifies`/`contradicts` inclus ; usage strict).
-14. **Audit final obligatoire** (sans questions user) : confronter source↔registre ; corriger splits / locators / grounding ; produire `AUDIT.md`.
-15. Valider sur le **chemin cible** avec export JSON :
-    `python .cursor/skills/brain-capture/scripts/validate-registry.py <cible>/entries.jsonl --require-intention --json-out <cible>/validate.json`
-16. Corriger le brouillon ; append uniquement les nouvelles entrées.
-17. Produire le **bilan template** (section ci-dessous). En test-run : + `COMPARISON.md` + `AUDIT.md` + `validate.json`.
+Ordre strict (ne pas inverser validation et corrections) :
+
+1. **Brouillon des captures**
+   1. Identifier la source exacte.
+   2. Choisir le mode ; créer le dossier test-run si besoin ; fixer `run_id`.
+   3. Lire schéma + registre cible.
+   4. Comprendre le contexte projet.
+   5. **Découper en fenêtres** (~5 échanges user/assistant). Chevauchement contextuel. **Même agent / même conversation / mémoire de travail globale**. Éviter les doublons inter-fenêtres.
+   6. Pour chaque fenêtre, enchaîner **4 passes** (même agent) :
+      - Passe 1 — informations (idées, suggestions, préférences, orientations, décisions, observations, questions, contraintes)
+      - Passe 2 — actionable (tâches, jalons, objectifs, cadrage, roadmap, détails opérationnels)
+      - Passe 3 — relations (réponses, corrections, précisions, contradictions, évolutions, approbations partielles, rejets)
+      - Passe 4 — contexte d'autonomie (explications, alternatives, raisons, exceptions, incertitudes)
+   7. **Atomicité** : un élément identifiable par CAP ; lier plutôt que fusionner (voir capture-rules).
+   8. Attribuer `author` (principal) + **`author_confidence`**, `type`, **`intention`**, `position` (`null` si non identifiable).
+   9. Renseigner **`grounding`** (4 valeurs) et **`origin.locators[]`** pour tous les passages utilisés.
+   10. Fixer `capture_ref` = `"{run_id}:{id}"` (et `uid` optionnel).
+   11. Déterminer `validation` / `approved_by` / `approval_scope` **uniquement** sur preuves — anti-faux-explicit (orientations ambiguës → `none`).
+   12. Contenu autonome : enrichir depuis la source si besoin ; ne pas inventer ; signaler l'inconnu.
+   13. Relations utiles (`clarifies`/`contradicts` inclus ; usage strict ; cibles `CAP-NNN` locales au run).
+2. **Audit final source↔registre** (complet, sans questions user) — voir section Audit.
+3. **Appliquer TOUTES les corrections** avant validation : atomicité, enrichissement, couverture, relations, author, grounding, locators.
+4. **Finaliser** `entries.jsonl` (append uniquement les nouvelles entrées ; pas de réécriture d'anciennes captures).
+5. **Valider le registre final** :
+   `python .cursor/skills/brain-capture/scripts/validate-registry.py <cible>/entries.jsonl --require-intention --json-out <cible>/validate.json`
+6. **Garantir** que `validate.json` correspond au registre final.
+7. Produire `AUDIT.md`, `COMPARISON.md` (test-run) et le **bilan template**.
+
+**Règle** : aucun changement de registre **après** validation sans re-exécuter le validateur **et** régénérer `validate.json`.
 
 ## Audit final (obligatoire)
 
-Avant clôture, l'agent confronte systématiquement la source au registre :
+Avant finalisation / validation, l'agent confronte systématiquement la source au registre :
 
 1. Couverture : thèmes / messages pertinents → CAP ou exclusion motivée (bruit).
 2. Atomicité : fusions abusives ? splits manquants ?
 3. Provenance : chaque CAP a-t-elle des `locators[]` non vides et exacts ?
 4. Grounding / anti-faux-explicit : orientations ambiguës en `none` ?
 5. Relations : contradictions étayées signalées ; pas de validation implicite via liens.
-6. Corrections appliquées **avant** le validateur.
+6. Toutes les corrections listées sont appliquées **avant** le validateur (étape Workflow 3–4).
 
 ### Template `AUDIT.md` (test-run / génération neuve)
 

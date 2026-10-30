@@ -61,17 +61,28 @@ Chaque ligne de `entries.jsonl` est un objet JSON unique. Contrat **0.1.3** (ext
 }
 ```
 
-- `source` : chemin ou identifiant de source (obligatoire).
+- `source` : chemin ou identifiant de source (obligatoire ; string non vide en génération 0.1.3).
 - `url` : optionnel (string ou absent/`null`).
-- `locators` : **tableau** (1..N) obligatoire non vide en génération 0.1.3 (`--require-intention`).
-- Chaque item : `kind` ∈ `lines` \| `window` \| `offset` ; pour `lines`/`offset` : `start`/`end` numériques ; pour `window` : `window_id` ; `role` optionnel (`user`\|`assistant`\|`unknown`) ; `note` optionnelle.
+- `locators` : **tableau** (1..N) obligatoire non vide en génération 0.1.3 (`--require-intention`). Sous `--require-intention`, `origin` doit être un **objet** (pas `null`), avec `source` + `locators[]` valides.
+- Chaque item : `kind` ∈ `lines` \| `window` \| `offset` ; `role` optionnel (`user`\|`assistant`\|`unknown`) ; `note` optionnelle.
 - Rétrocompat : anciennes entrées sans `locators` OK hors `--require-intention`. Pas d’ancien champ unique `locator`.
+
+#### Conventions `origin.locators[]`
+
+| `kind` | Bornes | Règles |
+| --- | --- | --- |
+| `lines` | `start`, `end` | **1-based inclusif** ; entiers positifs (`>= 1`) ; `end >= start` |
+| `offset` | `start`, `end` | Positions de **caractères Unicode** ; **0-based** ; `start` inclusif, `end` **exclusif** ; `start >= 0` ; `end >= start` |
+| `window` | `window_id` | String **non vide**. Pour retrouver la fenêtre : utiliser `window_id` dans les artefacts / notes de run (découpage fenêtres du skill) ou la source associée à `origin.source` — le schéma ne stocke pas le texte de la fenêtre. |
+
+Rejets mécaniques : négatifs hors convention, booléens utilisés comme int, plages invalides (`end < start`), types incorrects, locators incomplets. Pas de nouveaux kinds.
 
 ### Identité inter-runs
 
 - `id` reste local au fichier (`CAP-NNN` réutilisable entre runs).
 - `capture_ref` = `"{run_id}:{id}"` est la référence stable pour un Review futur.
 - Cohérence mécanique : `capture_ref` doit égaler `run_id + ":" + id`.
+- **Limite 0.1.3** : `relations[].to` reste un `CAP-NNN` **local au même run / même fichier**. `capture_ref` prépare l’identité inter-runs mais **n’autorise pas encore** les relations inter-runs. Brain Review traitera ce cas plus tard. Aucun changement de format de `relations` en 0.1.3.
 
 ### Attribution
 
@@ -97,6 +108,7 @@ Détail : Skill `references/capture-rules.md` et `references/source-attribution.
 
 `related`, `evolves_from`, `evolves_to`, `answers`, `answered_by`, `conflicts_with` (tension active), `resolves`, `supersedes_candidate`, `parent_of`, `child_of`, `clarifies`, `clarified_by`, `contradicts`, `contradicted_by`
 
+- Cibles : `relations[].to` = `CAP-NNN` **local au même run** (pas de `capture_ref` / ID d’un autre registre).
 - `conflicts_with` = tension active ; `contradicts` = incompatibilité affirmée étayée (Capture ne tranche pas).
 - Docs → `feeds_doc` ; ClickUp → `clickup_ref`. Pas de double evolves+supersedes sur la même paire.
 
@@ -116,7 +128,7 @@ python .cursor/skills/brain-capture/scripts/validate-registry.py path/test/entri
 python .cursor/skills/brain-capture/scripts/validate-registry.py path/test/entries.jsonl --require-intention --json-out validate.json
 ```
 
-Sous `--require-intention` (générations 0.1.3) : fichier vide = **ERROR** ; exige `intention`, `position`, `author_confidence`, `grounding`, `run_id`, `capture_ref`, `origin.locators` non vide.
+Sous `--require-intention` (générations 0.1.3) : fichier vide = **ERROR** ; exige `intention`, `position`, `author_confidence`, `grounding`, `run_id`, `capture_ref` ; `origin` objet avec `source` non vide et `origin.locators` non vide (chaque locator conforme aux conventions).
 
 ## Exemple minimal (0.1.3)
 

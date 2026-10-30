@@ -23,13 +23,26 @@ Source de vérité : `brain/registry/SCHEMA.md`.
 | `title` / `content` / `evidence` | oui | Contenu autonome |
 | `confidence` | oui | Extraction : `high` \| `medium` \| `low` |
 | `grounding` | oui en 0.1.3 | `source_explicit` \| `source_contextual` \| `source_interpreted` \| `uncertain` |
-| `origin` | oui | `{ "source", "url"?, "locators"? }` — `locators[]` obligatoire non vide en 0.1.3 |
+| `origin` | oui | Objet `{ "source", "url"?, "locators"? }` — en 0.1.3 (`--require-intention`) : objet (pas `null`), `source` non vide, `locators[]` non vide |
 | `project` / `created_at` / `storage` | oui | |
 | `relations` / `clickup_ref` / `feeds_doc` / `tags` | non | |
 
 ### `origin.locators[]`
 
-Chaque item : `kind` ∈ `lines`\|`window`\|`offset` ; `start`/`end` ou `window_id` ; `role?` ; `note?`.
+Chaque item : `kind` ∈ `lines`\|`window`\|`offset` ; `role?` ; `note?`.
+
+| `kind` | Bornes | Règles |
+| --- | --- | --- |
+| `lines` | `start`, `end` | **1-based inclusif** ; entiers positifs (`>= 1`) ; `end >= start` |
+| `offset` | `start`, `end` | Positions de **caractères Unicode** ; **0-based** ; `start` inclusif, `end` **exclusif** ; `start >= 0` ; `end >= start` |
+| `window` | `window_id` | String **non vide**. Retrouver la fenêtre via `window_id` dans les artefacts / notes de run (découpage fenêtres) ou la source `origin.source` — le schéma ne stocke pas le texte. |
+
+Rejets : négatifs hors convention, bool-as-int, plages invalides, types incorrects, locators incomplets. Pas de nouveaux kinds. Rétrocompat : sans `--require-intention`, `locators` peut être absent.
+
+### Identité inter-runs / limite relations
+
+- `capture_ref` = `"{run_id}:{id}"` prépare l’identité inter-runs.
+- En 0.1.3, `relations[].to` reste un `CAP-NNN` **local au même run** — pas de relations inter-runs encore (Brain Review plus tard). Aucun changement de format de `relations`.
 
 ### Mapping indicatif `type` → `intention`
 
@@ -56,6 +69,8 @@ Les champs restent distincts ; ne pas supprimer `type`.
 
 `related`, `evolves_from`, `evolves_to`, `answers`, `answered_by`, `conflicts_with`, `resolves`, `supersedes_candidate`, `parent_of`, `child_of`, `clarifies`, `clarified_by`, `contradicts`, `contradicted_by`
 
+Cibles locales uniquement (`CAP-NNN` du même fichier / run). `capture_ref` n’ouvre pas encore les liens inter-runs.
+
 ## Orientation future (non implémentée en 0.1.3)
 
 D'autres registres (`decisions.jsonl`, `tasks.jsonl`, …) pourront exister plus tard. `entries.jsonl` reste le registre de **capture**. Pas de déplacement automatique. Pas de Brain Review / Sync / ClickUp / graphe en 0.1.3.
@@ -74,4 +89,4 @@ python .cursor/skills/brain-capture/scripts/validate-registry.py path/entries.js
 python .cursor/skills/brain-capture/scripts/validate-registry.py path/entries.jsonl --require-intention --json-out validate.json
 ```
 
-`--require-intention` : obligatoire pour les générations V0.1.3 (test-runs neufs). Vide = ERROR ; exige intention, position, author_confidence, grounding, run_id, capture_ref, locators[] non vide.
+`--require-intention` : obligatoire pour les générations V0.1.3 (test-runs neufs). Vide = ERROR ; exige intention, position, author_confidence, grounding, run_id, capture_ref ; `origin` objet + `source` non vide + `locators[]` non vide (locators conformes). Toute correction post-validation ⇒ rejouer le validateur et régénérer `validate.json`.

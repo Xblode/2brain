@@ -4,7 +4,8 @@
 
 Contrat schéma : 0.1.3
 - Hors --require-intention : rétrocompat 0.1.2 (intention/position/locators optionnels).
-- Avec --require-intention : générations neuves 0.1.3 (vide = ERROR ; champs 0.1.3 exigés).
+- Avec --require-intention : générations neuves 0.1.3 (vide = ERROR ; champs 0.1.3 exigés ;
+  origin objet + source non vide + locators[] non vide / schema-valides).
 
 Couche 1 seulement (validation technique). Ne juge pas la fidélité sémantique.
 """
@@ -204,6 +205,10 @@ def load_entries(
     return entries
 
 
+def _is_int(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
 def validate_locator(eid: str, idx: int, loc: Any, report: Report) -> None:
     prefix = f"{eid}: origin.locators[{idx}]"
     if not isinstance(loc, dict):
@@ -213,30 +218,103 @@ def validate_locator(eid: str, idx: int, loc: Any, report: Report) -> None:
     if kind not in ALLOWED_LOCATOR_KIND:
         report.error(f"{prefix}: kind={kind!r} non autorisé (lines|window|offset).")
         return
-    if kind in ("lines", "offset"):
+    if kind == "lines":
+        # 1-based inclusive ; start/end entiers positifs ; end >= start
         start, end = loc.get("start"), loc.get("end")
-        if not isinstance(start, int) or isinstance(start, bool):
-            report.error(f"{prefix}: start (int) obligatoire pour kind={kind}.")
-        if not isinstance(end, int) or isinstance(end, bool):
-            report.error(f"{prefix}: end (int) obligatoire pour kind={kind}.")
-        if (
-            isinstance(start, int)
-            and not isinstance(start, bool)
-            and isinstance(end, int)
-            and not isinstance(end, bool)
-            and end < start
-        ):
+        start_ok = _is_int(start)
+        end_ok = _is_int(end)
+        if not start_ok:
+            report.error(f"{prefix}: start (int) obligatoire pour kind=lines.")
+        elif start < 1:
+            report.error(f"{prefix}: start ({start}) doit être >= 1 (lines, 1-based).")
+        if not end_ok:
+            report.error(f"{prefix}: end (int) obligatoire pour kind=lines.")
+        elif end < 1:
+            report.error(f"{prefix}: end ({end}) doit être >= 1 (lines, 1-based).")
+        if start_ok and end_ok and start >= 1 and end >= 1 and end < start:
+            report.error(f"{prefix}: end ({end}) < start ({start}).")
+    elif kind == "offset":
+        # positions Unicode ; 0-based ; start inclusif, end exclusif ; start >= 0 ; end >= start
+        start, end = loc.get("start"), loc.get("end")
+        start_ok = _is_int(start)
+        end_ok = _is_int(end)
+        if not start_ok:
+            report.error(f"{prefix}: start (int) obligatoire pour kind=offset.")
+        elif start < 0:
+            report.error(f"{prefix}: start ({start}) doit être >= 0 (offset, 0-based).")
+        if not end_ok:
+            report.error(f"{prefix}: end (int) obligatoire pour kind=offset.")
+        elif end < 0:
+            report.error(f"{prefix}: end ({end}) doit être >= 0 (offset, 0-based).")
+        if start_ok and end_ok and start >= 0 and end >= 0 and end < start:
             report.error(f"{prefix}: end ({end}) < start ({start}).")
     elif kind == "window":
         wid = loc.get("window_id")
         if not isinstance(wid, str) or not wid.strip():
-            report.error(f"{prefix}: window_id (string non vide) obligatoire pour kind=window.")
+            report.error(
+                f"{prefix}: window_id (string non vide) obligatoire pour kind=window."
+            )
     role = loc.get("role")
     if role is not None and role not in ALLOWED_LOCATOR_ROLE:
         report.error(f"{prefix}: role={role!r} non autorisé (user|assistant|unknown).")
     note = loc.get("note")
     if note is not None and not isinstance(note, str):
         report.error(f"{prefix}: note doit être string ou absent.")
+
+
+def validate_origin(
+    eid: str, origin: Any, report: Report, require_intention: bool
+) -> None:
+    """Valide origin / locators.
+
+    Avec --require-intention : origin objet, source non vide, locators[] non vide
+    et chaque locator schema-valide ; null / type incorrect / incomplet = ERROR.
+    Sans flag : rétrocompat (locators optionnels ; origin null/non-objet = ERROR
+    car champ obligatoire).
+    """
+    if not isinstance(origin, dict):
+        report.error(
+            f"{eid}: origin doit être un objet JSON"
+            f"{' (obligatoire en génération 0.1.3, --require-intention)' if require_intention else ''}."
+        )
+        return
+
+    source = origin.get("source")
+    if require_intention:
+        if not isinstance(source, str) or not source.strip():
+            report.error(
+                f"{eid}: origin.source (string non vide) obligatoire "
+                f"en génération 0.1.3 (--require-intention)."
+            )
+    else:
+        if "source" not in origin or not isinstance(source, str):
+            report.error(f"{eid}: origin.source (string) obligatoire.")
+
+    if "url" in origin and origin["url"] is not None and not isinstance(
+        origin["url"], str
+    ):
+        report.error(f"{eid}: origin.url doit être string ou absent.")
+    if "locator" in origin:
+        report.error(
+            f"{eid}: origin.locator (singulier) interdit — utiliser origin.locators[]."
+        )
+
+    locators = origin.get("locators")
+    if require_intention:
+        if not isinstance(locators, list) or len(locators) == 0:
+            report.error(
+                f"{eid}: origin.locators (tableau non vide) obligatoire "
+                f"en génération 0.1.3 (--require-intention)."
+            )
+        else:
+            for i, loc in enumerate(locators):
+                validate_locator(eid, i, loc, report)
+    elif locators is not None:
+        if not isinstance(locators, list):
+            report.error(f"{eid}: origin.locators doit être une liste.")
+        else:
+            for i, loc in enumerate(locators):
+                validate_locator(eid, i, loc, report)
 
 
 def validate_entry(
@@ -343,37 +421,8 @@ def validate_entry(
     if "created_at" in entry and not is_iso_datetime(entry["created_at"]):
         report.error(f"{eid}: created_at n'est pas une date ISO valide.")
 
-    origin = entry.get("origin")
-    if origin is not None:
-        if not isinstance(origin, dict):
-            report.error(f"{eid}: origin doit être un objet.")
-        else:
-            if "source" not in origin or not isinstance(origin.get("source"), str):
-                report.error(f"{eid}: origin.source (string) obligatoire.")
-            if "url" in origin and origin["url"] is not None and not isinstance(
-                origin["url"], str
-            ):
-                report.error(f"{eid}: origin.url doit être string ou absent.")
-            if "locator" in origin:
-                report.error(
-                    f"{eid}: origin.locator (singulier) interdit — utiliser origin.locators[]."
-                )
-            locators = origin.get("locators")
-            if require_intention:
-                if not isinstance(locators, list) or len(locators) == 0:
-                    report.error(
-                        f"{eid}: origin.locators (tableau non vide) obligatoire "
-                        f"en génération 0.1.3 (--require-intention)."
-                    )
-                elif isinstance(locators, list):
-                    for i, loc in enumerate(locators):
-                        validate_locator(eid, i, loc, report)
-            elif locators is not None:
-                if not isinstance(locators, list):
-                    report.error(f"{eid}: origin.locators doit être une liste.")
-                else:
-                    for i, loc in enumerate(locators):
-                        validate_locator(eid, i, loc, report)
+    if "origin" in entry:
+        validate_origin(eid, entry.get("origin"), report, require_intention)
 
     validation = entry.get("validation")
     approved_by = entry.get("approved_by")
@@ -682,7 +731,8 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help=(
             "Exige champs 0.1.3 (intention, position, author_confidence, grounding, "
-            "run_id, capture_ref, origin.locators non vide) ; fichier vide = ERROR"
+            "run_id, capture_ref) ; origin objet + source non vide + locators non vide ; "
+            "fichier vide = ERROR"
         ),
     )
     args = parser.parse_args(argv)

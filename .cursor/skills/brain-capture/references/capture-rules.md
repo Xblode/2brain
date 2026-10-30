@@ -147,9 +147,13 @@ Le `content` doit permettre de comprendre la capture sans la source : définir o
 
 ## Provenance — `origin.locators[]`
 
-- `origin.source` (+ `url` optionnel) inchangé.
+- `origin.source` (+ `url` optionnel) inchangé ; sous `--require-intention`, `origin` objet + `source` non vide.
 - `origin.locators` : **tableau** (1..N) obligatoire non vide en génération 0.1.3.
-- Chaque localisateur : `kind` ∈ `lines` \| `window` \| `offset` ; `start`/`end` ou `window_id` selon kind ; `role` optionnel (`user`\|`assistant`\|`unknown`) ; `note` optionnelle.
+- Conventions (identiques aux schémas) :
+  - `lines` : 1-based inclusif ; `start`/`end` entiers `>= 1` ; `end >= start`
+  - `offset` : caractères Unicode ; 0-based ; `start` inclusif, `end` exclusif ; `start >= 0` ; `end >= start`
+  - `window` : `window_id` string non vide (retrouver la fenêtre via artefacts/notes de run ou `origin.source`)
+- `role` optionnel (`user`\|`assistant`\|`unknown`) ; `note` optionnelle.
 - Une capture multi-passages → **plusieurs** locators, pas une seule plage approximative.
 - Locators portent la provenance ; `evidence` reste lisible humain.
 
@@ -162,7 +166,7 @@ Le `content` doit permettre de comprendre la capture sans la source : définir o
 | `capture_ref` | `"{run_id}:{id}"` — référence composite canonique |
 | `uid` | Optionnel (UUID) ; ne remplace pas `capture_ref` |
 
-Brain Review futur cite `capture_ref` (ou `run_id`+`id`). Pas de fusion de registres en 0.1.3.
+Brain Review futur cite `capture_ref` (ou `run_id`+`id`). Pas de fusion de registres en 0.1.3. `capture_ref` **ne permet pas encore** les relations inter-runs.
 
 ## Relations
 
@@ -178,7 +182,7 @@ Vocabulaire : `related`, `evolves_from`/`evolves_to`, `answers`/`answered_by`, `
 - Deux approches différentes mais compatibles → `related`, **pas** `contradicts`.
 - Pas de relation pour simple proximité thématique.
 - Pas de double `evolves_*` + `supersedes_candidate` sur la même paire.
-- Cibles = `CAP-NNN` uniquement ; docs → `feeds_doc` ; ClickUp → `clickup_ref`.
+- Cibles = `CAP-NNN` **local au même run** uniquement ; docs → `feeds_doc` ; ClickUp → `clickup_ref`.
 
 ## Actionable
 
