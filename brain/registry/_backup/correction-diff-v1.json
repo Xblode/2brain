@@ -1,0 +1,594 @@
+{
+  "conversions_implicit_to_explicit": [
+    "CAP-010",
+    "CAP-014",
+    "CAP-016",
+    "CAP-024",
+    "CAP-025",
+    "CAP-027",
+    "CAP-039",
+    "CAP-041",
+    "CAP-053"
+  ],
+  "kept_implicit_for_human_review": [
+    "CAP-005",
+    "CAP-011",
+    "CAP-040",
+    "CAP-058",
+    "CAP-061",
+    "CAP-065"
+  ],
+  "changes": [
+    {
+      "id": "CAP-035",
+      "field": "relations",
+      "old": [
+        {
+          "rel": "refers_clickup",
+          "to": "clickup:cadrage"
+        }
+      ],
+      "new": []
+    },
+    {
+      "id": "CAP-036",
+      "field": "relations",
+      "old": [
+        {
+          "rel": "refers_clickup",
+          "to": "clickup:roadmap"
+        }
+      ],
+      "new": []
+    },
+    {
+      "id": "CAP-043",
+      "field": "relations",
+      "old": [
+        {
+          "rel": "evolves_to",
+          "to": "CAP-044"
+        },
+        {
+          "rel": "feeds_doc",
+          "to": "architecture.md"
+        }
+      ],
+      "new": [
+        {
+          "rel": "evolves_to",
+          "to": "CAP-044"
+        }
+      ]
+    },
+    {
+      "id": "CAP-043",
+      "field": "feeds_doc",
+      "old": null,
+      "new": "architecture.md"
+    },
+    {
+      "id": "CAP-044",
+      "field": "relations",
+      "old": [
+        {
+          "rel": "evolves_from",
+          "to": "CAP-043"
+        },
+        {
+          "rel": "conflicts_with",
+          "to": "CAP-043"
+        }
+      ],
+      "new": [
+        {
+          "rel": "evolves_from",
+          "to": "CAP-043"
+        }
+      ]
+    },
+    {
+      "id": "CAP-046",
+      "field": "relations",
+      "old": [
+        {
+          "rel": "evolves_from",
+          "to": "CAP-045"
+        },
+        {
+          "rel": "conflicts_with",
+          "to": "CAP-045"
+        }
+      ],
+      "new": [
+        {
+          "rel": "evolves_from",
+          "to": "CAP-045"
+        }
+      ]
+    },
+    {
+      "id": "CAP-066",
+      "field": "relations",
+      "old": [
+        {
+          "rel": "refers_clickup",
+          "to": "CAP-035"
+        }
+      ],
+      "new": []
+    },
+    {
+      "id": "CAP-027",
+      "field": "validation",
+      "old": "implicit",
+      "new": "explicit_user_approval"
+    },
+    {
+      "id": "CAP-010",
+      "field": "validation",
+      "old": "implicit",
+      "new": "explicit_user_approval"
+    },
+    {
+      "id": "CAP-014",
+      "field": "validation",
+      "old": "implicit",
+      "new": "explicit_user_approval"
+    },
+    {
+      "id": "CAP-024",
+      "field": "validation",
+      "old": "implicit",
+      "new": "explicit_user_approval"
+    },
+    {
+      "id": "CAP-025",
+      "field": "validation",
+      "old": "implicit",
+      "new": "explicit_user_approval"
+    },
+    {
+      "id": "CAP-041",
+      "field": "validation",
+      "old": "implicit",
+      "new": "explicit_user_approval"
+    },
+    {
+      "id": "CAP-016",
+      "field": "validation",
+      "old": "implicit",
+      "new": "explicit_user_approval"
+    },
+    {
+      "id": "CAP-039",
+      "field": "validation",
+      "old": "implicit",
+      "new": "explicit_user_approval"
+    },
+    {
+      "id": "CAP-053",
+      "field": "validation",
+      "old": "implicit",
+      "new": "explicit_user_approval"
+    },
+    {
+      "id": "CAP-001",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-002",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-003",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-004",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-005",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-006",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-007",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-008",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-009",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-010",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-011",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-012",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-013",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-014",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-015",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-016",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-017",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-018",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-019",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-020",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-021",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-022",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-023",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-024",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-025",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-026",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-027",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-028",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-029",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-030",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-031",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-032",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-033",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-034",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-035",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-036",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-037",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-038",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-039",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-040",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-041",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-042",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-043",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-044",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-045",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-046",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-047",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-048",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-049",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-050",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-051",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-052",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-053",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-054",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-055",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": "user"
+    },
+    {
+      "id": "CAP-056",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-057",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-058",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-059",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-060",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-061",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-062",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-063",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-064",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-065",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-066",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-067",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-068",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    },
+    {
+      "id": "CAP-069",
+      "field": "approved_by",
+      "old": "<missing>",
+      "new": null
+    }
+  ],
+  "counts": {
+    "entries": 69,
+    "change_records": 85
+  }
+}
