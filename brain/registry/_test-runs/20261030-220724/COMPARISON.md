@@ -3,11 +3,11 @@
 | | |
 | --- | --- |
 | Run | `brain/registry/_test-runs/20261030-220724/` |
-| Source | `brain/sources/conversation-reference-3.txt` (~1461 lignes) |
+| Source | `brain/sources/conversation-reference-3.txt` (2296 lignes) |
 | Type de test | **Smoke régression** sur règles 0.1.3 |
 | ≠ Test A | Ce run **n'est pas** une preuve de généralisation |
 | Méthode | Skill-direct, sans `_gen.py` |
-| Validateur | OK `--require-intention` + `validate.json` |
+| Validateur | Rejoué après correctifs 0.1.3 (`--require-intention` + `validate.json` à jour) |
 | AUDIT.md | oui |
 
 ## Grille de traçabilité

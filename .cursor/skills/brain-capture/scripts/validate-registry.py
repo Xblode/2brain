@@ -209,13 +209,21 @@ def _is_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
+def _in_allowed(value: Any, allowed: set[Any]) -> bool:
+    """Membership safe for JSON malformé (objet/liste non hashable → False, pas d'exception)."""
+    try:
+        return value in allowed
+    except TypeError:
+        return False
+
+
 def validate_locator(eid: str, idx: int, loc: Any, report: Report) -> None:
     prefix = f"{eid}: origin.locators[{idx}]"
     if not isinstance(loc, dict):
         report.error(f"{prefix}: doit être un objet.")
         return
     kind = loc.get("kind")
-    if kind not in ALLOWED_LOCATOR_KIND:
+    if not _in_allowed(kind, ALLOWED_LOCATOR_KIND):
         report.error(f"{prefix}: kind={kind!r} non autorisé (lines|window|offset).")
         return
     if kind == "lines":
@@ -255,7 +263,7 @@ def validate_locator(eid: str, idx: int, loc: Any, report: Report) -> None:
                 f"{prefix}: window_id (string non vide) obligatoire pour kind=window."
             )
     role = loc.get("role")
-    if role is not None and role not in ALLOWED_LOCATOR_ROLE:
+    if role is not None and not _in_allowed(role, ALLOWED_LOCATOR_ROLE):
         report.error(f"{prefix}: role={role!r} non autorisé (user|assistant|unknown).")
     note = loc.get("note")
     if note is not None and not isinstance(note, str):
@@ -359,7 +367,7 @@ def validate_entry(
     def check_enum(field: str, allowed: set[Any]) -> None:
         if field not in entry:
             return
-        if entry[field] not in allowed:
+        if not _in_allowed(entry[field], allowed):
             report.error(f"{eid}: {field}={entry[field]!r} non autorisé.")
 
     check_enum("type", ALLOWED_TYPES)
@@ -371,12 +379,16 @@ def validate_entry(
     check_enum("intention", ALLOWED_INTENTION)
     check_enum("author_confidence", ALLOWED_AUTHOR_CONFIDENCE)
     check_enum("grounding", ALLOWED_GROUNDING)
-    if "position" in entry and entry["position"] not in ALLOWED_POSITION:
+    if "position" in entry and not _in_allowed(entry["position"], ALLOWED_POSITION):
         report.error(f"{eid}: position={entry['position']!r} non autorisé.")
 
-    if "approved_by" in entry and entry["approved_by"] not in ALLOWED_APPROVED_BY:
+    if "approved_by" in entry and not _in_allowed(
+        entry["approved_by"], ALLOWED_APPROVED_BY
+    ):
         report.error(f"{eid}: approved_by={entry['approved_by']!r} non autorisé (user|null).")
-    if "approval_scope" in entry and entry["approval_scope"] not in ALLOWED_APPROVAL_SCOPE:
+    if "approval_scope" in entry and not _in_allowed(
+        entry["approval_scope"], ALLOWED_APPROVAL_SCOPE
+    ):
         report.error(
             f"{eid}: approval_scope={entry['approval_scope']!r} non autorisé (item|set|null)."
         )
@@ -468,7 +480,10 @@ def validate_entry(
         )
 
     # Soft REVIEW: orientation ambiguë / partial + explicit (anti-faux-explicit)
-    tags = entry.get("tags") if isinstance(entry.get("tags"), list) else []
+    raw_tags = entry.get("tags") if isinstance(entry.get("tags"), list) else []
+    tags = [t for t in raw_tags if isinstance(t, str)]
+    if any(not isinstance(t, str) for t in raw_tags):
+        report.error(f"{eid}: tags[] doit contenir uniquement des strings.")
     if intention == "orientation" and validation == "explicit_user_approval":
         report.review(
             f"{eid}: intention=orientation + explicit — vérifier anti-faux-explicit "
@@ -577,15 +592,17 @@ def validate_relations(entries: list[dict[str, Any]], report: Report) -> None:
                 continue
             r = rel.get("rel")
             to = rel.get("to")
-            if r in FORBIDDEN_REL:
+            if _in_allowed(r, FORBIDDEN_REL):
                 report.error(
                     f"{eid}: rel={r!r} interdit dans relations "
                     f"(utiliser feeds_doc / clickup_ref)."
                 )
-            elif r not in ALLOWED_REL:
+            elif not _in_allowed(r, ALLOWED_REL):
                 report.error(f"{eid}: rel={r!r} non autorisé.")
             if not isinstance(to, str):
                 report.error(f"{eid}: relations[{idx}].to doit être une string.")
+                continue
+            if not isinstance(eid, str):
                 continue
             if not CAP_TARGET_RE.match(to):
                 report.error(
