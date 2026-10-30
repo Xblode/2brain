@@ -1,6 +1,6 @@
 # Schéma registre — vue Skill
 
-Source de vérité projet : `brain/registry/SCHEMA.md`. Ce fichier résume le contrat pour `/brain-capture`.
+Source de vérité projet : `brain/registry/SCHEMA.md`. Ce fichier résume le contrat pour `/brain-capture` (contrat **0.1.1**).
 
 ## Champs
 
@@ -13,6 +13,7 @@ Source de vérité projet : `brain/registry/SCHEMA.md`. Ce fichier résume le co
 | `validation` | oui | `none` \| `implicit` \| `explicit_user_approval` |
 | `author` | oui | `user` \| `assistant` |
 | `approved_by` | oui | `user` \| `null` |
+| `approval_scope` | oui | `item` \| `set` \| `null` |
 | `title` | oui | Titre court |
 | `content` | oui | Synthèse factuelle |
 | `evidence` | oui | Preuve / citation |
@@ -20,21 +21,40 @@ Source de vérité projet : `brain/registry/SCHEMA.md`. Ce fichier résume le co
 | `origin` | oui | Objet `{ "source": "...", "url"?: "..." }` |
 | `project` | oui | Ex. `2brain` |
 | `created_at` | oui | ISO 8601 de capture |
-| `storage` | oui | `brain/registry/entries.jsonl` |
+| `storage` | oui | Chemin du registre cible (prod ou test-run) |
 | `relations` | non | Liste `{ "rel", "to" }` vers `CAP-NNN` |
 | `clickup_ref` | non | Réf. ClickUp ou `null` |
 | `feeds_doc` | non | Nom de doc ou `null` |
 | `tags` | non | Liste de strings |
 
+## `approval_scope`
+
+| Valeur | Sens |
+| --- | --- |
+| `item` | Accord visant **cette** capture |
+| `set` | Accord visant un **bloc source clairement délimité et cité** |
+| `null` | Pas d’approbation établie |
+
+Cohérence obligatoire :
+
+- `explicit_user_approval` ⇒ `approved_by: user` **et** `approval_scope` ∈ {`item`, `set`}
+- `none` / `implicit` ⇒ `approved_by: null` **et** `approval_scope: null`
+
 ## Relations autorisées (`rel`)
 
-`related`, `evolves_from`, `evolves_to`, `answers`, `answered_by`, `conflicts_with`, `supersedes_candidate`, `parent_of`, `child_of`
+`related`, `evolves_from`, `evolves_to`, `answers`, `answered_by`, `conflicts_with`, `resolves`, `supersedes_candidate`, `parent_of`, `child_of`
 
 Interdit dans `relations` :
 
 - cibles documentaires (`architecture.md`, …) → utiliser `feeds_doc`
 - cibles ClickUp (`clickup:…`) → utiliser `clickup_ref`
 - `refers_clickup`, `feeds_doc` comme valeurs de `rel`
+
+Contraintes :
+
+- `conflicts_with` = tension encore active seulement
+- `resolves` = A clôt / tranche la tension de B (réciproque non obligatoire)
+- Interdit : `evolves_*` **et** `supersedes_candidate` sur la même paire
 
 ## Exemple minimal
 
@@ -47,6 +67,7 @@ Interdit dans `relations` :
   "validation": "none",
   "author": "user",
   "approved_by": null,
+  "approval_scope": null,
   "title": "...",
   "content": "...",
   "evidence": "...",

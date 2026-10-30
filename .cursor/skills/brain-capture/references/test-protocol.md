@@ -6,56 +6,64 @@ Conversation ayant produit les 69 captures initiales :
 
 | Propriété | Valeur |
 | --- | --- |
-| Fichier local | `C:\Users\planc\Documents\_Projets\Perso\2nd brain\2nd-brain\brain\conversation-référence-1.txt` |
+| Fichier local (origine) | `conversation-référence-1.txt` |
+| Copie dépôt | `brain/sources/conversation-reference-1.txt` |
 | Origin registre | `chatgpt-share` / `https://chatgpt.com/share/6ae3fb90-b6bc-83ed-b432-22f8963f96d8` |
-| Taille (~) | 78 341 octets / 1452 lignes |
-| Nom stable | `conversation-référence-1.txt` |
-
-Ce fichier n'est **pas** dans le dépôt `2brain` au moment du V1. Pour un test isolé, copier sans écraser :
-
-```text
-brain/sources/conversation-reference-1.txt
-```
+| Nom stable | `conversation-reference-1.txt` |
 
 Ne jamais utiliser `entries.jsonl` comme source de re-capture.
 
+## Mode registre (forcé pour la référence)
+
+Au démarrage de `/brain-capture`, choisir explicitement la cible :
+
+| Mode | Cible |
+| --- | --- |
+| `production` | `brain/registry/entries.jsonl` |
+| `test-run` | Nouveau dossier `brain/registry/_test-runs/YYYYMMDD-HHMMSS/` |
+
+**Règle forcée** : si la source est `brain/sources/conversation-reference-1.txt` (ou équivalent référence), **toujours** `test-run`. Ne jamais écrire une génération comparative dans le registre de production.
+
+Le validateur s'exécute sur le **chemin de la cible choisie**, jamais un chemin hardcodé.
+
 ## Procédure (chaque version du Skill)
 
-1. Utiliser **exactement** la même source (`conversation-référence-1.txt` ou sa copie locale).
-2. Créer un emplacement temporaire isolé, ex. :
+1. Utiliser **exactement** la même source (`conversation-reference-1.txt`).
+2. Créer un emplacement temporaire isolé :
    `brain/registry/_test-runs/YYYYMMDD-HHMMSS/`
-3. Y placer une copie vide ou minimale de travail (`entries.jsonl` vide + SCHEMA).
-4. Lancer `/brain-capture` en indiquant la source et le registre temporaire.
-5. **Ne jamais** écraser `brain/registry/entries.jsonl` ni les archives `_test-runs/` précédentes.
+3. Y placer `entries.jsonl` vide + copie de `SCHEMA.md`.
+4. Lancer `/brain-capture` en mode `test-run` avec cette source et ce registre.
+5. **Ne jamais** écraser `brain/registry/entries.jsonl` ni les archives `_test-runs/` précédentes (ex. `20261030-042859` = archive 0.1.0).
 6. Valider :
    `python .cursor/skills/brain-capture/scripts/validate-registry.py <chemin-temporaire>/entries.jsonl`
-7. Comparer qualitativement avec les générations précédentes (et/ou les 69 captures de référence).
+7. Rédiger `COMPARISON.md` **factuel** (counts, répartition `approval_scope`, tags `approval_global_partial`, relations `resolves`, écarts connus vs génération précédente) — **sans** scores subjectifs non vérifiés ni auto-notes « pertes faibles » non prouvées.
 
 ## Critères d'évaluation
 
 - couverture des informations utiles ;
-- informations perdues ;
-- faux positifs ;
 - attribution auteur correcte ;
-- validations injustifiées ;
+- validations justifiées (exprimer ≠ approuver) ;
+- `approval_scope` cohérent (`item` / `set` / `null`) ;
+- pas d'approbation héritée d'un accord global partiel sans tag ;
 - questions restées ouvertes ;
-- doublons potentiels ;
-- relations pertinentes ;
+- doublons potentiels (non fusionnés) ;
+- relations pertinentes (`resolves` vs `conflicts_with` actif ; pas de double evolves+supersedes) ;
 - préservation des évolutions ;
 - fidélité des preuves ;
-- cohérence des métadonnées.
+- cohérence des métadonnées (validateur vert).
 
 **Ne pas** chercher à reproduire exactement 69 entrées. Qualité et fidélité > nombre.
 
-## Premier test manuel (checklist)
+## Checklist test manuel
 
 ```text
-[ ] Source = conversation-référence-1.txt (chemin ci-dessus ou copie brain/sources/)
+[ ] Source = brain/sources/conversation-reference-1.txt
+[ ] Mode = test-run (forcé pour cette source)
 [ ] Registre de sortie = dossier _test-runs/ isolé (pas le registre vivant)
 [ ] Invoker /brain-capture avec ces chemins explicites
 [ ] Exécuter validate-registry.py sur le résultat
-[ ] Rédiger une note de comparaison (couverture, auteurs, validations, relations)
-[ ] Archiver la note à côté de la génération ; ne pas écraser
+[ ] Rédiger COMPARISON.md factuel (approval_scope, resolves, écarts)
+[ ] Archiver à côté de la génération ; ne pas écraser les runs antérieurs
 ```
 
 ## Commande validateur

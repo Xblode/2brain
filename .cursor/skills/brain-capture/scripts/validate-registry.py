@@ -3,6 +3,7 @@
 """Validateur déterministe du registre Brain (lecture seule).
 
 Ne modifie jamais les entrées. Catégories : errors / warnings / human_review.
+Contrat schéma : 0.1.1 (approval_scope, resolves).
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ ALLOWED_SPACES = {"atelier", "referentiel", "journal", "pilotage"}
 ALLOWED_VALIDATION = {"none", "implicit", "explicit_user_approval"}
 ALLOWED_AUTHOR = {"user", "assistant"}
 ALLOWED_APPROVED_BY = {"user", None}
+ALLOWED_APPROVAL_SCOPE = {"item", "set", None}
 ALLOWED_CONFIDENCE = {"high", "medium", "low"}
 ALLOWED_REL = {
     "related",
@@ -38,6 +40,7 @@ ALLOWED_REL = {
     "answers",
     "answered_by",
     "conflicts_with",
+    "resolves",
     "supersedes_candidate",
     "parent_of",
     "child_of",
@@ -51,6 +54,7 @@ REQUIRED_FIELDS = {
     "validation",
     "author",
     "approved_by",
+    "approval_scope",
     "title",
     "content",
     "evidence",
@@ -63,6 +67,7 @@ REQUIRED_FIELDS = {
 KNOWN_FIELDS = REQUIRED_FIELDS | {"relations", "clickup_ref", "feeds_doc", "tags"}
 ID_RE = re.compile(r"^CAP-\d{3,}$")
 CAP_TARGET_RE = re.compile(r"^CAP-\d{3,}$")
+EXPRESS_NOT_APPROVE_TYPES = {"observation", "event", "idea"}
 
 
 def is_iso_datetime(value: str) -> bool:
@@ -162,6 +167,11 @@ def validate_entry(
     if "approved_by" in entry and entry["approved_by"] not in ALLOWED_APPROVED_BY:
         report.error(f"{eid}: approved_by={entry['approved_by']!r} non autorisé (user|null).")
 
+    if "approval_scope" in entry and entry["approval_scope"] not in ALLOWED_APPROVAL_SCOPE:
+        report.error(
+            f"{eid}: approval_scope={entry['approval_scope']!r} non autorisé (item|set|null)."
+        )
+
     for text_field in ("title", "content", "evidence", "project", "storage"):
         if text_field in entry and not isinstance(entry[text_field], str):
             report.error(f"{eid}: {text_field} doit être une string.")
@@ -184,25 +194,65 @@ def validate_entry(
             if "url" in origin and origin["url"] is not None and not isinstance(origin["url"], str):
                 report.error(f"{eid}: origin.url doit être string ou absent.")
 
-    # author / approved_by / validation coherence
+    # author / approved_by / validation / approval_scope coherence
     validation = entry.get("validation")
     approved_by = entry.get("approved_by")
-    if validation == "explicit_user_approval" and approved_by != "user":
+    approval_scope = entry.get("approval_scope")
+
+    if validation == "explicit_user_approval":
+        if approved_by != "user":
+            report.error(
+                f"{eid}: validation=explicit_user_approval exige approved_by=user "
+                f"(reçu {approved_by!r})."
+            )
+        if approval_scope not in ("item", "set"):
+            report.error(
+                f"{eid}: validation=explicit_user_approval exige "
+                f"approval_scope item|set (reçu {approval_scope!r})."
+            )
+    if validation in ("none", "implicit"):
+        if approved_by not in (None,):
+            report.error(
+                f"{eid}: validation={validation} exige approved_by=null (reçu {approved_by!r})."
+            )
+        if approval_scope is not None:
+            report.error(
+                f"{eid}: validation={validation} exige approval_scope=null "
+                f"(reçu {approval_scope!r})."
+            )
+    if approved_by == "user" and approval_scope not in ("item", "set"):
         report.error(
-            f"{eid}: validation=explicit_user_approval exige approved_by=user "
-            f"(reçu {approved_by!r})."
-        )
-    if validation in ("none", "implicit") and approved_by not in (None,):
-        report.error(
-            f"{eid}: validation={validation} exige approved_by=null (reçu {approved_by!r})."
+            f"{eid}: approved_by=user exige approval_scope item|set "
+            f"(reçu {approval_scope!r})."
         )
     if validation == "implicit":
         report.review(
             f"{eid}: validation=implicit (historique) — réexaminer la preuve avant conversion."
         )
 
+    # express ≠ approve soft checks
+    etype = entry.get("type")
+    author = entry.get("author")
+    if (
+        author == "user"
+        and etype in EXPRESS_NOT_APPROVE_TYPES
+        and validation == "explicit_user_approval"
+    ):
+        report.warn(
+            f"{eid}: type={etype} + author=user avec explicit_user_approval "
+            f"(exprimer ≠ approuver — vérifier)."
+        )
+
+    # tags
+    tags = entry.get("tags")
+    if isinstance(tags, list) and "approval_global_partial" in tags:
+        report.review(
+            f"{eid}: tag approval_global_partial — accord global/partiel ; "
+            f"vérifier qu'aucune approbation item/set n'a été forcée."
+        )
+
     # space soft checks
-    if entry.get("type") == "task" and entry.get("space") not in ("pilotage", "atelier"):
+    if etype == "task" and entry.get("space") not in ("pilotage", "atelier"):
         report.warn(f"{eid}: type=task habituellement dans pilotage ou atelier.")
     if entry.get("space") == "referentiel" and validation != "explicit_user_approval":
         report.review(
@@ -225,12 +275,22 @@ def validate_entry(
         report.error(f"{eid}: feeds_doc doit être string ou null.")
 
 
+def _pair_key(a: str, b: str) -> tuple[str, str]:
+    return (a, b) if a <= b else (b, a)
+
+
 def validate_relations(
     entries: list[dict[str, Any]],
     report: Report,
 ) -> None:
     by_id = {e["id"]: e for e in entries if isinstance(e.get("id"), str)}
     all_ids = set(by_id)
+
+    # Collect edge sets for cross-checks
+    evolves_pairs: set[tuple[str, str]] = set()
+    supersedes_pairs: set[tuple[str, str]] = set()
+    resolves_edges: set[tuple[str, str]] = set()  # (from, to)
+    conflicts_edges: set[tuple[str, str]] = set()
 
     for entry in entries:
         eid = entry.get("id", "?")
@@ -260,6 +320,30 @@ def validate_relations(
                 )
             elif to not in all_ids:
                 report.error(f"{eid}: relation vers capture inexistante {to}.")
+            else:
+                if r in ("evolves_from", "evolves_to"):
+                    evolves_pairs.add(_pair_key(eid, to))
+                if r == "supersedes_candidate":
+                    supersedes_pairs.add(_pair_key(eid, to))
+                if r == "resolves":
+                    resolves_edges.add((eid, to))
+                if r == "conflicts_with":
+                    conflicts_edges.add((eid, to))
+
+    # Interdit : evolves_* et supersedes_candidate sur la même paire
+    for pair in evolves_pairs & supersedes_pairs:
+        report.error(
+            f"{pair[0]}↔{pair[1]}: evolves_* et supersedes_candidate sur la même paire "
+            f"(choisir une seule famille)."
+        )
+
+    # Warn : conflicts_with alors qu'un resolves existe sur la paire
+    for src, dst in resolves_edges:
+        if (src, dst) in conflicts_edges or (dst, src) in conflicts_edges:
+            report.warn(
+                f"{src}: resolves → {dst} alors qu'un conflicts_with existe sur la paire "
+                f"(préférer resolves seul si la tension est close)."
+            )
 
     # soft reciprocal checks
     def has_rel(src: str, rel: str, dst: str) -> bool:

@@ -1,0 +1,17 @@
+﻿{
+  "ok": true,
+  "errors": [],
+  "warnings": [
+    "CAP-051: conflicts_with → CAP-028 sans réciproque (recommandé mais non bloquant).",
+    "CAP-069: answered_by → CAP-008 sans réciproque answers (recommandé si les deux côtés sont connus).",
+    "Résumé: 69 entrées chargées, 69 ids uniques."
+  ],
+  "human_review": [
+    "CAP-010: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-014: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-016: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-024: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-025: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-041: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée."
+  ]
+}

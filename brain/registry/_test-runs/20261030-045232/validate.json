@@ -1,0 +1,15 @@
+﻿{
+  "ok": true,
+  "errors": [],
+  "warnings": [
+    "Résumé: 69 entrées chargées, 69 ids uniques."
+  ],
+  "human_review": [
+    "CAP-013: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-016: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-018: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-026: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-027: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée.",
+    "CAP-048: tag approval_global_partial — accord global/partiel ; vérifier qu'aucune approbation item/set n'a été forcée."
+  ]
+}
