@@ -52,7 +52,7 @@ Capture conversationnelle → registre Brain (production ou test-run isolé).
 12. Valider sur le **chemin cible** :
     `python .cursor/skills/brain-capture/scripts/validate-registry.py <cible>/entries.jsonl --require-intention`
 13. Corriger le brouillon ; append uniquement les nouvelles entrées.
-14. Bilan + grille de traçabilité si test-run.
+14. Produire le **bilan template** (section ci-dessous). En test-run : + `COMPARISON.md` (grille), pas dans le bilan.
 
 ## Checklist couverture
 
@@ -76,9 +76,41 @@ Capture conversationnelle → registre Brain (production ou test-run isolé).
 - Convertir `favorable` / `endorsed` / `selected` / `confirmed` en `explicit_user_approval` sans preuve d'approbation formelle.
 - Lancer `/brain-review` ou autre workflow.
 
-## Bilan attendu
+## Bilan attendu (obligatoire)
 
-Source ; mode + chemin ; IDs ajoutés ; intentions / positions / validations ; `approval_global_partial` ; relations ; doublons évités ; ambigus ; résultat validateur (`--require-intention`) ; note de couverture.
+Après chaque `/brain-capture`, produire **exactement** ce bilan (même ordre, mêmes libellés). Remplir chaque ligne ; mettre `0` ou `—` si vide. Ne pas ajouter de sections hors template.
+
+```markdown
+### Bilan `/brain-capture`
+
+| | |
+| --- | --- |
+| Source | <chemin ou « conversation courante »> |
+| Mode | `production` \| `test-run` |
+| Cible | <chemin entries.jsonl> |
+| IDs ajoutés | CAP-XXX → CAP-YYY (N) |
+| Validateur | OK \| KO (`--require-intention` si 0.1.2) |
+| Production touchée | non \| oui |
+
+**Comptes** — total N · explicit E · none F · `set` S · partial P · `position` null Z
+
+**Intentions** — <intention: count ; …> (toutes les intentions présentes ; 0 omises OK si absentes)
+
+**Actionnable** — milestones M · tasks T · cadrage individuels C
+
+**Relations** — R liens utiles · doubles évités : oui/non/partiel
+
+**Ambigus** — <CAP-… + motif court ; ou « aucun »>
+
+**Bruit exclu** — <CAP-… méta/test ; ou « aucun »>
+
+**Couverture** — messages pertinents : OK/partiel · propositions conservées : OK/partiel · nuances : OK/partiel
+
+<!-- test-run seulement : -->
+**Test-run** — COMPARISON.md : oui/non · scénarios A–H : OK/partiel/manque · vs réf. <run ou —>
+```
+
+En **production**, omettre la ligne `Test-run`. En **test-run**, la remplir et détailler la grille dans `COMPARISON.md` (pas dans le bilan).
 
 ## Ressources
 
