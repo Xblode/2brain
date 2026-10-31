@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "schema_contract": "0.1.3",
+  "layer": "technical_validation",
+  "errors": [],
+  "warnings": [
+    "Résumé: 14 entrées, 14 ids uniques [require-intention]."
+  ],
+  "human_review": [
+    "CAP-070: position=confirmed + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-071: position=confirmed + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-072: position=confirmed + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-073: position=confirmed + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-074: position=confirmed + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-076: position=confirmed + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-077: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-078: position=confirmed + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-079: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-081: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture.",
+    "CAP-082: position=selected + explicit — vérifier que l'approbation formelle est distincte de la seule posture."
+  ]
+}

@@ -19,11 +19,11 @@
 
 Consigne minimale à coller :
 
-> Mode **production**. Source unique : `brain/sources/conversation-reference-1.txt`.  
+> Mode **production**. Source unique : `lab/sources/conversation-reference-1.txt`.  
 > Append dans `brain/registry/entries.jsonl` (registre initialement vide).  
 > Appliquer Skill 0.1.4 (atomicité, mapping intention→type, space, refs/URLs, relations).  
-> Ne pas modifier le Skill. Produire AUDIT.md à côté du registre ou dans `brain/registry/AUDIT-ref1.md`.  
-> Valider avec `--require-intention --json-out brain/registry/validate.json`.
+> Ne pas modifier le Skill. Produire AUDIT.md dans `lab/AUDIT-ref1.md` (hors living).  
+> Valider avec `--require-intention --json-out lab/validate.json`.
 
 ### Vérifications après appel 1
 
@@ -40,7 +40,7 @@ Consigne minimale à coller :
 
 Même skill, **sans** vider le registre.
 
-> Mode **production**. Source : `brain/sources/conversation-reference-2.txt`.  
+> Mode **production**. Source : `lab/sources/conversation-reference-2.txt`.  
 > **Append only** — ne modifier aucune ligne existante. Continuer les IDs après le max actuel.
 
 ### Vérifications après appel 2
@@ -55,7 +55,7 @@ Même skill, **sans** vider le registre.
 
 ## Appel 3 — source 3
 
-> Mode **production**. Source : `brain/sources/conversation-reference-3.txt`.  
+> Mode **production**. Source : `lab/sources/conversation-reference-3.txt`.  
 > Append only ; IDs à la suite.
 
 ### Vérifications après appel 3

@@ -35,7 +35,7 @@ Le mode est **choisi explicitement** selon la cible demandée (par l’utilisate
 | Mode | Cible | `run_id` |
 | --- | --- | --- |
 | `production` | `brain/registry/entries.jsonl` | `production` |
-| `test-run` | `brain/registry/_test-runs/MMDD-HHMM/` (dossier **vide** + copie SCHEMA si besoin) | = nom du dossier (ex. `1031-1512`) |
+| `test-run` | `lab/_test-runs/MMDD-HHMM/` (dossier **vide** + copie SCHEMA si besoin) | = nom du dossier (ex. `1031-1512`) |
 
 ### Création d’un test-run
 

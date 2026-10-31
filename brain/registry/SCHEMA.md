@@ -70,7 +70,7 @@ Sous `--require-intention`, une entrée **nouvelle** doit respecter ce mapping (
 
 ```json
 {
-  "source": "brain/sources/conversation-reference-1.txt",
+  "source": "lab/sources/conversation-reference-1.txt",
   "url": null,
   "locators": [
     {"kind": "lines", "start": 120, "end": 125, "role": "user"}

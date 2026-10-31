@@ -1,0 +1,240 @@
+Le dépôt est bien à jour : le dernier commit est 6dddde5, intitulé Ship brain-capture 0.1.2 with intention/position and a fresh fenestrated test-run.
+
+Le test indépendant est présent dans brain/registry/_test-runs/20261030-180454/, avec ses rapports COMPARISON.md et ISSUES.md. Les deux sources de conversation sont également présentes. Je vais auditer à la fois le fonctionnement réel du Skill, la qualité des captures et la solidité des preuves de validation — pas seulement vérifier que les fichiers existent.
+Audit Brain Capture 0.1.2
+Structure améliorée
+Validation sémantique nécessaire
+Test non reproductible
+
+Verdict : 0.1.2 est une vraie progression par rapport à 0.1.1, mais je ne considérerais pas encore le Skill comme validé pour une utilisation fiable en production.
+
+Les améliorations de structure sont réelles. Le problème principal est ailleurs : le test ne démontre pas encore que l'agent sait réellement exécuter le processus de capture décrit dans le Skill.
+1. Résultats quantitatifs
+77
+Captures générées
+
+77/77
+Intention renseignée
+
+22
+Approbations explicites déclarées
+
+0
+Relations vers des IDs inexistants
+
+
+
+Répartition des intentions
+suggestion
+
+18
+
+
+
+
+milestone
+
+13
+
+
+
+
+decision
+
+13
+
+
+
+
+convention
+
+11
+
+
+
+
+observation
+
+9
+
+
+
+
+question
+
+5
+
+
+
+
+autres
+
+8
+
+
+
+
+
+Indicateur	0.1.1	0.1.2
+Captures	69	77
+Intentions	Non renseignées	77
+Jalons roadmap individuels	1 agrégat	6
+Sujets de cadrage individuels	0	7
+Approbations set	0	0
+
+Les points positifs :
+- Les deux nouveaux champs sont bien intégrés.
+- Les positions ne sont pas confondues systématiquement avec les validations.
+- Les six couches de roadmap et les sept sujets de cadrage sont individualisés.
+- Les relations présentes pointent toutes vers des captures existantes.
+- Les approbations partielles sont conservées sans être converties en approbations d'ensemble.
+- Le registre de production n'a pas été modifié.
+2. Problèmes identifiés
+P1 — Bloquant
+ Le test ne prouve pas le fonctionnement réel du Skill
+C'est le problème le plus important de cet audit.
+
+J'ai inspecté _gen.py, le script qui produit les 77 captures.
+
+Il contient directement les appels add(...) avec les titres, contenus, auteurs, intentions et preuves déjà rédigés. Il ne lit pas le fichier conversation-reference-1.txt pour extraire les informations. Il ne met pas en œuvre un moteur de fenêtrage ou les quatre passes.
+
+Autrement dit :
+- Le résultat est une extraction rédigée et matérialisée dans un script.
+- Le script peut régénérer le même registre.
+- Mais il ne permet pas de vérifier que le Skill, exécuté par un agent, sait produire ce résultat à partir de la conversation.
+C'est une distinction fondamentale.
+
+Le test montre que 77 captures ont été constituées selon les règles 0.1.2. Il ne démontre pas que /brain-capture 0.1.2 sait les constituer de manière autonome.
+
+Deuxième problème : le dépôt ne contient pas de validate.json pour ce test-run. Le rapport affirme que le validateur a réussi, mais le résultat détaillé n'est pas archivé.
+
+Correction nécessaire : faire un véritable test d'exécution du Skill dans Cursor, depuis la source brute, sans script prérempli. Archiver la sortie du validateur.
+P1 — Bloquant
+ Deux approbations discutables
+J'ai extrait les 22 captures déclarées explicit_user_approval et vérifié leurs preuves.
+
+Deux cas contredisent les précautions définies dans les règles.
+Capture	Problème
+CAP-009	L'utilisateur dit « B ou C ». La capture reconnaît que le choix exact reste indéterminé, mais lui attribue une approbation explicite.
+CAP-047	L'utilisateur demande de « valider certaines choses », mais la portée de cette validation est explicitement décrite comme ambiguë. Pourtant, la capture reçoit explicit_user_approval.
+
+Dans les deux cas, la capture devrait préserver la position exprimée sans affirmer une validation formelle de l'élément.
+
+Je recommande de repasser ces deux entrées à validation: none, avec approved_by: null et approval_scope: null, tout en conservant leur position et leurs tags d'ambiguïté.
+
+Le validateur actuel ne détecte pas ces cas : il contrôle la cohérence des champs, pas la fidélité de l'interprétation.
+P2 — Important
+ La traçabilité n'est pas assez précise
+La grille COMPARISON.md est une bonne amélioration, mais elle ne correspond pas encore complètement à une véritable grille de traçabilité.
+
+Elle contient des thèmes comme « Q1 rôle A/B/C » ou « réponse ClickUp », mais pas les identifiants des messages sources, ni les lignes ou plages de la conversation.
+
+Conséquence : un auditeur ne peut pas facilement retrouver l'endroit exact d'où vient une information.
+
+Je recommande d'ajouter, à terme, un localisateur source :
+- Identifiant du message si disponible.
+- Sinon, numéro de ligne ou plage de lignes.
+- Identifiant de la fenêtre de capture.
+- Auteur du message source.
+La provenance actuelle identifie le fichier, mais pas précisément l'emplacement de l'information.
+P2 — Important
+ La confiance est trop souvent élevée
+73 captures sur 77 ont une confiance high.
+
+Or plusieurs entrées reconnaissent explicitement une incertitude :
+- CAP-009 : B ou C non tranché.
+- CAP-047 : portée de validation ambiguë.
+- Plusieurs propositions assistant ne sont pas encore adoptées.
+- Certaines informations sont des orientations provisoires.
+La confiance devrait mesurer la solidité de l'interprétation et de son attribution, pas simplement la présence d'une phrase dans la source.
+
+Je recommande de réserver high aux informations clairement attribuées et correctement interprétées. Les captures dont le sens reste partiellement incertain devraient être medium.
+3. Couverture : les progrès et les oublis
+La comparaison identifie correctement quatre pertes par rapport à la référence précédente :
+Information	État
+Taxonomie Core / Module / Instance / Agent / Skill / Rule / Template / Workflow	Manquante
+Mapping espaces logiques ↔ local ↔ ClickUp	Manquant
+Consultation ClickUp : Inbox et documents vides	Manquante
+Liste documentaire initiale complète	Partielle
+
+Ce n'est pas forcément une mauvaise chose qu'une nouvelle extraction ne reproduise pas exactement l'ancienne.
+
+Mais ces différences doivent être expliquées : est-ce une information oubliée, absorbée dans une autre capture, ou volontairement écartée ?
+
+La grille actuelle commence à le faire. Il faut conserver cette discipline.
+4. Audit du validateur
+Le validateur est globalement bien conçu pour vérifier la structure.
+
+Il contrôle notamment :
+- Les champs obligatoires.
+- Les énumérations.
+- Les identifiants uniques.
+- Les relations et leurs cibles.
+- La cohérence entre validation, approbateur et portée.
+- Les champs intention et position avec --require-intention.
+Il reste néanmoins quelques limites.
+
+A. Un fichier vide passe comme valide.
+
+load_entries() ajoute un avertissement, mais aucune erreur. Le rapport peut donc afficher ok: true avec zéro capture.
+
+Pour un test de génération, c'est dangereux : un agent pourrait produire un fichier vide et obtenir une validation technique positive.
+
+B. Le validateur ne vérifie pas la qualité sémantique.
+
+C'est normal qu'un script Python ne puisse pas entièrement juger le sens d'une conversation. Mais les cas connus doivent alimenter une checklist de revue humaine.
+
+C. Les champs de provenance sont peu contrôlés.
+
+Le validateur vérifie la présence de origin.source, mais pas sa non-vacuité ni l'existence réelle du fichier source.
+
+D. Le contrôle de couverture reste extérieur au validateur.
+
+C'est logique : le script ne dispose pas de la conversation source. Il faut donc garder un processus de vérification séparé.
+
+5. Ce que je retiens de la conception 0.1.2
+Il y a trois évolutions particulièrement importantes.
+
+1. Intention, position et validation sont séparées.
+
+C'est une excellente décision d'architecture. Elle permet de stocker une proposition, de savoir si son auteur y est favorable et de savoir si elle a été officiellement approuvée sans confondre ces informations.
+
+2. Les propositions assistant ont leur place dans la mémoire.
+
+C'est essentiel pour ton projet. Une idée n'a pas besoin d'être adoptée pour être conservée et retrouvée.
+
+3. La capture devient plus orientée vers les informations actionnables.
+
+Les jalons et les sujets de cadrage individualisés constituent un vrai progrès. Cela prépare le travail de Brain Review sans que Capture ait besoin de prendre des décisions définitives.
+6. Ce que je ferais pour la 0.1.3
+Je ne ferais pas une nouvelle refonte du Skill. Je consoliderais ce qui existe.
+Priorité	Travail	Objectif
+P0	Véritable exécution du Skill	Prouver que l'agent sait capturer sans script prérempli
+P0	Corriger CAP-009 et CAP-047	Fiabiliser les validations
+P1	Ajouter des localisateurs de source	Retrouver précisément chaque information
+P1	Durcir le validateur	Refuser les fichiers vides en mode test
+P1	Revoir la calibration de confiance	Réduire les high injustifiés
+P2	Compléter les informations manquantes	Vérifier la couverture réelle
+
+Je ne créerais pas encore de nouveaux registres, d'agents ou de commandes. Ce serait prématuré tant que la qualité de Capture n'est pas démontrée.
+
+7. Verdict final
+Brain Capture 0.1.2
+Prometteur, pas encore validé en conditions réelles
+Qualité du schéma : bonne.
+
+Qualité de la documentation : bonne.
+
+Qualité des captures : en progrès, avec quelques erreurs sémantiques.
+
+Fiabilité du test : insuffisamment démontrée.
+
+Prêt pour production : pas encore.
+
+Le point le plus important : ne confonds pas la qualité du registre généré avec la qualité de l'agent qui est censé le générer.
+
+Tu as maintenant un bon contrat documentaire et un registre plus riche. La prochaine étape doit prouver que le Skill peut respecter ce contrat sur une conversation inconnue, sans script préparé, sans perte d'information et sans validation inventée.
+
+C'est cette preuve qui permettra de considérer Brain Capture comme une fondation fiable pour les autres composants du Second Brain.
+
+Je peux préparer un prompt Cursor ciblé pour une phase de consolidation 0.1.3, avec les corrections prioritaires et surtout un protocole de test qui vérifie réellement l'exécution du Skill, pas seulement le contenu d'un JSONL.

@@ -4,9 +4,9 @@
 
 | Échantillon | Fichier | Rôle |
 | --- | --- | --- |
-| 1 | `brain/sources/conversation-reference-1.txt` | Corpus conception initiale |
-| 2 | `brain/sources/conversation-reference-2.txt` | Corpus indépendant |
-| 3 | `brain/sources/conversation-reference-3.txt` | Smoke régression (≠ généralisation) |
+| 1 | `lab/sources/conversation-reference-1.txt` | Corpus conception initiale |
+| 2 | `lab/sources/conversation-reference-2.txt` | Corpus indépendant |
+| 3 | `lab/sources/conversation-reference-3.txt` | Smoke régression (≠ généralisation) |
 
 Ne pas comparer les CAP entre sources. `erreur-1.txt` n’est pas une source officielle.
 
@@ -15,7 +15,7 @@ Ne pas comparer les CAP entre sources. `erreur-1.txt` n’est pas une source off
 | Mode | Usage |
 | --- | --- |
 | `production` | Living `brain/registry/entries.jsonl` — mode du **test manuel séquentiel** |
-| `test-run` | Optionnel : `brain/registry/_test-runs/MMDD-HHMM/` (suffixe `-2`, `-3`… si collision ; jamais écraser) |
+| `test-run` | Optionnel : `lab/_test-runs/MMDD-HHMM/` (suffixe `-2`, `-3`… si collision ; jamais écraser) |
 
 **Pas** de forçage test-run sur `conversation-reference-*.txt`.
 
