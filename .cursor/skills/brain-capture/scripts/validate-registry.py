@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """Validateur déterministe du registre Brain (lecture seule, mécanique uniquement).
 
-Contrat schéma : 0.1.3
-- Hors --require-intention : rétrocompat 0.1.2 (intention/position/locators optionnels).
-- Avec --require-intention : générations neuves 0.1.3 (vide = ERROR ; champs 0.1.3 exigés ;
-  origin objet + source non vide + locators[] non vide / schema-valides).
+Contrat schéma : 0.1.4 (rétrocompat 0.1.x)
+- Hors --require-intention : rétrocompat (intention/position/locators/refs optionnels).
+- Avec --require-intention : générations neuves ≥0.1.3/0.1.4 (vide = ERROR ; champs exigés ;
+  origin+locators ; mapping intention→type ; refs structurels si présents).
 
 Couche 1 seulement (validation technique). Ne juge pas la fidélité sémantique.
 """
@@ -119,12 +119,41 @@ KNOWN_FIELDS = REQUIRED_FIELDS | {
     "clickup_ref",
     "feeds_doc",
     "tags",
+    "refs",
 }
 ID_RE = re.compile(r"^CAP-\d{3,}$")
 CAP_TARGET_RE = re.compile(r"^CAP-\d{3,}$")
+URL_IN_TEXT_RE = re.compile(r"https?://[^\s\]\)\"<>]+", re.I)
+LIEN_FOURNE_RE = re.compile(
+    r"lien\s+fourn|link\s+provid|url\s+clickup(?!\s*:?\s*https?://)", re.I
+)
 EXPRESS_NOT_APPROVE_TYPES = {"observation", "event", "idea"}
 META_NOISE_TAGS = {"test-noise", "meta-test", "simulation"}
 AMBIGUOUS_TAGS = {"ambiguous", "ambiguous_orientation", "ambiguous-approval"}
+ATELIER_DEFAULT_INTENTIONS = {
+    "idea",
+    "suggestion",
+    "orientation",
+    "question",
+    "preference",
+    "feedback",
+}
+# Mapping déterministe intention → type (taxonomy 0.1.4)
+INTENTION_TO_TYPE = {
+    "idea": "idea",
+    "suggestion": "proposition",
+    "preference": "observation",
+    "orientation": "proposition",
+    "question": "open_question",
+    "decision": "decision",
+    "requirement": "observation",
+    "convention": "convention",
+    "task": "task",
+    "milestone": "task",
+    "observation": "observation",
+    "risk": "observation",
+    "feedback": "observation",
+}
 
 
 def is_iso_datetime(value: str) -> bool:
@@ -164,7 +193,7 @@ class Report:
     def to_dict(self) -> dict[str, Any]:
         return {
             "ok": self.ok,
-            "schema_contract": "0.1.3",
+            "schema_contract": "0.1.4",
             "layer": "technical_validation",
             "errors": self.errors,
             "warnings": self.warnings,
@@ -415,6 +444,18 @@ def validate_entry(
     if "uid" in entry and entry["uid"] is not None and not isinstance(entry["uid"], str):
         report.error(f"{eid}: uid doit être string ou absent.")
 
+    # refs[] — littéraux URL/chemin/id (0.1.4)
+    if "refs" in entry and entry["refs"] is not None:
+        refs = entry["refs"]
+        if not isinstance(refs, list):
+            report.error(f"{eid}: refs doit être une liste ou absent.")
+        else:
+            for i, ref in enumerate(refs):
+                if not isinstance(ref, str) or not ref.strip():
+                    report.error(
+                        f"{eid}: refs[{i}] doit être une string non vide (littéral exact)."
+                    )
+
     for text_field in ("title", "content", "evidence", "project", "storage"):
         if text_field in entry and not isinstance(entry[text_field], str):
             report.error(f"{eid}: {text_field} doit être une string.")
@@ -509,6 +550,32 @@ def validate_entry(
 
     etype = entry.get("type")
     author = entry.get("author")
+
+    # Mapping intention → type (ERROR sous --require-intention pour générations neuves)
+    if (
+        require_intention
+        and isinstance(intention, str)
+        and intention in INTENTION_TO_TYPE
+        and isinstance(etype, str)
+    ):
+        expected_type = INTENTION_TO_TYPE[intention]
+        if etype != expected_type:
+            report.error(
+                f"{eid}: mapping intention→type : intention={intention!r} exige "
+                f"type={expected_type!r} (reçu {etype!r})."
+            )
+    elif (
+        isinstance(intention, str)
+        and intention in INTENTION_TO_TYPE
+        and isinstance(etype, str)
+        and etype != INTENTION_TO_TYPE[intention]
+    ):
+        report.warn(
+            f"{eid}: intention={intention!r} / type={etype!r} hors mapping 0.1.4 "
+            f"(attendu {INTENTION_TO_TYPE[intention]!r}) — historique toléré hors "
+            f"--require-intention."
+        )
+
     if (
         author == "user"
         and etype in EXPRESS_NOT_APPROVE_TYPES
@@ -518,6 +585,35 @@ def validate_entry(
             f"{eid}: type={etype} + author=user avec explicit_user_approval "
             f"(exprimer ≠ approuver — vérifier)."
         )
+
+    # Heuristique mécanique : périphrase de lien sans URL littérale
+    blob = " ".join(
+        x
+        for x in (
+            content if isinstance(content, str) else "",
+            entry.get("evidence") if isinstance(entry.get("evidence"), str) else "",
+            entry.get("title") if isinstance(entry.get("title"), str) else "",
+        )
+        if x
+    )
+    refs_list = entry.get("refs") if isinstance(entry.get("refs"), list) else []
+    refs_text = " ".join(r for r in refs_list if isinstance(r, str))
+    has_url = bool(URL_IN_TEXT_RE.search(blob) or URL_IN_TEXT_RE.search(refs_text))
+    if LIEN_FOURNE_RE.search(blob) and not has_url:
+        report.review(
+            f"{eid}: formulation de lien sans URL littérale dans content/evidence/refs "
+            f"— vérifier préservation URL (0.1.4)."
+        )
+    if has_url:
+        missing_refs = not isinstance(entry.get("refs"), list)
+        for m in URL_IN_TEXT_RE.findall(blob):
+            url = m.rstrip(".,);]")
+            if url and (missing_refs or url not in refs_text):
+                report.review(
+                    f"{eid}: URL présente dans le texte mais absente de refs[] — "
+                    f"ajouter le littéral exact dans refs."
+                )
+                break
 
     if etype == "decision" and isinstance(content, str):
         low = content.lower()
@@ -536,6 +632,15 @@ def validate_entry(
                 report.review(
                     f"{eid}: decision+explicit avec formulation préférentielle/ambiguë — vérifier."
                 )
+            if require_intention and intention in (
+                "orientation",
+                "suggestion",
+                "preference",
+            ):
+                report.error(
+                    f"{eid}: intention={intention} incompatible avec type=decision "
+                    f"(mapping 0.1.4)."
+                )
 
     if isinstance(tags, list):
         if "approval_global_partial" in tags:
@@ -548,9 +653,25 @@ def validate_entry(
 
     if etype == "task" and entry.get("space") not in ("pilotage", "atelier"):
         report.warn(f"{eid}: type=task habituellement dans pilotage ou atelier.")
+    if intention in ("task", "milestone") and entry.get("space") not in (
+        "pilotage",
+        "atelier",
+    ):
+        report.warn(
+            f"{eid}: intention={intention} habituellement dans pilotage ou atelier."
+        )
     if entry.get("space") == "referentiel" and validation != "explicit_user_approval":
         report.review(
             f"{eid}: space=referentiel sans explicit_user_approval — vérifier le placement."
+        )
+    if (
+        entry.get("space") == "referentiel"
+        and intention in ATELIER_DEFAULT_INTENTIONS
+        and validation == "none"
+    ):
+        report.review(
+            f"{eid}: intention={intention} en space=referentiel avec validation=none — "
+            f"préférer atelier (0.1.4)."
         )
 
     if "relations" in entry and entry["relations"] is not None and not isinstance(
@@ -705,7 +826,7 @@ def print_report(report: Report, as_json: bool) -> None:
         print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
         return
     print("=== Validateur registre Brain (lecture seule, mécanique) ===")
-    print(f"Contrat: 0.1.3 | Couche: validation technique uniquement")
+    print(f"Contrat: 0.1.4 | Couche: validation technique uniquement")
     print(f"OK bloquant: {'oui' if report.ok else 'non'}")
     print(f"\nErreurs bloquantes ({len(report.errors)}):")
     for m in report.errors:
@@ -747,8 +868,8 @@ def main(argv: list[str] | None = None) -> int:
         "--require-intention",
         action="store_true",
         help=(
-            "Exige champs 0.1.3 (intention, position, author_confidence, grounding, "
-            "run_id, capture_ref) ; origin objet + source non vide + locators non vide ; "
+            "Exige champs ≥0.1.3/0.1.4 (intention, position, author_confidence, grounding, "
+            "run_id, capture_ref) ; origin+locators ; mapping intention→type ; "
             "fichier vide = ERROR"
         ),
     )

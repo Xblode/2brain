@@ -1,48 +1,55 @@
-# Attribution des sources — `/brain-capture` 0.1.3
+# Attribution des sources — `/brain-capture` 0.1.4
 
-Règles pour identifier l'auteur principal et les contributions sans inventer de signatures plateforme.
+## Hiérarchie d’attribution
 
-## Hiérarchie d'attribution
+Du plus fiable au moins :
 
-Ordre de priorité (du plus fiable au moins) :
+1. **Métadonnées de rôle** explicites (labels `User` / `Assistant` / système).
+2. **Structure conversationnelle** (alternance claire des tours, en-têtes de message).
+3. **Indices rédactionnels** (style) — **appoint uniquement**, jamais seuls pour `author_confidence: high`.
+4. **Incertitude** — si non établissable → `uncertain` ou `low`.
 
-1. **Métadonnées de rôle** explicites dans la source (labels User / Assistant / système).
-2. **Structure conversationnelle** (alternance des tours, en-têtes de message).
-3. **Indices rédactionnels** (style, formules typiques) — uniquement en appoint, jamais seuls pour forcer `high`.
-4. **Incertitude explicite** — si le rôle n'est pas établissable → `author_confidence: uncertain` (ou `low`).
+Ne **pas** inventer de signatures ChatGPT / Claude / Cursor. Marqueur UI non vérifié en live → « à confirmer en live » dans `evidence` / `note`.
 
-Ne **pas** inventer de signatures ChatGPT / Claude / Cursor / autres plateformes. Si un marqueur semble spécifique à une UI mais n'est pas vérifié en live → noter « à confirmer en live » dans `evidence` / `note`, sans figer une signature inventée.
+## Niveaux `author_confidence`
+
+| Niveau | Quand |
+| --- | --- |
+| `high` | Structure source permet une attribution **fiable** (labels ou tours clairement séparés) |
+| `medium` | Attribution **probable** mais indirecte (export partiellement structuré, collage avec indices) |
+| `low` | Indices faibles ; doute sérieux |
+| `uncertain` | Auteur non établissable correctement |
+
+**Règle** : le style rédactionnel **seul** ne suffit jamais pour `high`.
+
+## Formats réellement rencontrés
+
+| Format source | Traitement typique |
+| --- | --- |
+| Export avec labels `User` / `Assistant` | `high` si cohérent |
+| Collage brut sans labels (`conversation-reference-*.txt`) | Déduire par alternance / structure → souvent `medium` ; passages ambigus → `low` / `uncertain` |
+| User colle un long bloc assistant puis commente | CAP commentaire = `author: user` ; CAP contenu cité si utile = `author: assistant` (ou uncertain) ; liées |
+| Citation inline | Auteur du propos cité ≠ auteur du message actuel |
 
 ## Auteur principal vs contributions
 
-| Concept | Champ / lieu | Règle |
+| Concept | Lieu | Règle |
 | --- | --- | --- |
-| Auteur principal | `author` | Qui **porte** l'idée / l'info capturée |
-| Confiance d'attribution | `author_confidence` | `high` \| `medium` \| `low` \| `uncertain` |
-| Contribution à un passage | `origin.locators[].role` + `note` | Rôle du passage cité, pas second auteur global |
-| Enrichissement / reformulation | `evidence` | Mentionner si l'assistant a reformulé ou complété |
-| Idées indépendantes | deux CAP | Lier via `related` / `clarifies` — **ne pas** fusionner |
+| Auteur principal | `author` | Qui **porte** l’idée capturée |
+| Confiance | `author_confidence` | Voir seuils ci-dessus |
+| Contribution | `origin.locators[].role` + `note` | Rôle du passage, pas second auteur global |
+| Enrichissement | `evidence` | Mentionner reformulation assistant |
+| Idées indépendantes | deux CAP | `related` / `clarifies` — ne pas fusionner |
 
-**Ne pas** ajouter de tableau `contributors` tant que evidence + locators + splits suffisent.
+Pas de tableau `contributors`.
 
-## Observé vs non vérifié
+## Citations ≠ approbations
 
-| Situation | Traitement |
-| --- | --- |
-| Rôle clairement labelé dans le fichier source | `author` + `author_confidence: high` (si cohérent) |
-| Structure claire sans label ambigu | `high` ou `medium` selon clarté |
-| Indices seuls / mélange citation | `medium` ou `low` ; evidence précise |
-| Impossible à trancher | `author_confidence: uncertain` ; ne pas inventer |
-| Marqueur plateforme non confirmé | Ne pas figer ; « à confirmer en live » |
-
-## Citations
-
-- Distinguer : auteur du propos cité ≠ auteur du message actuel.
-- Une citation collée n'est **pas** une approbation ni un transfert d'`author`.
-- Si le user colle un bloc assistant pour commenter → CAP sur le **commentaire** (author user) + éventuelle CAP séparée sur le contenu cité si utile, liées.
+- Coller / citer ≠ approuver.
+- Ne pas transférer `author` ni monter `validation` sur une citation.
 
 ## Lien avec grounding
 
-- Attribution claire + formulation présente → souvent `grounding: source_explicit`.
-- Attribution OK mais contenu reformulé par l'agent de capture → `source_interpreted` (indépendamment de `author_confidence`).
-- Passages multiples nécessaires pour comprendre → `source_contextual`.
+- Attribution claire + formulation présente → souvent `source_explicit`.
+- Contenu reformulé par l’agent de capture → `source_interpreted` (indépendant de `author_confidence`).
+- Multi-passages → `source_contextual`.

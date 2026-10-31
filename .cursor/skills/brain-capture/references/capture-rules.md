@@ -1,203 +1,136 @@
-# Règles de capture `/brain-capture` (0.1.3)
+# Règles de capture `/brain-capture` (0.1.4)
+
+Taxonomies canoniques : `brain-main/conventions/taxonomy.md`.
 
 ## Fidélité et couverture
 
 - Collecter large la matière **projet** utile ; ne pas sélectionner seulement les « meilleures » idées.
 - Exclure du métier : commentaires de test/génération, simulations méta, instructions temporaires de test.
-- Conserver les préférences durables sur Second Brain si clairement exprimées.
 - Ne pas transformer hypothèse → fait, recommandation assistant → choix user, citation → approbation.
-- Préserver conditions, exceptions, refus, alternatives, incertitudes.
-- Séparer les infos de natures / positions / certitudes différentes ; ne pas sur-segmenter non plus.
+- Préserver conditions, exceptions, refus, alternatives, incertitudes, **URLs et références exactes**.
 
 ## Atomicité
 
-Une capture = **un élément d'information identifiable**.
+Une capture = **une information identifiable**.
 
 | Règle | Détail |
 | --- | --- |
-| Un élément | Une idée, une contrainte, une décision, une tâche, une observation distincte → une CAP |
-| Lier plutôt que fusionner | Si deux infos sont liées mais distinctes → deux CAP + relation (`related`, `clarifies`, …) |
-| Idée + explications | Peuvent rester ensemble si c'est **la même** info enrichie (pas deux décisions) |
-| Anti-fusion | Ne pas fusionner convention + emplacement, multi-exigences, multi-validations, ou sujets de cadrage distincts |
-| Exemple anti-fusion | « clickup.md est la convention » **et** « emplacement proposé sous docs/ » → deux CAP (ou locators distincts + split si idées indépendantes), pas un seul CAP fourre-tout |
+| Un élément | Une idée, contrainte, décision, tâche, observation distincte → une CAP |
+| Lier plutôt que fusionner | Infos liées mais distinctes → deux CAP + relation |
+| Idée + explications | Ensemble OK si **même** info enrichie (autonomie) |
+| Anti-fusion | Ne pas fusionner : convention + emplacement ; multi-exigences ; décision + proposition + question ; idées user et assistant indépendantes |
+| Anti-sur-segmentation | Ne pas éclater chaque phrase d’explication d’**une** même info |
 
-### Richesse contrôlée
+### Exemples
 
-- Contenu **court OK** s'il est lié (`related` / `clarifies`) à une CAP plus riche, ou si l'info source est elle-même brève.
-- Sinon : **enrichir depuis la source** (passages, conditions, alternatives) — ne jamais inventer.
-- Si la source ne fournit pas assez → signaler l'incomplet (`grounding: uncertain`, evidence honnête).
+**Bonne** — deux CAP :
 
-## Auteur principal vs contributions
+1. Convention : « le fichier de convention ClickUp s’appelle `clickup.md` »
+2. Suggestion d’emplacement : « proposer sous `brain/docs/` ou `brain/conventions/` »  
+   Relation : `2 clarifies 1` ou `related`.
 
-- `author` = auteur **principal** de l'information (celui qui porte l'idée).
-- `author_confidence` = `high` \| `medium` \| `low` \| `uncertain` — confiance dans cette attribution.
-- Contributions (enrichissements assistant, précisions user) → `evidence` + `origin.locators[].role` / `note` ; **pas** de champ `contributors`.
-- Si user et assistant portent des **idées indépendantes** → **deux CAP** liées (`related` / `clarifies`), pas une fusion sous un seul `author`.
-- Hiérarchie d'attribution détaillée : [source-attribution.md](source-attribution.md).
+**Mauvaise** — une CAP fourre-tout : « clickup.md sous docs/ + validé + à sync ».
 
-Citation : distinguer auteur initial, contenu cité, commentaire actuel. Une citation n'est **pas** une nouvelle approbation.
+**Bonne** — idée + raisons dans la même CAP si une seule orientation : « Local = SoT parce que ClickUp est un visualiseur et que le gratuit est limité ».
 
-## Intention (obligatoire en génération 0.1.3)
+**Mauvaise** — fusion user « je veux des agents » + assistant « orchestrateur central recommandé » sous un seul `author`.
 
-Une intention principale par capture. Ne pas inventer de nouvelles valeurs.
+**Bonne** — décision user séparée de la question encore ouverte, même dans le même message.
 
-| Intention | Signification | Exemple |
+## Intention → type (déterministe)
+
+`intention` = référence sémantique. Appliquer le mapping de `taxonomy.md` **automatiquement** pour fixer `type`.
+
+Cas obligatoires :
+
+| intention | type | Interdit |
 | --- | --- | --- |
-| `idea` | Idée / possibilité explorée | « Et si on avait un journal d'activité… » |
-| `suggestion` | Proposition formulée | Assistant propose quatre espaces logiques |
-| `preference` | Préférence exprimée | « Je préfère ClickUp comme visualiseur » |
-| `orientation` | Direction provisoire | « On part sur un socle universel + modules » |
-| `question` | Question ouverte | « brain init une fois ou par session ? » |
-| `decision` | Choix explicitement effectué | « Pour 3 : oui socle universel + modules » |
-| `requirement` | Besoin / contrainte | « UX ultra importante, ~10–15 commandes max » |
-| `convention` | Règle de fonctionnement | Capture → registres ; Review → docs |
-| `task` | Action à réaliser (même potentielle) | « Standardiser le contenu des docs plus tard » |
-| `milestone` | Étape / jalon structurant | Une couche « Core minimal » de la roadmap |
-| `observation` | Constat factuel | « ClickUp a déjà deux espaces » |
-| `risk` | Risque identifié | « Un skill seul ne garantit pas l'écriture auto » |
-| `feedback` | Retour / critique / correction | « d'accord globalement… par contre les docs… » |
+| `orientation` | `proposition` | `decision` |
+| `suggestion` | `proposition` | `decision` |
+| `question` | `open_question` | `decision` |
+| `idea` | `idea` | `decision` |
 
-Conserver aussi `type` (schéma 0.1.1). Mapping indicatif : `proposition`↔`suggestion`, `open_question`↔`question`, `idea`↔`idea`, etc. Les deux champs restent distincts.
+Proposition assistant ≠ décision utilisateur.  
+`selected` / `confirmed` / `favorable` / `endorsed` ≠ `explicit_user_approval` automatique.
 
-## Position (nullable)
+Détail des valeurs : `taxonomy.md`.
 
-Posture de l'auteur. `null` si non identifiable. **Ne pas déduire abusivement.**
+## Position, validation, status
 
-| Position | Signification | Exemple |
-| --- | --- | --- |
-| `proposed` | Proposition formulée | Assistant pose une hypo |
-| `exploring` | Piste explorée | User explore sans choisir |
-| `favorable` | Avis favorable | « c'est pas mal ce que tu proposes » |
-| `endorsed` | Bonne base / à conserver comme matière | « ça fait une bonne base de travail » |
-| `opposed` | Opposition | « je ne veux pas ça » |
-| `selected` | Option explicitement choisie | « je dirais B ou C » |
-| `confirmed` | Règle / info confirmée | « vision.md validé à 100% » |
-| `uncertain` | Hésitation | « je sais pas si on a déjà fixé ça » |
-| `null` | Aucune position claire | Observation neutre |
+Trois dimensions **indépendantes** (+ `space` opérationnel de rangement).
 
-### Intention / position / validation = trois dimensions
+- Position = posture ; validation = preuve d’approbation formelle ; status Capture = toujours `extracted`.
+- Accords partiels → tag `approval_global_partial`, `validation: none`.
 
-- `selected` ou `confirmed` **ne déclenchent pas** automatiquement `validation: explicit_user_approval`.
-- `favorable` / `endorsed` = signal de pertinence, pas validation formelle.
-- Validation formelle uniquement avec preuve d'approbation + `approval_scope` ∈ {`item`,`set`}.
+## Space
 
-## Grounding (4 valeurs, obligatoire en 0.1.3)
-
-Confiance dans l'**ancrage source** du contenu (distinct de `confidence` et `author_confidence`).
-
-| Valeur | Sens |
+| space | Usage Capture |
 | --- | --- |
-| `source_explicit` | Formulation explicitement présente dans la source |
-| `source_contextual` | Compris grâce à **plusieurs** passages (sans reformuler abusivement le sens) |
-| `source_interpreted` | Reformulation / interprétation agent (raisonnable mais ≠ texte original) |
-| `uncertain` | Sens ou ancrage insuffisamment établi |
+| `atelier` | Défaut pour exploration, propositions, questions, orientations non validées |
+| `referentiel` | Uniquement connaissances / conventions / décisions **établies** (pas auto pour une suggestion) |
+| `journal` | Événements / historique |
+| `pilotage` | Tâches, jalons, suivi |
 
-Les reformulations sont autorisées ; les marquer `source_interpreted` quand ce n'est pas la formulation originale.
+Classer ≠ valider. Incertitude → `atelier`. Voir `taxonomy.md` §6.
 
-## Validation et `approval_scope`
+## Préservation absolue des URLs et références
 
-| validation | Sens |
-| --- | --- |
-| `none` | Pas d'approbation formelle établie |
-| `explicit_user_approval` | Accord explicite identifiable |
-| `implicit` | Historique ; ne plus attribuer |
+Exigence **critique**.
 
-| approval_scope | Sens |
-| --- | --- |
-| `item` | Approbation explicite de **cette** capture |
-| `set` | Approbation explicite d'un **ensemble identifiable** de captures |
-| `null` | Pas d'approbation formelle |
+1. Toute URL explicitement présente dans la source et pertinente pour la CAP doit être conservée **complète** (paramètres, ancres, IDs).
+2. Interdit : remplacer par « lien fourni », « URL ClickUp », troncature.
+3. Stocker dans **`refs[]`** (tableau de strings exactes) **et** reprendre dans `content` / `evidence`.
+4. Plusieurs URLs → toutes dans `refs[]`.
+5. Chemins, noms de fichiers, IDs concrets : même discipline dans `content` + `refs` si ancre de recherche.
+6. Ne jamais inventer / reconstruire une URL absente.
+7. `origin.url` = URL de la **source document** éventuelle — **pas** le seul stock des liens métier du contenu.
 
-### Distinguer
+### Exemple
 
-| Acte | Effet |
-| --- | --- |
-| Citation d'un bloc | Preuve / contexte — **pas** approbation |
-| Analyse / reformulation | Compréhension — **pas** approbation |
-| Correction | Relation de précision/évolution — **pas** approbation |
-| Approbation partielle (« d'accord globalement », « bonne base ») | Tag `approval_global_partial` ; `validation: none` ; confiance ↑ ; suggestions restent suggestions |
-| Approbation explicite d'un élément | `explicit` + `scope: item` |
-| Approbation explicite d'un ensemble nommé/délimité | `explicit` + `scope: set` (uniquement si l'ensemble de captures est identifiable) |
+Source : `https://app.clickup.com/90151633729/v/f/1201110000005979/90156746497`
 
-Ne pas étendre une approbation partielle hors du segment concerné. Pas de cherry-picking silencieux dans un `set`.
+```json
+"content": "… folder ClickUp : https://app.clickup.com/90151633729/v/f/1201110000005979/90156746497 …",
+"refs": ["https://app.clickup.com/90151633729/v/f/1201110000005979/90156746497"]
+```
 
-### Anti-faux `explicit`
+## Contenu autonome et retrouvabilité
 
-Ne **jamais** mettre `validation: explicit_user_approval` + `grounding: source_explicit` (ni explicit tout court) quand :
-
-| Cas | Règle |
-| --- | --- |
-| Orientation ambiguë / non tranchée | `validation: none` ; tag `ambiguous` si utile |
-| Multi-validations / accord partiel | tag `approval_global_partial` ; `validation: none` |
-| Formulation préférentielle (« B ou C », « pourrait ») | ne pas forcer `decision` + `explicit` |
-| Preuve partielle seulement | `validation: none` ; `grounding` honnête (`source_interpreted` / `uncertain`) |
-
-### Exprimer ≠ approuver
-
-| Cas | Règle |
-| --- | --- |
-| user + observation/event/idea | `validation: none` |
-| user + decision claire | peut être `explicit` + `item` |
-| user + convention énoncée comme règle | peut être `explicit` + `item` |
-| assistant | `explicit` seulement avec preuve item/set stricte ; reste `author: assistant` |
-
-## Contenu autonome
-
-Le `content` doit permettre de comprendre la capture sans la source : définir options (ex. modes A/B/C), raisons, conditions ; signaler l'inconnu ; ne pas inventer.
-
-## Provenance — `origin.locators[]`
-
-- `origin.source` (+ `url` optionnel) inchangé ; sous `--require-intention`, `origin` objet + `source` non vide.
-- `origin.locators` : **tableau** (1..N) obligatoire non vide en génération 0.1.3.
-- Conventions (identiques aux schémas) :
-  - `lines` : 1-based inclusif ; `start`/`end` entiers `>= 1` ; `end >= start`
-  - `offset` : caractères Unicode ; 0-based ; `start` inclusif, `end` exclusif ; `start >= 0` ; `end >= start`
-  - `window` : `window_id` string non vide (retrouver la fenêtre via artefacts/notes de run ou `origin.source`)
-- `role` optionnel (`user`\|`assistant`\|`unknown`) ; `note` optionnelle.
-- Une capture multi-passages → **plusieurs** locators, pas une seule plage approximative.
-- Locators portent la provenance ; `evidence` reste lisible humain.
-
-## Identité inter-runs
-
-| Champ | Rôle |
-| --- | --- |
-| `id` | Identifiant local (`CAP-NNN`) |
-| `run_id` | Identifiant du run / registre (ex. timestamp test-run ; `production` pour living) |
-| `capture_ref` | `"{run_id}:{id}"` — référence composite canonique |
-| `uid` | Optionnel (UUID) ; ne remplace pas `capture_ref` |
-
-Brain Review futur cite `capture_ref` (ou `run_id`+`id`). Pas de fusion de registres en 0.1.3. `capture_ref` **ne permet pas encore** les relations inter-runs.
+- Titre **spécifique** (noms concrets : CardCarousel, Minecraft, `vision.md`, …).
+- Contenu compréhensible hors source ; options A/B/C définies.
+- Tags utiles : `ambiguous`, `approval_global_partial`, `potential`, sujets courts (`clickup`, `inbox`, …) — sans taxonomie de tags figée.
+- Éviter titres génériques (« Point important », « Suite »).
 
 ## Relations
 
-Vocabulaire : `related`, `evolves_from`/`evolves_to`, `answers`/`answered_by`, `conflicts_with`, `resolves`, `supersedes_candidate`, `parent_of`/`child_of`, **`clarifies`/`clarified_by`**, **`contradicts`/`contradicted_by`**.
+Priorités : `answers`/`answered_by` ; `clarifies`/`clarified_by` ; `evolves_*` ; `contradicts` (≠ simple différence) ; proposition ↔ validation/rejet.
 
-| Relation | Usage |
-| --- | --- |
-| `clarifies` / `clarified_by` | Une CAP précise / enrichit une autre sans la remplacer |
-| `conflicts_with` | Tension **active** (désaccord non clos, concurrent) |
-| `contradicts` / `contradicted_by` | Incompatibilité **affirmée et étayée** (≠ « différent ») ; Capture **ne tranche pas** |
-| `resolves` | Tension close / résolution |
-
-- Deux approches différentes mais compatibles → `related`, **pas** `contradicts`.
-- Pas de relation pour simple proximité thématique.
+- Réciproques **recommandées** quand les deux CAP du run sont connues (`answers`↔`answered_by`, `clarifies`↔`clarified_by`, `contradicts`↔`contradicted_by`) — pas obligatoires pour `related`.
+- Pas de lien pour seule proximité thématique.
 - Pas de double `evolves_*` + `supersedes_candidate` sur la même paire.
-- Cibles = `CAP-NNN` **local au même run** uniquement ; docs → `feeds_doc` ; ClickUp → `clickup_ref`.
+- Cibles locales `CAP-NNN` uniquement (pas d’inter-runs en 0.1.4).
+
+## Provenance — `origin.locators[]`
+
+Inchangé vs 0.1.3 : `lines` / `offset` / `window` ; multi-passages → plusieurs locators.
+
+## Identité
+
+| Champ | Rôle |
+| --- | --- |
+| `id` | Local au fichier (`CAP-NNN`) — en production séquentielle : continuer la numérotation, ne jamais réutiliser ni réécrire |
+| `run_id` | `production` ou id du dossier test-run |
+| `capture_ref` | `"{run_id}:{id}"` |
+| `refs` | Références littérales (URLs, …) |
 
 ## Actionable
 
-Capturer tâches / jalons / cadrage / roadmap avec `intention: task|milestone` même sans validation définitive. Ne pas créer d'objets ClickUp. Détailler individuellement les sujets (ex. 7 sujets de cadrage = 7 captures ou contenus individuels retrouvables).
+`intention: task|milestone` même sans validation. Sujets de cadrage = CAP individuelles. Pas d’objets ClickUp créés par Capture.
 
-## Espaces et statut
+## Trois couches
 
-- Capture : toujours `status: extracted`.
-- Espaces : `atelier` | `referentiel` | `journal` | `pilotage`.
-- `type: decision` + `extracted` ≠ décision officielle.
+1. Validation technique (mécanique)  
+2. Audit de capture (`AUDIT.md`)  
+3. Évaluation humaine  
 
-## Trois couches de résultat
-
-1. **Validation technique** — validateur mécanique (schéma, enums, ids, relations, locators, cohérence structurelle).
-2. **Audit de capture** — couverture source↔registre, atomicité, richesse (`AUDIT.md`).
-3. **Évaluation humaine** — fidélité réelle aux intentions utilisateur (hors validateur).
-
-Le validateur ne fait que (1). « OK » technique ≠ qualité sémantique.
+Le validateur ne fait que (1).
