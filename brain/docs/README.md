@@ -5,12 +5,12 @@ description: Catalogue et règles du socle documentaire universel Brain (docs ob
 type: documentation-standard
 status: proposed
 version: 1.0.0
-created_at: 2026-10-30
-updated_at: 2026-10-30
+created_at: 2026-10-30T00:00:00.000Z
+updated_at: 2026-10-30T00:00:00.000Z
 update_sources: []
-# locked: false = modifiable | true = lecture seule (ne pas modifier ce fichier)
-locked: false
+locked: true
 ---
+
 # Standardisation documentaire Brain
 
 

@@ -1,4 +1,4 @@
-# Règles de capture `/brain-capture` (0.1.4)
+# Règles de capture `/brain-capture` (0.1.5)
 
 Taxonomies canoniques : `brain-main/conventions/taxonomy.md`.
 
@@ -37,6 +37,8 @@ Une capture = **une information identifiable**.
 
 **Bonne** — décision user séparée de la question encore ouverte, même dans le même message.
 
+Régression (ne pas réécrire l’historique) : CAP-333 (composite à scinder à l’avenir), CAP-329, CAP-332. **Mieux vaut plusieurs captures précises et reliées** qu’une fusion. Scinder si les éléments peuvent évoluer, se décider, s’exécuter ou se retrouver **indépendamment**. Une idée + ses explications nécessaires restent ensemble. Pas une phrase = une capture.
+
 ## Intention → type (déterministe)
 
 `intention` = référence sémantique. Appliquer le mapping de `taxonomy.md` **automatiquement** pour fixer `type`.
@@ -61,17 +63,23 @@ Trois dimensions **indépendantes** (+ `space` opérationnel de rangement).
 
 - Position = posture ; validation = preuve d’approbation formelle ; status Capture = toujours `extracted`.
 - Accords partiels → tag `approval_global_partial`, `validation: none`.
+- `selected` / `confirmed` / `favorable` / `endorsed` ≠ approbation automatique.
+- Citation, reformulation, répétition, analyse assistant ≠ approbation utilisateur.
+- Phrase assistant « je valide » ≠ `explicit_user_approval`.
+- Orientation générale + ajustements demandés → ne pas marquer tous les détails comme approuvés.
 
 ## Space
 
 | space | Usage Capture |
 | --- | --- |
-| `atelier` | Défaut pour exploration, propositions, questions, orientations non validées |
-| `referentiel` | Uniquement connaissances / conventions / décisions **établies** (pas auto pour une suggestion) |
+| `atelier` | Idées, propositions, explorations, orientations et questions **non établies** |
+| `referentiel` | Connaissances / conventions / décisions **suffisamment établies** — y compris un fait stable **sans** approbation formelle |
 | `journal` | Événements / historique |
 | `pilotage` | Tâches, jalons, suivi |
 
-Classer ≠ valider. Incertitude → `atelier`. Voir `taxonomy.md` §6.
+Classer ≠ valider. `space` n’est pas une validation. Incertitude → `atelier`.  
+Proposition / orientation assistant non établie → `atelier`. Ne pas exiger `explicit_user_approval` pour tout `referentiel`.  
+`position: proposed` ne force pas `referentiel`. Régression : CAP-003, CAP-005, CAP-006, CAP-173, CAP-211 (ne pas réécrire).
 
 ## Préservation absolue des URLs et références
 
@@ -105,10 +113,12 @@ Source : `https://app.clickup.com/90151633729/v/f/1201110000005979/90156746497`
 
 Priorités : `answers`/`answered_by` ; `clarifies`/`clarified_by` ; `evolves_*` ; `contradicts` (≠ simple différence) ; proposition ↔ validation/rejet.
 
+Une précision n’est pas une contradiction. Une évolution n’est pas forcément un remplacement. Une nouvelle idée **n’efface pas** une ancienne : relier (`clarifies` / `evolves_*` / `contradicts` / `answers`). Ne pas inventer de liens. Schéma de relations **local** au fichier.
+
 - Réciproques **recommandées** quand les deux CAP du run sont connues (`answers`↔`answered_by`, `clarifies`↔`clarified_by`, `contradicts`↔`contradicted_by`) — pas obligatoires pour `related`.
 - Pas de lien pour seule proximité thématique.
 - Pas de double `evolves_*` + `supersedes_candidate` sur la même paire.
-- Cibles locales `CAP-NNN` uniquement (pas d’inter-runs en 0.1.4).
+- Cibles locales `CAP-NNN` uniquement (pas d’inter-runs en 0.1.5).
 
 ## Provenance — `origin.locators[]`
 
@@ -125,7 +135,13 @@ Inchangé vs 0.1.3 : `lines` / `offset` / `window` ; multi-passages → plusieur
 
 ## Actionable
 
-`intention: task|milestone` même sans validation. Sujets de cadrage = CAP individuelles. Pas d’objets ClickUp créés par Capture.
+Identifier : tâches potentielles, objectifs, jalons, sujets de cadrage, exigences, contraintes, questions ouvertes, dépendances.
+
+`intention: task|milestone` même sans validation ni hiérarchie. Sujets de cadrage = CAP individuelles. Pas de `tasks.jsonl` ni d’objets ClickUp. L’organisation progressive relève de Brain Review.
+
+## Écriture registre (0.1.5)
+
+Staging séparé → `append-captures.py` seulement. Anciennes lignes **intouchables**. IDs réservés après rollback. Voir `rollback.md`.
 
 ## Trois couches
 

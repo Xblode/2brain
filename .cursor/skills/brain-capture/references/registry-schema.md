@@ -1,8 +1,10 @@
-# Schéma registre — vue Skill (0.1.4)
+# Schéma registre — vue Skill (0.1.5)
 
 Source de vérité : `brain/registry/SCHEMA.md` + `brain-main/conventions/taxonomy.md`.
 
-## Champs (delta 0.1.4)
+Compatibilité historique 0.1.x conservée. Pas de 0.1.4.1.
+
+## Champs (delta ≥ 0.1.4 ; 0.1.5 = contrat d’écriture)
 
 | Champ | Notes |
 | --- | --- |
@@ -21,8 +23,8 @@ Voir taxonomy / SCHEMA. Points non négociables :
 
 ## Space
 
-`atelier` (défaut exploration) \| `referentiel` (établi) \| `journal` \| `pilotage`  
-Classer ≠ valider.
+`atelier` (exploration / non établi) \| `referentiel` (connaissance **établie**, y compris sans `explicit`) \| `journal` \| `pilotage`  
+Classer ≠ valider. Proposition non établie → `atelier`.
 
 ## refs vs origin.url
 
@@ -33,10 +35,19 @@ Classer ≠ valider.
 
 Inchangé : cibles `CAP-NNN` locales au fichier ; pas d’inter-runs.
 
-## Validateur
+## Validateur (lecture seule)
 
 ```bash
-python .cursor/skills/brain-capture/scripts/validate-registry.py path/entries.jsonl --require-intention --json-out validate.json
+python .cursor/skills/brain-capture/scripts/validate-registry.py path/entries.jsonl --require-intention --json-out lab/validate-015.json
 ```
 
-Mécanique uniquement (mapping, enums, refs structure, locators). Pas de jugement sémantique de couverture.
+Fichier vide + `--require-intention` = ERROR. `--json-out` **hors** du registre. Mécanique uniquement.
+
+## Écriture / rollback
+
+```bash
+python .cursor/skills/brain-capture/scripts/append-captures.py --registry brain/registry/entries.jsonl --staging .../entries.jsonl --source ... --run-validator --validate-json-out lab/validate-015.json
+python .cursor/skills/brain-capture/scripts/rollback-captures.py --n 1
+```
+
+Voir [rollback.md](rollback.md). Relations `to` = `CAP-NNN` **local** (pas d’inter-runs).

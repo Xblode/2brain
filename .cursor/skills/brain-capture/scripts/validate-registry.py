@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Validateur déterministe du registre Brain (lecture seule, mécanique uniquement).
 
-Contrat schéma : 0.1.4 (rétrocompat 0.1.x)
+Contrat schéma : 0.1.5 (rétrocompat 0.1.x)
 - Hors --require-intention : rétrocompat (intention/position/locators/refs optionnels).
 - Avec --require-intention : générations neuves ≥0.1.3/0.1.4 (vide = ERROR ; champs exigés ;
   origin+locators ; mapping intention→type ; refs structurels si présents).

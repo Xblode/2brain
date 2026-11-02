@@ -1,4 +1,4 @@
-# Attribution des sources — `/brain-capture` 0.1.4
+# Attribution des sources — `/brain-capture` 0.1.5
 
 ## Hiérarchie d’attribution
 
@@ -6,8 +6,9 @@ Du plus fiable au moins :
 
 1. **Métadonnées de rôle** explicites (labels `User` / `Assistant` / système).
 2. **Structure conversationnelle** (alternance claire des tours, en-têtes de message).
-3. **Indices rédactionnels** (style) — **appoint uniquement**, jamais seuls pour `author_confidence: high`.
-4. **Incertitude** — si non établissable → `uncertain` ou `low`.
+3. **Signatures ou marqueurs réels** de plateforme **observés** (jamais inventés).
+4. **Indices rédactionnels** (style) — **appoint uniquement**, jamais seuls pour `author_confidence: high`.
+5. **Incertitude** — si non établissable → `uncertain` ou `low`.
 
 Ne **pas** inventer de signatures ChatGPT / Claude / Cursor. Marqueur UI non vérifié en live → « à confirmer en live » dans `evidence` / `note`.
 
@@ -46,7 +47,19 @@ Pas de tableau `contributors`.
 ## Citations ≠ approbations
 
 - Coller / citer ≠ approuver.
-- Ne pas transférer `author` ni monter `validation` sur une citation.
+- Une citation de l’assistant **ne devient pas** une idée utilisateur.
+- Une proposition assistant **approuvée** conserve `author: assistant` ; la validation est une dimension séparée.
+- « Je valide » **dit par l’assistant** n’est jamais une approbation utilisateur.
+- Vérifier la cohérence `author` ↔ `origin.locators[].role`. Multi-rôles + idées indépendantes → **deux CAP**.
+- Réduire `author_confidence` plutôt que deviner.
+
+### Régressions (ne pas réécrire)
+
+| Cas | Leçon |
+| --- | --- |
+| CAP-270 | « Je valide son orientation générale, mais je ferais 5 ajustements… » — auteur = **qui a dit** la phrase ; locators `assistant` ⇏ `author: user`. |
+| CAP-278 | « Feu vert après ajustements » — même discipline auteur / preuve d’approbation. |
+| CAP-219 | Localisateurs de **plusieurs rôles** → scinder si infos indépendantes. |
 
 ## Lien avec grounding
 

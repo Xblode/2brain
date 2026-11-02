@@ -1,12 +1,11 @@
 ---
 name: brain-capture
-version: 0.1.4
+version: 0.1.5
 description: >-
-  Capture fidèle et progressive d'une conversation dans le registre Brain
-  (entries.jsonl) : fenêtres d'échanges, multi-passes, intention→type, locators,
-  refs/URLs, grounding, audit final — sans valider de décisions ni modifier
-  les documents. Utiliser pour /brain-capture, capture de conversation,
-  ou extraction registre.
+  Capture fidèle d'une conversation dans le registre Brain (append sécurisé,
+  empreintes SHA-256, rollback /brain-capture 1). Fenêtres, multi-passes,
+  intention→type, locators, refs, audit final. Ne jamais réécrire les anciennes
+  CAP. Utiliser pour /brain-capture, rollback 1, ou extraction registre.
 disable-model-invocation: true
 ---
 
@@ -14,7 +13,9 @@ disable-model-invocation: true
 
 Capture conversationnelle → registre Brain (production ou test-run isolé).
 
-**Version** : 0.1.4
+**Version** : 0.1.5
+
+**Protection** : aucune exécution normale ne peut détruire, réécrire, renuméroter ou supprimer silencieusement des informations déjà présentes. Append contrôlé uniquement. Rollback explicite : `/brain-capture 1`.
 
 **Philosophie** : collecter la matière utile avant consolidation. Une information non validée reste utile. Une proposition assistant non approuvée se conserve. La capture n'est pas une sélection des « meilleures » idées.
 
@@ -25,8 +26,9 @@ Capture conversationnelle → registre Brain (production ou test-run isolé).
 3. [references/source-attribution.md](references/source-attribution.md)
 4. `brain-main/conventions/taxonomy.md` (taxonomies + mapping intention→type + spaces)
 5. `brain/registry/SCHEMA.md`
-6. Le registre **cible**
-7. Contexte léger : `brain/docs/vision.md`, `project.md`, `architecture.md`, `workflow.md`, `integrations.md`
+6. [references/rollback.md](references/rollback.md) si `/brain-capture 1`
+7. Le registre **cible**
+8. Contexte léger : `brain/docs/vision.md`, `project.md`, `architecture.md`, `workflow.md`, `integrations.md`
 
 ## Mode registre
 
@@ -48,9 +50,22 @@ Jamais de génération comparative artificielle en production. Skill-direct uniq
 
 ### Production séquentielle
 
-- **Append only** : ajouter les nouvelles lignes ; **ne jamais** modifier / renuméroter / supprimer d’anciennes CAP.
-- Prochain `id` = `CAP-` + (max N existant + 1), zero-pad ≥ 3.
+- **Append only technique** : uniquement via `scripts/append-captures.py` (verrou, SHA-256, staging, historique).
+- **Interdit** : `write_text` / Write / reconstruction du JSONL historique / tri / reformatage / suppression de lignes / remplacement du fichier.
+- Le validateur est **lecture seule** sur le registre ; `--json-out` vers un fichier **séparé**.
+- Prochain `id` = max(IDs présents, IDs **réservés** dans `_capture-history/` y compris `rolled_back`) + 1, zero-pad ≥ 3. Les trous sont acceptés.
 - `capture_ref` = `production:CAP-NNN`.
+- Test-run : **jamais** le registre de production ; cible `lab/_test-runs/<id>/entries.jsonl` uniquement.
+
+### `/brain-capture 1` (rollback)
+
+Si l’utilisateur demande `/brain-capture 1` (ou « annuler la dernière capture ») :
+
+1. **Ne pas** capturer.
+2. Exécuter `python .cursor/skills/brain-capture/scripts/rollback-captures.py --n 1`.
+3. Suivre [references/rollback.md](references/rollback.md). En cas de refus : ne rien supprimer.
+
+Seul `1` est supporté.
 
 ## Workflow
 
@@ -76,12 +91,13 @@ Ordre strict (ne pas inverser validation et corrections) :
    13. Contenu autonome + titre spécifique (retrouvabilité) ; ne pas inventer.
    14. Relations utiles (priorités capture-rules) ; cibles `CAP-NNN` locales au **fichier** (en production = tout le living).
 2. **Audit final source↔registre** — voir section Audit (inclure checklist **URLs**).
-3. **Appliquer TOUTES les corrections** avant validation.
-4. **Finaliser** `entries.jsonl` (append uniquement).
-5. **Valider** :
-   `python .cursor/skills/brain-capture/scripts/validate-registry.py <cible>/entries.jsonl --require-intention --json-out <cible-ou-run>/validate.json`
-6. Garantir que `validate.json` correspond au registre final validé.
-7. Produire `AUDIT.md` ; `COMPARISON.md` si test-run ; **bilan template**.
+3. **Appliquer TOUTES les corrections** sur le **brouillon / staging** (pas le registre actif).
+4. Écrire uniquement les **nouvelles** lignes dans `brain/registry/_capture-staging/<operation-id>/entries.jsonl`.
+5. **Empreinte initiale** puis append sécurisé (ne pas toucher le registre autrement) :
+   `python .cursor/skills/brain-capture/scripts/append-captures.py --registry <cible>/entries.jsonl --staging <staging>/entries.jsonl --source <source> --run-validator --validate-json-out <rapport-hors-registre>`
+6. Si l’append refuse ou restaure : **arrêt** ; ne pas « réparer » les anciennes CAP.
+7. Garantir que le rapport validateur correspond au registre **après** append.
+8. Produire `AUDIT.md` ; `COMPARISON.md` si test-run ; **bilan template**.
 
 **Règle** : aucun changement de registre **après** validation sans re-exécuter le validateur **et** régénérer `validate.json`.
 
@@ -160,13 +176,17 @@ Le validateur Python **ne fait que (1)**. « OK » ≠ qualité sémantique.
 ## Interdictions
 
 - Valider une décision ; écrire docs / ClickUp ; fusionner / renuméroter / réécrire contenu existant.
+- Écrire directement dans `entries.jsonl` (Write, `write_text`, reconstruction JSON, normalisation des anciennes lignes).
+- Corriger automatiquement une ancienne entrée invalide.
+- Réutiliser un ID déjà présent **ou réservé** (y compris après rollback).
 - Forcer test-run uniquement parce que la source s’appelle `conversation-reference-*.txt`.
 - Génération comparative artificielle / `_gen.py` pour fabriquer les CAP.
-- Transformer citation / analyse / correction en approbation.
+- Transformer citation / analyse / « je valide » **assistant** en approbation utilisateur.
 - Convertir `favorable` / `endorsed` / `selected` / `confirmed` en `explicit_user_approval` sans preuve.
 - Remplacer une URL par une périphrase.
 - Inventer des signatures plateforme.
 - Lancer Review / Sync / Search (hors scope).
+- `git reset` / `checkout` / `clean` pour « annuler » une capture.
 
 ## Bilan attendu (obligatoire)
 
@@ -219,6 +239,9 @@ En **production**, omettre la ligne `Test-run`.
 - [references/registry-schema.md](references/registry-schema.md)
 - [references/source-attribution.md](references/source-attribution.md)
 - [references/test-protocol.md](references/test-protocol.md)
+- [references/rollback.md](references/rollback.md)
 - [references/manual-production-sequence.md](references/manual-production-sequence.md)
 - [scripts/validate-registry.py](scripts/validate-registry.py)
+- [scripts/append-captures.py](scripts/append-captures.py)
+- [scripts/rollback-captures.py](scripts/rollback-captures.py)
 - `brain-main/conventions/taxonomy.md`
