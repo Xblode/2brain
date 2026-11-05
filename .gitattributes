@@ -1,0 +1,2 @@
+brain/registry/*.jsonl -text
+brain/registry/_capture-history/** -text

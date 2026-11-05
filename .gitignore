@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+_tmp_*.py
+brain/registry/_capture.lock
+brain/registry/_capture-staging/

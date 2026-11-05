@@ -4,7 +4,7 @@ Chaque ligne de `entries.jsonl` est un objet JSON unique. Contrat **0.1.4** (ext
 
 `entries.jsonl` reste le registre de **capture**. D’autres registres spécialisés sont une orientation future — non créés automatiquement ici.
 
-Taxonomies sémantiques : `brain-main/conventions/taxonomy.md`.
+Taxonomies sémantiques : `brain-main/conventions/TAXONOMY.md`.
 
 ## Champs
 

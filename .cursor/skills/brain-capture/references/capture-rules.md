@@ -1,6 +1,6 @@
 # Règles de capture `/brain-capture` (0.1.5)
 
-Taxonomies canoniques : `brain-main/conventions/taxonomy.md`.
+Taxonomies canoniques : `brain-main/conventions/TAXONOMY.md`.
 
 ## Fidélité et couverture
 
@@ -41,7 +41,7 @@ Régression (ne pas réécrire l’historique) : CAP-333 (composite à scinder �
 
 ## Intention → type (déterministe)
 
-`intention` = référence sémantique. Appliquer le mapping de `taxonomy.md` **automatiquement** pour fixer `type`.
+`intention` = référence sémantique. Appliquer le mapping de `TAXONOMY.md` **automatiquement** pour fixer `type`.
 
 Cas obligatoires :
 
@@ -55,7 +55,7 @@ Cas obligatoires :
 Proposition assistant ≠ décision utilisateur.  
 `selected` / `confirmed` / `favorable` / `endorsed` ≠ `explicit_user_approval` automatique.
 
-Détail des valeurs : `taxonomy.md`.
+Détail des valeurs : `TAXONOMY.md`.
 
 ## Position, validation, status
 

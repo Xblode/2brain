@@ -24,7 +24,7 @@ Capture conversationnelle → registre Brain (production ou test-run isolé).
 1. [references/capture-rules.md](references/capture-rules.md)
 2. [references/registry-schema.md](references/registry-schema.md)
 3. [references/source-attribution.md](references/source-attribution.md)
-4. `brain-main/conventions/taxonomy.md` (taxonomies + mapping intention→type + spaces)
+4. `brain-main/conventions/TAXONOMY.md` (taxonomies + mapping intention→type + spaces)
 5. `brain/registry/SCHEMA.md`
 6. [references/rollback.md](references/rollback.md) si `/brain-capture 1`
 7. Le registre **cible**
@@ -244,4 +244,4 @@ En **production**, omettre la ligne `Test-run`.
 - [scripts/validate-registry.py](scripts/validate-registry.py)
 - [scripts/append-captures.py](scripts/append-captures.py)
 - [scripts/rollback-captures.py](scripts/rollback-captures.py)
-- `brain-main/conventions/taxonomy.md`
+- `brain-main/conventions/TAXONOMY.md`
