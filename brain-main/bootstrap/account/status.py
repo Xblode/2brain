@@ -72,13 +72,28 @@ def brain_main_state(project):
     }
 
 
+TODO_MARK = "À compléter"
+
+
+def docs_to_complete(docs_dir):
+    """Documents de brain/docs/ contenant encore « À compléter » (noms triés)."""
+    out = []
+    if docs_dir.is_dir():
+        for p in sorted(docs_dir.glob("*.md")):
+            text = read_text(p)
+            if text and TODO_MARK in text:
+                out.append(p.name)
+    return out
+
+
 def brain_state(project):
     root = project / "brain"
     if not root.exists():
-        return {"etat": "absent", "entrees_registre": 0}
+        return {"etat": "absent", "entrees_registre": 0, "documents_a_completer": 0, "documents_a_completer_noms": []}
     docs_dir = root / "docs"
     present = {p.name.lower() for p in docs_dir.iterdir()} if docs_dir.is_dir() else set()
     missing = [d for d in DOCS if d not in present]
+    todo = docs_to_complete(docs_dir)
     registry = root / "registry" / "entries.jsonl"
     count = 0
     if registry.is_file():
@@ -93,6 +108,8 @@ def brain_state(project):
         "etat": "complet" if not missing else "partiel",
         "manquants": missing,
         "entrees_registre": count,
+        "documents_a_completer": len(todo),
+        "documents_a_completer_noms": todo,
     }
 
 
@@ -126,13 +143,22 @@ def build(project, home, offline):
             "sur le compte (install-account.py) : /brain -u ne met pas à jour le compte." % (remote, account)
         )
     if a and p and p > a:
-        notes.append("Le projet embarque un Bootstrap plus récent (%s) que celui du compte (%s)." % (in_project, account))
+        notes.append(
+            "Une version plus récente du Bootstrap existe : le projet embarque %s, le compte a %s. "
+            "Relance install-account.py (brain-main/bootstrap/scripts/) pour mettre à jour le compte." % (in_project, account)
+        )
+    brain = brain_state(project)
+    if brain["etat"] != "absent" and brain["documents_a_completer"] > 0:
+        notes.append(
+            "%d document(s) de brain/docs/ contiennent encore « %s » : /brain -o propose de les remplir (rien n'est écrit sans validation)."
+            % (brain["documents_a_completer"], TODO_MARK)
+        )
     return {
         "racine": str(project),
         "premier_niveau": entries,
         "dossier_vide": all(e == ".git" for e in entries),
         "brain_main": brain_main_state(project),
-        "brain": brain_state(project),
+        "brain": brain,
         "depot_source": is_source_repo(project),
         "technologies": [h for h in TECH_HINTS if (project / h).exists()],
         "bootstrap": {
@@ -152,6 +178,7 @@ def as_text(st):
         "Premier niveau : %s" % (", ".join(st["premier_niveau"]) or "(rien)"),
         "brain-main : %s%s" % (bm["etat"], " (version %s)" % bm["version_installee"] if bm.get("version_installee") else ""),
         "brain : %s (%d entrées au registre)" % (br["etat"], br["entrees_registre"]),
+        "Documents contenant encore « %s » : %d" % (TODO_MARK, br["documents_a_completer"]),
         "Dépôt source 2brain : %s" % ("oui" if st["depot_source"] else "non"),
         "Technologies (indices) : %s" % (", ".join(st["technologies"]) or "aucun"),
         "Bootstrap : compte %s, projet %s, distante %s" % (

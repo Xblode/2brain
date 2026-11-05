@@ -20,7 +20,7 @@ from datetime import date
 from pathlib import Path, PurePosixPath
 
 MANIFEST = "manifest.json"
-TEMPLATE_PREFIXES = ("bootstrap/templates/brain/", "bootstrap/templates/AGENTS.md")
+TEMPLATE_PREFIXES = ("bootstrap/templates/",)
 
 
 class Refused(Exception):

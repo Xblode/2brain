@@ -2,19 +2,29 @@
 metadata_version: 1
 title: "Instructions agents"
 type: index
-description: "Point d'entrée des agents IA : renvoie à brain-main/ (moteur) et à brain/ (contenu du projet)."
-version: "0.1.0"
+description: "Point d'entrée des agents IA : contexte 2brain chargé à chaque session et consignes de base."
+version: "0.2.0"
 status: draft
 created: "{{date}}"
 updated: "{{date}}"
 ---
 
-# AGENTS.md
+# Instructions agents
 
-Point d'entrée des agents IA sur ce projet. Orientation seulement : le détail est dans les documents cités.
+Ce projet utilise 2brain. Le moteur est dans `brain-main/` (conventions, outils, guide) ; le contenu du projet est dans `brain/` (documents, registre). Le contenu du projet va dans `brain/`, jamais dans `brain-main/`.
 
-- `brain-main/` : moteur 2brain (conventions, skills, bootstrap). Ne pas y mettre de contenu propre au projet.
-- `brain/` : contenu du projet (`docs/` pour les documents, `registry/` pour le registre de capture, `conventions/` pour les conventions d'instance).
-- Commande : `/brain` donne l'état et l'aide ; `/brain -u` met à jour `brain-main/` après validation.
+## Contexte chargé
 
-Ne rien modifier sans validation explicite de l'humain. Une proposition n'est pas une décision.
+Ces fichiers sont importés dans cet ordre :
+
+@brain-main/conventions/README.md
+@brain-main/conventions/TAXONOMY.md
+@brain-main/README.md
+
+Pour un outil qui n'applique pas les imports `@` : lire ces mêmes fichiers dans le même ordre (README des conventions, `brain-main/conventions/TAXONOMY.md`, puis le guide `brain-main/README.md`), puis `brain-main/conventions/NAMING.md` et `brain-main/conventions/METADATA.md` au moment voulu. Les instructions détaillées d'un outil se lisent quand l'outil sert, au chemin donné par le guide.
+
+## Consignes
+
+- **Obligatoire avant de créer ou modifier un document** : lire `brain-main/conventions/NAMING.md` pour un nom de fichier ou de dossier, et `brain-main/conventions/METADATA.md` pour un en-tête, une version ou une date (au moins les sections utiles).
+- Si `brain/docs/` contient encore « À compléter », proposer `/brain -o` une seule fois par session.
+- Ne rien modifier sans validation explicite de l'humain. Une proposition n'est pas une décision.

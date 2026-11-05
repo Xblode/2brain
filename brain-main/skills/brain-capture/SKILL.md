@@ -13,9 +13,11 @@ disable-model-invocation: true
 
 Capture conversationnelle → registre Brain (production ou test-run isolé).
 
-Ce skill est appelé par `/brain -c` (commande prévue, voir `brain-main/bootstrap/README.md`) ; en attendant, la capture se fait en lisant ce fichier.
+Ce skill est appelé par `/brain -c` (voir `brain-main/bootstrap/README.md`).
 
 **Version** : 0.1.5
+
+La source peut être un extrait de session produit par `scripts/read-session.py` (seuls les blocs `[USER]` sont des messages humains ; voir `brain-main/bootstrap/README.md` §8).
 
 **Protection** : aucune exécution normale ne peut détruire, réécrire, renuméroter ou supprimer silencieusement des informations déjà présentes. Append contrôlé uniquement. Rollback explicite : `/brain -c 1`.
 
@@ -27,10 +29,10 @@ Ce skill est appelé par `/brain -c` (commande prévue, voir `brain-main/bootstr
 2. [references/registry-schema.md](references/registry-schema.md)
 3. [references/source-attribution.md](references/source-attribution.md)
 4. `brain-main/conventions/TAXONOMY.md` (taxonomies + mapping intention→type + spaces)
-5. `brain/registry/SCHEMA.md`
+5. `brain-main/registry/SCHEMA.md`
 6. [references/rollback.md](references/rollback.md) si `/brain -c 1`
 7. Le registre **cible**
-8. Contexte léger : `brain/docs/VISION.md`, `PROJECT.md`, `ARCHITECTURE.md`, `WORKFLOW.md`, `INTEGRATIONS.md`
+8. Contexte léger, si présents : `brain/docs/VISION.md`, `PROJECT.md`, `ARCHITECTURE.md`, `WORKFLOW.md`, `INTEGRATIONS.md`
 
 ## Mode registre
 
@@ -39,7 +41,7 @@ Le mode est **choisi explicitement** selon la cible demandée (par l’utilisate
 | Mode | Cible | `run_id` |
 | --- | --- | --- |
 | `production` | `brain/registry/entries.jsonl` | `production` |
-| `test-run` | `lab/_test-runs/MMDD-HHMM/` (dossier **vide** + copie SCHEMA si besoin) | = nom du dossier (ex. `1031-1512`) |
+| `test-run` | `lab/_test-runs/MMDD-HHMM/` (dossier **vide** + copie du contrat `brain-main/registry/SCHEMA.md` si besoin) | = nom du dossier (ex. `1031-1512`) |
 
 ### Création d’un test-run
 

@@ -6,11 +6,11 @@ type: convention
 description: "Centralise les taxonomies partagées des champs de capture et de registre Brain."
 summary: "Définit les valeurs et la sémantique des champs de registre communs (intention, type, position, validation, status, space, relations, grounding, confidences, refs) et les règles de compatibilité historique. Le contrat JSON mécanique reste brain/registry/SCHEMA.md."
 
-version: "1.0.1"
+version: "1.0.2"
 status: review
 
 created: "2026-10-31"
-updated: "2026-11-05"
+updated: "2026-11-06"
 
 scope:
   level: universal
@@ -38,15 +38,11 @@ tags:
 | Compatible registre | 0.1.4 (rétrocompat 0.1.x) |
 | Évolution | Ajouter une valeur = versioning + note de compatibilité ; **ne jamais** retirer silencieusement une valeur encore présente dans des registres historiques |
 
-Ce document centralise les taxonomies partagées. Les Skills appliquent ces règles ; `brain/registry/SCHEMA.md` reste le contrat JSON mécanique.
-
-Les champs ci-dessous sont ceux des **entrées de registre**. Ils ne sont pas les propriétés de front matter de [METADATA.md](METADATA.md) (`type`, `status`, `tags` y ont un autre sens : voir [README.md](README.md)). La version de cette convention est celle de son front matter ; « Compatible registre » ci-dessous est la version du registre, pas du document. Les fichiers de registre suivent [NAMING.md](NAMING.md).
-
----
+Les Skills appliquent ces règles ; `brain/registry/SCHEMA.md` reste le contrat JSON mécanique. Les champs ci-dessous sont ceux des **entrées de registre**, pas les propriétés de front matter de [METADATA.md](METADATA.md) (voir [README.md](README.md)). « Compatible registre » est la version du registre, pas du document. Les fichiers de registre suivent [NAMING.md](NAMING.md).
 
 ## 1. `intention` (référence sémantique principale — générations ≥ 0.1.4)
 
-**Responsabilité** : dire *ce que l’information veut être* dans le discours (idée, décision, risque…). Une capture a **une** intention principale.
+Dit *ce que l’information veut être* dans le discours. Une capture a **une** intention principale.
 
 | Valeur | Signification | Usage |
 | --- | --- | --- |
@@ -70,19 +66,15 @@ Les champs ci-dessous sont ceux des **entrées de registre**. Ils ne sont pas le
 - `orientation` / `suggestion` / `question` **ne sont pas** des `decision`.
 - Une proposition assistant reste `suggestion` (ou `idea`) même si le user dit « bonne base » (`approval_global_partial`).
 
-**Incompatibilités**
+**Incompatibilités** (éviter)
 
-| Éviter | Pourquoi |
-| --- | --- |
-| `intention: decision` pour « B ou C » non tranché | Ambiguïté → `orientation` + tag `ambiguous` |
-| `intention: decision` pour une suggestion assistant | Pas de choix user |
-| Confondre `feedback` et `decision` | Un avis n’est pas un choix |
-
----
+- `intention: decision` pour « B ou C » non tranché → `orientation` + tag `ambiguous`.
+- `intention: decision` pour une suggestion assistant (pas de choix user).
+- Confondre `feedback` et `decision` (un avis n’est pas un choix).
 
 ## 2. `type` (compatibilité historique 0.1.1)
 
-**Responsabilité** : nature structurelle héritée. **Ne plus l’interpréter indépendamment** de `intention` pour les nouvelles captures. `intention` prime ; `type` est dérivé.
+Nature structurelle héritée. **Ne plus l’interpréter indépendamment** de `intention` pour les nouvelles captures : `intention` prime, `type` est dérivé.
 
 ### Mapping déterministe `intention` → `type` (obligatoire en génération ≥ 0.1.4)
 
@@ -108,11 +100,9 @@ Le Skill **applique ce mapping automatiquement** après choix de `intention`. Ne
 
 **Valeur `event`** : réservée aux constats d’événement calendaire / fait daté ; intention typique `observation`. Ne pas inventer d’intention `event`.
 
----
-
 ## 3. `position`
 
-**Responsabilité** : posture de l’auteur face à l’info. Indépendante de `validation`. Nullable.
+Posture de l’auteur face à l’info. Indépendante de `validation`. Nullable.
 
 | Valeur | Signification |
 | --- | --- |
@@ -131,11 +121,9 @@ Le Skill **applique ce mapping automatiquement** après choix de `intention`. Ne
 - `selected` / `confirmed` / `favorable` / `endorsed` **ne déclenchent pas** `validation: explicit_user_approval`.
 - Ne pas déduire abusivement une position.
 
----
-
 ## 4. `validation` / `approved_by` / `approval_scope`
 
-**Responsabilité** : preuve d’**approbation formelle**, distincte de la posture.
+Preuve d’**approbation formelle**, distincte de la posture.
 
 | validation | Sens |
 | --- | --- |
@@ -153,11 +141,9 @@ Cohérence mécanique : `explicit` ⇒ `approved_by: user` + scope `item|set` ; 
 
 Tag `approval_global_partial` : accord « en gros » → **toujours** `validation: none`.
 
----
-
 ## 5. `status` (opérationnel)
 
-**Responsabilité** : état de traitement dans le pipeline Capture. Indépendant de la vérité projet.
+État de traitement dans le pipeline Capture. Indépendant de la vérité projet.
 
 | Valeur | Sens |
 | --- | --- |
@@ -165,11 +151,9 @@ Tag `approval_global_partial` : accord « en gros » → **toujours** `validatio
 
 D’autres statuts pourront exister plus tard (Review) — **hors scope Capture**.
 
----
-
 ## 6. `space`
 
-**Responsabilité** : boîte logique de rangement. **Le classement n’est jamais une validation.**
+Boîte logique de rangement. **Le classement n’est jamais une validation.**
 
 | Valeur | Responsabilité | Exemples |
 | --- | --- | --- |
@@ -196,11 +180,9 @@ D’autres statuts pourront exister plus tard (Review) — **hors scope Capture*
 | Observation « ClickUp a deux espaces » | `journal` ou `atelier` selon contexte (fait vs exploration) |
 | Jalon roadmap proposé non verrouillé | `pilotage` + `validation: none` |
 
----
-
 ## 7. Relations (`relations[].rel`)
 
-**Responsabilité** : liens utiles à la navigation future — pas un score de densité.
+Liens utiles à la navigation future — pas un score de densité.
 
 | Rel | Sens | Réciproque recommandée |
 | --- | --- | --- |
@@ -218,11 +200,9 @@ D’autres statuts pourront exister plus tard (Review) — **hors scope Capture*
 
 Cibles = `CAP-NNN` **local au même fichier / run**. Pas de relations inter-runs en 0.1.4.
 
----
-
 ## 8. `grounding`
 
-**Responsabilité** : ancrage du **contenu** dans la source (≠ `confidence` extraction, ≠ `author_confidence`).
+Ancrage du **contenu** dans la source (≠ `confidence` extraction, ≠ `author_confidence`).
 
 | Valeur | Sens |
 | --- | --- |
@@ -231,8 +211,6 @@ Cibles = `CAP-NNN` **local au même fichier / run**. Pas de relations inter-runs
 | `source_interpreted` | Reformulation agent raisonnable |
 | `uncertain` | Ancrage insuffisant |
 
----
-
 ## 9. `confidence` et `author_confidence`
 
 | Champ | Responsabilité | Valeurs |
@@ -240,20 +218,16 @@ Cibles = `CAP-NNN` **local au même fichier / run**. Pas de relations inter-runs
 | `confidence` | Qualité de l’extraction du contenu | `high` \| `medium` \| `low` |
 | `author_confidence` | Fiabilité de l’attribution d’auteur | `high` \| `medium` \| `low` \| `uncertain` |
 
-Voir Skill `source-attribution.md` pour les seuils (`high` seulement si structure source fiable ; style seul ≠ `high`).
-
----
+Seuils : Skill `source-attribution.md` (`high` seulement si structure source fiable ; style seul ≠ `high`).
 
 ## 10. Références concrètes (`refs`)
 
-**Responsabilité** : conserver **littéralement** URLs, chemins, identifiants et ancres présents dans la source et liés à la capture.
+Conserver **littéralement** URLs, chemins, identifiants et ancres présents dans la source et liés à la capture.
 
 - Type : tableau de strings non vides (optionnel si aucune référence).
 - Chaque URL complète exacte (paramètres et `#ancres` inclus).
 - Ne pas utiliser `origin.url` comme seul emplacement multi-liens métier.
 - Le `content` doit aussi citer ces références (pas « lien fourni »).
-
----
 
 ## 11. Compatibilité historique
 

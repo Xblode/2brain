@@ -162,31 +162,40 @@ def main():
         for rel, path in list_files(templates / "brain").items():
             target = emplacement / "brain" / rel
             target.parent.mkdir(parents=True, exist_ok=True)
-            if rel.endswith(".md") and rel != "registry/SCHEMA.md":
+            if rel.endswith(".md"):
                 text = render(path.read_text(encoding="utf-8"), values)
                 target.write_text(text, encoding="utf-8", newline="\n")
             else:
                 shutil.copyfile(path, target)
 
-        # AGENTS.md : créé seulement s'il est absent.
+        # CLAUDE.md et AGENTS.md : créés seulement s'ils sont absents, jamais modifiés.
         adaptations = []
         conflicts = []
         agents_template = templates / "AGENTS.md"
-        if os.path.lexists(project / "AGENTS.md"):
-            adaptations.append(
-                "AGENTS.md existe : il n'est pas modifié. Proposition : y ajouter une référence à brain-main/ "
-                "(conventions et skills) et à brain/ (documents et registre du projet)."
-            )
-        elif agents_template.is_file():
-            text = render(agents_template.read_text(encoding="utf-8"), values)
-            (emplacement / "AGENTS.md").write_text(text, encoding="utf-8", newline="\n")
-            if not os.path.lexists(project / "CLAUDE.md"):
+        claude_template = templates / "CLAUDE.md"
+        agents_exists = os.path.lexists(project / "AGENTS.md")
+        claude_exists = os.path.lexists(project / "CLAUDE.md")
+        agents_text = render(agents_template.read_text(encoding="utf-8"), values) if agents_template.is_file() else ""
+        if not agents_exists and agents_text:
+            (emplacement / "AGENTS.md").write_text(agents_text, encoding="utf-8", newline="\n")
+        if not claude_exists and claude_template.is_file():
+            shutil.copyfile(claude_template, emplacement / "CLAUDE.md")
+        if agents_exists:
+            current = (project / "AGENTS.md").read_text(encoding="utf-8", errors="replace")
+            present = {line.strip() for line in current.splitlines()}
+            wanted = [l.rstrip() for l in agents_text.splitlines() if l.startswith("@brain-main/") or l.startswith("- Si `brain/docs/`")]
+            missing = [l for l in wanted if l not in present]
+            if missing:
                 adaptations.append(
-                    "CLAUDE.md est absent et n'est pas créé : Claude Code lit CLAUDE.md. "
-                    "Proposition : un CLAUDE.md contenant la ligne @AGENTS.md."
+                    "AGENTS.md existe : il n'est pas modifié. Pour charger 2brain à chaque session, ajouter exactement ces lignes "
+                    "(les imports dans cet ordre, hors de tout bloc de code) :\n" + "\n".join(missing)
                 )
-        if os.path.lexists(project / "CLAUDE.md") and os.path.lexists(project / "AGENTS.md"):
-            adaptations.append("CLAUDE.md existe : non modifié (vérifier qu'il importe AGENTS.md).")
+        if claude_exists:
+            current = (project / "CLAUDE.md").read_text(encoding="utf-8", errors="replace")
+            if "@AGENTS.md" not in {line.strip() for line in current.splitlines()}:
+                adaptations.append(
+                    "CLAUDE.md existe : il n'est pas modifié. Pour qu'il charge AGENTS.md, ajouter exactement la ligne :\n@AGENTS.md"
+                )
 
         files = {}
         for rel, path in list_files(emplacement).items():
@@ -222,7 +231,9 @@ def main():
             "arborescence": dirs,
             "fichiers_brain_main": sum(1 for r in files if r.startswith("brain-main/")),
             "fichiers_brain": sorted(r for r in files if r.startswith("brain/")),
+            "racine_creee": sorted(r for r in files if r in ("CLAUDE.md", "AGENTS.md")),
             "agents_md_cree": "AGENTS.md" in files,
+            "claude_md_cree": "CLAUDE.md" in files,
             "conflits": conflicts,
             "adaptations": adaptations,
         }

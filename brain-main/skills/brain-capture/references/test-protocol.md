@@ -33,6 +33,7 @@ Un test-run **ne touche pas** la production.
 
 ```bash
 python brain-main/skills/brain-capture/scripts/run_corrective_015_tests.py
+python brain-main/bootstrap/tests/run_commands_tests.py
 python brain-main/skills/brain-capture/scripts/validate-registry.py brain/registry/entries.jsonl
 ```
 

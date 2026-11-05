@@ -17,7 +17,7 @@ Identité, contexte, périmètre, utilisateurs et contraintes du projet.
 
 ## 2. État actuel
 
-Document créé à l'installation de 2brain. Il ne contient que ce qui a été déclaré lors de l'installation ; rien n'est inventé.
+Seules les informations confirmées figurent en section 3 ; rien n'est inventé.
 
 ## 3. Informations confirmées
 
@@ -29,7 +29,7 @@ Identité :
 
 {{identite}}
 
-Intention sur les modules de 2brain (notée seulement ; aucun module n'est activé, la décision se prend plus tard) :
+Modules envisagés (intention seulement ; rien n'est activé) :
 
 {{modules}}
 
@@ -43,4 +43,4 @@ Intention sur les modules de 2brain (notée seulement ; aucun module n'est activ
 
 ## 6. Références
 
-Standard documentaire : `brain/docs/README.md` du dépôt 2brain (non recopié ici).
+À compléter.

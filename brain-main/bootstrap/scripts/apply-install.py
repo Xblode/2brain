@@ -85,7 +85,7 @@ def safe_rel(rel):
     p = PurePosixPath(rel)
     if p.is_absolute() or ".." in p.parts or "\\" in rel or ":" in rel.split("/")[0]:
         raise Refused("chemin dangereux dans le plan : %r" % rel, 3)
-    if p.parts[0] not in ("brain-main", "brain", "AGENTS.md"):
+    if p.parts[0] not in ("brain-main", "brain", "AGENTS.md", "CLAUDE.md"):
         raise Refused("chemin inattendu dans le plan : %r" % rel, 3)
 
 
@@ -131,8 +131,9 @@ def main():
         for top in ("brain-main", "brain"):
             if os.path.lexists(project / top) and not any(r.startswith(top + "/") for r in conflicts):
                 conflicts.append(top)
-        if os.path.lexists(project / "AGENTS.md") and "AGENTS.md" in files and "AGENTS.md" not in conflicts:
-            conflicts.append("AGENTS.md")
+        for root_file in ("AGENTS.md", "CLAUDE.md"):
+            if os.path.lexists(project / root_file) and root_file in files and root_file not in conflicts:
+                conflicts.append(root_file)
         if conflicts:
             return out_json({
                 "ok": False,
@@ -198,6 +199,7 @@ def main():
                 "brain_main": sum(1 for r in posed if r.startswith("brain-main/")),
                 "brain": sorted(r for r in posed if r.startswith("brain/")),
                 "agents_md": "AGENTS.md" in posed,
+                "claude_md": "CLAUDE.md" in posed,
                 "manifeste": "brain-main/" + MANIFEST,
                 "validateur_registre": "ok",
                 "autres_fichiers_inchanges": len(before),

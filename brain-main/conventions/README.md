@@ -6,11 +6,11 @@ type: index
 description: "Catalogue des conventions communes à toute instance Brain et règles d'articulation entre elles."
 summary: "Liste les quatre documents du dossier, la responsabilité unique de chacun, les termes à ne pas confondre entre métadonnées de document et champs de registre, et la règle de lecture (relire les quatre pour modifier une convention, sinon seulement les pertinentes)."
 
-version: "1.0.0"
+version: "1.0.1"
 status: review
 
 created: "2026-10-31"
-updated: "2026-11-05"
+updated: "2026-11-06"
 
 scope:
   level: universal
@@ -29,19 +29,17 @@ tags:
 
 # Conventions brain-main
 
-Conventions **communes** à toute instance Brain. Elles définissent le langage partagé des registres, des documents et des Skills, pas le contenu d'un projet.
+Conventions **communes** à toute instance Brain : langage partagé des registres, documents et Skills, pas le contenu d'un projet.
 
 ## Catalogue
 
-Chaque règle a un seul document responsable. Les autres le référencent sans la recopier.
+Chaque règle a un seul document responsable. Les autres le référencent sans la recopier. Ce fichier est l'index : il ne définit aucune règle propre en dehors de celles ci-dessous.
 
 | Fichier | Responsabilité |
 | --- | --- |
 | [METADATA.md](METADATA.md) | Métadonnées des documents : front matter, propriétés, versions, dates, sources de mise à jour, héritage entre conventions |
 | [NAMING.md](NAMING.md) | Nommage des fichiers et dossiers, casse, vocabulaire normatif (DOIT / DEVRAIT / PEUT), règles pour les agents |
 | [TAXONOMY.md](TAXONOMY.md) | Taxonomies des champs de capture / registres (`intention`, `type`, `position`, `status`, `space`, relations, `grounding`, confidences, `refs`) |
-
-Ce fichier est l'index du dossier. Il ne définit aucune règle propre en dehors de celles ci-dessous.
 
 ## Termes à ne pas confondre
 
@@ -55,7 +53,7 @@ Ce fichier est l'index du dossier. Il ne définit aucune règle propre en dehors
 ## Lecture
 
 - Modifier une convention : relire intégralement les quatre fichiers du dossier (ce README et les trois conventions), puis mettre à jour le front matter de chacun des documents touchés ([METADATA.md](METADATA.md) §8).
-- Travailler sur une partie précise du projet : lire uniquement les conventions pertinentes (nommage des fichiers → NAMING ; front matter → METADATA ; champs de registre → TAXONOMY).
+- Travailler sur une partie précise : lire uniquement les conventions pertinentes (nommage → NAMING ; front matter → METADATA ; champs de registre → TAXONOMY).
 
 ## Règles
 

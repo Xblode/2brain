@@ -262,7 +262,7 @@ def main():
                 if name == "SKILL.md":
                     text = text.replace("__PYTHON__", Path(sys.executable).as_posix())
                 (skill_dir / name).write_text(text, encoding="utf-8", newline="\n")
-            (skill_dir / "VERSION").write_text(version + "\n", encoding="utf-8")
+            (skill_dir / "VERSION").write_text(version + "\n", encoding="utf-8", newline="\n")
             write_settings(settings, data, fmt)
         return report(True, args.dry_run, actions)
     except Refused as exc:

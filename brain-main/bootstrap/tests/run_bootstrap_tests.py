@@ -4,7 +4,7 @@
 Usage : python brain-main/bootstrap/tests/run_bootstrap_tests.py
 Tout se passe dans un dossier créé par tempfile.mkdtemp, hors du dépôt. La source
 utilisée est une copie temporaire de brain-main/ ; le brain/ réel n'est jamais
-écrit (SCHEMA.md n'est lu que pour comparaison). Rien n'est écrit dans ~/.claude :
+écrit (le SCHEMA.md du dépôt n'est lu que pour comparaison). Rien n'est écrit dans ~/.claude :
 les tests du compte utilisent --home avec un dossier temporaire.
 Sortie : une ligne PASS/FAIL par contrôle. Code de sortie 0 si tout passe, 1 sinon.
 """
@@ -13,6 +13,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -36,12 +37,13 @@ EXPECTED_MESSAGE = (
 ANSWERS_FULL = {
     "nature": "Site web vitrine",
     "objectif": "Présenter l'activité de l'atelier",
-    "modules": ["capture", "recherche"],
+    "modules": ["recherche", "revue"],
     "outils": "Next.js, Figma",
     "identite": "Atelier Test",
 }
 ANSWERS_NULL = {k: None for k in ANSWERS_FULL}
 
+NL = chr(10)
 RESULTS = []
 TMP = None
 
@@ -412,8 +414,7 @@ def test_install():
     check("installation validée: code 0, bilan", rc == 0 and data.get("ok") and data["bilan"]["validateur_registre"] == "ok", data)
     check("installation: brain-main/ et brain/ créés",
           (proj / "brain-main" / "ROUTER.md").is_file() and (proj / "brain" / "registry" / "entries.jsonl").is_file()
-          and all((proj / "brain" / "docs" / n).is_file() for n in ("VISION.md", "PROJECT.md", "REQUIREMENTS.md", "ARCHITECTURE.md", "WORKFLOW.md"))
-          and (proj / "brain" / "conventions" / "README.md").is_file())
+          and all((proj / "brain" / "docs" / n).is_file() for n in ("VISION.md", "PROJECT.md", "REQUIREMENTS.md", "ARCHITECTURE.md", "WORKFLOW.md")))
     check("installation: autres fichiers intacts",
           all(tree(proj).get(k) == v for k, v in others.items()))
     check("installation: EMPLACEMENT supprimé", not (proj / "EMPLACEMENT").exists())
@@ -426,9 +427,10 @@ def test_install():
     rc, out, _ = run(proj / "brain-main/skills/brain-capture/scripts/validate-registry.py", proj / "brain/registry/entries.jsonl")
     check("installation: validateur de registre OK sur le registre généré", rc == 0 and "OK bloquant: oui" in out, out)
     check("installation: registre vide", (proj / "brain/registry/entries.jsonl").read_bytes() == b"")
-    check("installation: SCHEMA.md du modèle identique à celui du dépôt",
-          sha(BOOT / "templates/brain/registry/SCHEMA.md") == sha(REPO / "brain/registry/SCHEMA.md"))
-    check("installation: SCHEMA.md installé identique à celui du dépôt", sha(proj / "brain/registry/SCHEMA.md") == sha(REPO / "brain/registry/SCHEMA.md"))
+    check("installation: SCHEMA.md de brain-main identique à celui du dépôt source (brain/registry/SCHEMA.md)",
+          sha(REPO / "brain-main/registry/SCHEMA.md") == sha(REPO / "brain/registry/SCHEMA.md"))
+    check("installation: SCHEMA.md installé dans brain-main/registry/, pas dans brain/",
+          sha(proj / "brain-main/registry/SCHEMA.md") == sha(REPO / "brain/registry/SCHEMA.md") and not (proj / "brain/registry/SCHEMA.md").exists())
     check("installation: aucun __pycache__", not list(proj.rglob("__pycache__")))
     vision, project_md = doc_text(proj, "VISION.md"), doc_text(proj, "PROJECT.md")
     check("installation: front matter conforme METADATA (6 champs obligatoires)",
@@ -439,8 +441,8 @@ def test_install():
           "Présenter l'activité" in vision and "Site web vitrine" in project_md and "Atelier Test" in project_md
           and "Next.js" in doc_text(proj, "ARCHITECTURE.md"))
     check("installation: modules notés comme intention, sans activation",
-          "- capture" in project_md and "aucun module n'est activé" in project_md)
-    check("installation: aucun placeholder restant", not any("{{" in p.read_text(encoding="utf-8") for p in (proj / "brain").rglob("*.md") if p.name != "SCHEMA.md"))
+          "- recherche" in project_md and "rien n'est activé" in project_md)
+    check("installation: aucun placeholder restant", not any("{{" in p.read_text(encoding="utf-8") for p in (proj / "brain").rglob("*.md")))
     rc, prep2 = prepare(proj)
     check("installation: projet désormais équipé -> nouvelle prévisualisation refusée", rc == 2, prep2)
 
@@ -493,6 +495,211 @@ def test_install():
               rc == 4 and tree(pc) == b and (pc / "EMPLACEMENT" / "plan.json").is_file() and what in " ".join(data.get("conflits", [])), data)
     rc, data = apply(project_with_files("inst-noprep"), "0" * 64)
     check("installation sans prévisualisation: refus", rc == 2, data)
+
+
+IMPORTS = ["brain-main/conventions/README.md", "brain-main/conventions/TAXONOMY.md", "brain-main/README.md"]
+DOCS5 = ("VISION.md", "PROJECT.md", "REQUIREMENTS.md", "ARCHITECTURE.md", "WORKFLOW.md")
+
+
+def import_lines(text):
+    """Lignes d'import @chemin hors blocs de code (une ligne qui commence par @)."""
+    out, fence = [], False
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            fence = not fence
+            continue
+        if not fence and line.strip().startswith("@"):
+            out.append(line.strip()[1:])
+    return out
+
+
+def stray_at(text):
+    """Arobases hors blocs et hors code en ligne, en dehors des lignes d'import (import involontaire possible)."""
+    cleaned, fence = [], False
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            fence = not fence
+            continue
+        if not fence and not line.strip().startswith("@"):
+            cleaned.append(re.sub(r"`[^`]*`", "", line))
+    return re.findall(r"(?:^|\s)@[\w./-]+", "\n".join(cleaned))
+
+
+def test_root_files():
+    # CLAUDE.md et AGENTS.md absents : créés, affichés dans le plan
+    pn = mk(new_dir("root-none"), {"README.md": "# P" + NL})
+    rc, prep = prepare(pn)
+    plan = json.loads((pn / "EMPLACEMENT" / "plan.json").read_text(encoding="utf-8"))
+    check("racine absente: CLAUDE.md et AGENTS.md dans le plan et dans le résumé",
+          rc == 0 and prep["racine_creee"] == ["AGENTS.md", "CLAUDE.md"] and "CLAUDE.md" in plan["fichiers"] and "AGENTS.md" in plan["fichiers"]
+          and prep["adaptations"] == [] and prep["conflits"] == [], prep)
+    rc, data = apply(pn, prep["plan_sha256"])
+    claude = (pn / "CLAUDE.md").read_text(encoding="utf-8") if (pn / "CLAUDE.md").is_file() else ""
+    agents = (pn / "AGENTS.md").read_text(encoding="utf-8") if (pn / "AGENTS.md").is_file() else ""
+    check("racine absente: CLAUDE.md = ligne @AGENTS.md, AGENTS.md créé, bilan", rc == 0 and claude == "@AGENTS.md" + NL
+          and agents.startswith("---" + NL) and data["bilan"]["claude_md"] and data["bilan"]["agents_md"], data)
+    check("AGENTS.md installé: dates rendues, aucun placeholder", "{{" not in agents and "created: " in agents, agents[:300])
+    check("AGENTS.md installé: les 3 imports, dans l'ordre, hors de tout bloc de code", import_lines(agents) == IMPORTS, import_lines(agents))
+    check("AGENTS.md installé: chaque fichier importé existe dans le projet installé",
+          all((pn / rel).is_file() for rel in import_lines(agents)), [r for r in import_lines(agents) if not (pn / r).is_file()])
+    check("AGENTS.md installé: ordre répété en clair (sans arobase), consigne -o, séparation brain/brain-main",
+          "dans le même ordre" in agents and "`/brain -o`" in agents and "une seule fois par session" in agents
+          and "jamais dans `brain-main/`" in agents and "À compléter" in agents, agents)
+    check("AGENTS.md installé: METADATA.md et NAMING.md non importés, consigne obligatoire présente (modèle et guide)",
+          not any("METADATA" in x or "NAMING" in x for x in import_lines(agents))
+          and all(w in agents for w in ("Obligatoire avant de créer ou modifier un document", "brain-main/conventions/NAMING.md", "brain-main/conventions/METADATA.md"))
+          and "Obligatoire avant de créer ou modifier un document" in (pn / "brain-main/README.md").read_text(encoding="utf-8"))
+    check("AGENTS.md installé: aucun arobase hors des imports", stray_at(agents) == [], stray_at(agents))
+    check("fichiers importés: aucun arobase involontaire (pas d'import en chaîne)",
+          all(stray_at((pn / rel).read_text(encoding="utf-8")) == [] for rel in IMPORTS + ["brain-main/conventions/METADATA.md", "brain-main/conventions/NAMING.md"]),
+          [(r, stray_at((pn / r).read_text(encoding="utf-8"))) for r in IMPORTS])
+    check("modèles: CLAUDE.md = @AGENTS.md ; AGENTS.md importe dans l'ordre",
+          (BOOT / "templates/CLAUDE.md").read_text(encoding="utf-8").strip() == "@AGENTS.md"
+          and import_lines((BOOT / "templates/AGENTS.md").read_text(encoding="utf-8")) == IMPORTS)
+
+    # les deux existent : jamais modifiés, adaptation exacte
+    pe = mk(new_dir("root-both"), {"CLAUDE.md": "perso claude" + NL, "AGENTS.md": "perso agents" + NL})
+    before = tree(pe)
+    rc, prep = prepare(pe)
+    ad = prep["adaptations"]
+    check("racine existante: rien créé à la racine, adaptations signalées avec les lignes exactes",
+          rc == 0 and prep["racine_creee"] == [] and len(ad) == 2
+          and all("@" + rel in ad[0] for rel in IMPORTS) and ad[0].index("@" + IMPORTS[0]) < ad[0].index("@" + IMPORTS[-1])
+          and "/brain -o" in ad[0] and ad[1].endswith("@AGENTS.md"), ad)
+    check("racine existante: la prévisualisation n'écrit que EMPLACEMENT", tree(pe, skip=("EMPLACEMENT",)) == before)
+    rc, data = apply(pe, prep["plan_sha256"])
+    check("racine existante: installation ok, CLAUDE.md et AGENTS.md jamais modifiés",
+          rc == 0 and tree(pe, skip=("brain-main", "brain")) == before and data["bilan"]["adaptations"] == ad, data)
+
+    # AGENTS.md existe seul : CLAUDE.md créé, AGENTS.md intact
+    pa = mk(new_dir("root-agents"), {"AGENTS.md": "perso agents" + NL})
+    before = tree(pa)
+    rc, prep = prepare(pa)
+    rc2, data = apply(pa, prep["plan_sha256"])
+    check("AGENTS.md seul: CLAUDE.md créé, AGENTS.md intact, adaptation = lignes à ajouter à AGENTS.md",
+          rc == 0 and rc2 == 0 and prep["racine_creee"] == ["CLAUDE.md"] and (pa / "CLAUDE.md").read_text(encoding="utf-8") == "@AGENTS.md" + NL
+          and sha(pa / "AGENTS.md") == before["AGENTS.md"] and len(prep["adaptations"]) == 1 and "@" + IMPORTS[0] in prep["adaptations"][0], prep)
+
+    # CLAUDE.md existe seul : AGENTS.md créé, CLAUDE.md intact, ligne @AGENTS.md à ajouter
+    pc = mk(new_dir("root-claude"), {"CLAUDE.md": "perso claude" + NL})
+    rc, prep = prepare(pc)
+    rc2, data = apply(pc, prep["plan_sha256"])
+    check("CLAUDE.md seul: AGENTS.md créé, CLAUDE.md intact, adaptation = ligne @AGENTS.md",
+          rc == 0 and rc2 == 0 and prep["racine_creee"] == ["AGENTS.md"] and (pc / "CLAUDE.md").read_text(encoding="utf-8") == "perso claude" + NL
+          and len(prep["adaptations"]) == 1 and prep["adaptations"][0].endswith("@AGENTS.md"), prep)
+
+    # déjà conforme : aucune adaptation
+    done = "".join("@" + r + NL for r in IMPORTS) + "- Si `brain/docs/` contient encore « À compléter », proposer `/brain -o` une seule fois par session." + NL
+    pd = mk(new_dir("root-done"), {"CLAUDE.md": "@AGENTS.md" + NL, "AGENTS.md": done})
+    rc, prep = prepare(pd)
+    check("racine déjà conforme: aucune adaptation, rien créé", rc == 0 and prep["adaptations"] == [] and prep["racine_creee"] == [], prep)
+
+    # conflit apparu après validation sur CLAUDE.md
+    pk = mk(new_dir("root-conflict"), {"README.md": "x"})
+    rc, prep = prepare(pk)
+    (pk / "CLAUDE.md").write_text("apparu" + NL, encoding="utf-8")
+    b = tree(pk)
+    rc, data = apply(pk, prep["plan_sha256"])
+    check("conflit apparu sur CLAUDE.md: code 4, rien écrit", rc == 4 and tree(pk) == b and "CLAUDE.md" in data.get("conflits", []), data)
+
+
+def installed_project(name, answers):
+    proj = mk(new_dir(name), {"README.md": "# P" + NL})
+    rc, prep = prepare(proj, answers)
+    rc, data = apply(proj, prep["plan_sha256"])
+    assert rc == 0, data
+    return proj
+
+
+def test_generated_brain():
+    forbidden = re.compile(r"2brain|brain-main|bootstrap|capture|cap-", re.I)
+    for label, answers in (("réponses complètes", ANSWERS_FULL), ("réponses nulles", ANSWERS_NULL)):
+        proj = installed_project("gen-" + label.split()[1], answers)
+        files = sorted(p.relative_to(proj / "brain").as_posix() for p in (proj / "brain").rglob("*") if p.is_file())
+        check("brain/ généré (%s): seulement les 5 documents et registry/entries.jsonl" % label,
+              files == sorted(["docs/" + n for n in DOCS5] + ["registry/entries.jsonl"]), files)
+        dirs = sorted(p.relative_to(proj / "brain").as_posix() for p in (proj / "brain").rglob("*") if p.is_dir())
+        check("brain/ généré (%s): seulement docs/ et registry/" % label, dirs == ["docs", "registry"], dirs)
+        hits = []
+        for p in (proj / "brain").rglob("*"):
+            rel = p.relative_to(proj / "brain").as_posix()
+            if forbidden.search(rel):
+                hits.append((rel, "chemin"))
+            if p.is_file():
+                for m in forbidden.finditer(p.read_text(encoding="utf-8")):
+                    hits.append((rel, m.group(0)))
+        check("brain/ généré (%s): aucune occurrence (insensible à la casse) de 2brain, brain-main, bootstrap, capture, CAP-" % label, not hits, hits[:5])
+        texts = [p.read_text(encoding="utf-8") for p in (proj / "brain").rglob("*.md")]
+        check("brain/ généré (%s): ni « créé à l'installation » ni renvoi au standard du dépôt" % label,
+              not any("installation" in t.lower() or "dépôt" in t for t in texts))
+    projn = installed_project("gen-fm", ANSWERS_NULL)
+    check("brain/ généré: front matter METADATA, plan en 6 sections, réponses vides en « À compléter. »",
+          all(doc_text(projn, n).startswith("---" + NL + "metadata_version: 1" + NL) and doc_text(projn, n).count(NL + "## ") == 6 for n in DOCS5)
+          and doc_text(projn, "VISION.md").count("À compléter.") >= 4)
+    check("brain/ généré: PROJECT.md note les modules comme intention seulement",
+          "Modules envisagés (intention seulement ; rien n'est activé)" in doc_text(installed_project("gen-mod", ANSWERS_FULL), "PROJECT.md"))
+
+
+def test_status_todo():
+    home = new_dir("home-todo")
+    proj = installed_project("todo-proj", ANSWERS_NULL)
+    rc, st = status(proj, home)
+    check("status: installation neuve -> 5 documents « À compléter », -o suggéré",
+          st["brain"]["etat"] == "complet" and st["brain"]["documents_a_completer"] == 5
+          and any("/brain -o" in n for n in st["notes"]), st)
+    rc, out, _ = run(ACCOUNT / "status.py", "--project", proj, "--home", home, "--offline")
+    check("status: sortie texte avec le nombre et la suggestion de -o", "encore « À compléter » : 5" in out and "/brain -o" in out, out)
+    for n in ("VISION.md", "PROJECT.md"):
+        path = proj / "brain" / "docs" / n
+        path.write_text(path.read_text(encoding="utf-8").replace("À compléter", "Renseigné"), encoding="utf-8")
+    rc, st = status(proj, home)
+    check("status: 2 documents remplis -> 3 restants, noms listés",
+          st["brain"]["documents_a_completer"] == 3
+          and st["brain"]["documents_a_completer_noms"] == ["ARCHITECTURE.md", "REQUIREMENTS.md", "WORKFLOW.md"], st["brain"])
+    for n in ("REQUIREMENTS.md", "ARCHITECTURE.md", "WORKFLOW.md"):
+        path = proj / "brain" / "docs" / n
+        path.write_text(path.read_text(encoding="utf-8").replace("À compléter", "Renseigné"), encoding="utf-8")
+    before = tree(proj)
+    rc, st = status(proj, home)
+    check("status: 0 document « À compléter » -> aucune suggestion de -o, brain complet",
+          st["brain"]["documents_a_completer"] == 0 and st["brain"]["etat"] == "complet" and not any("/brain -o" in n for n in st["notes"]), st)
+    check("status: lecture seule", tree(proj) == before)
+    rc, st = status(mk(new_dir("todo-abs"), {"a.txt": "x"}), home)
+    check("status: brain absent -> 0 et pas de suggestion",
+          st["brain"]["documents_a_completer"] == 0 and not any("/brain -o" in n for n in st["notes"]), st)
+
+
+def test_onboarding_files():
+    skill = REPO / "brain-main/skills/brain-onboarding/SKILL.md"
+    text = skill.read_text(encoding="utf-8")
+    head = text.split("---")[1]
+    check("onboarding: SKILL.md existe, front matter sur le modèle de brain-capture", skill.is_file()
+          and "name: brain-onboarding" in head and "disable-model-invocation: true" in head and "description:" in head
+          and "version:" in head, head)
+    check("onboarding: au plus 80 lignes", len(text.splitlines()) <= 80, len(text.splitlines()))
+    forbidden = ("UPPER_SNAKE_CASE", "kebab-case", "metadata_version", "SemVer", "snake_case", "camelCase", "TAXONOMY.md")
+    check("onboarding: aucune convention reprise", not any(w in text for w in forbidden))
+    check("onboarding: marqueurs confirmé/hypothèse/à compléter, validation explicite, état par status.py, renvoi à /brain -i",
+          all(w in text for w in ("`confirmé`", "`hypothèse`", "`à compléter`", "validation explicite", "status.py", "/brain -i")), text[:200])
+    check("onboarding: ne modifie ni le registre ni brain-main/, ne décide rien, ne code rien",
+          "ni le registre, ni `brain-main/`" in text and "Ne rien décider, ne rien coder" in text)
+    check("onboarding: /compact absent", "/compact" not in text)
+    proj = installed_project("onb-proj", ANSWERS_FULL)
+    check("onboarding: présent dans le projet installé", sha(proj / "brain-main/skills/brain-onboarding/SKILL.md") == sha(skill))
+    guide = (REPO / "brain-main/README.md").read_text(encoding="utf-8")
+    check("guide: au plus 80 lignes", len(guide.splitlines()) <= 80, len(guide.splitlines()))
+    check("guide: chaque commande présente", all(("`%s`" % c) in guide for c in
+          ("/brain", "/brain -i", "/brain -u", "/brain -o", "/brain -c", "/brain -c <fichier>", "/brain -c 1", "/brain -s <sujet>", "/brain -r")))
+    paths = re.findall(r"`(brain-main/[\w./-]+\.md)`", guide)
+    check("guide: chemins de fichiers cités existent dans le projet installé (et skill d'onboarding et de capture cités)",
+          bool(paths) and all((proj / p).is_file() for p in paths)
+          and "brain-main/skills/brain-onboarding/SKILL.md" in paths and "brain-main/skills/brain-capture/SKILL.md" in paths,
+          [p for p in paths if not (proj / p).is_file()])
+    check("guide: règles (append only, proposition, locked, commit, convention avant création) et /compact absent",
+          all(w in guide for w in ("append only", "Une proposition n'est pas une décision", "locked: true", "commit", "lire la convention concernée"))
+          and "/compact" not in guide)
+    check("guide: aucune copie de convention", not any(w in guide for w in ("UPPER_SNAKE_CASE", "kebab-case", "SemVer")))
+    check("guide: aucune mention de documents inexistants", "COMMANDS.md" not in guide and "BOOTSTRAP.md" not in guide)
 
 
 def pick(manifest_files, prefix_list):
@@ -796,16 +1003,19 @@ def test_skill():
     text = (ACCOUNT / "SKILL.md").read_text(encoding="utf-8")
     head = text.split("---")[1]
     check("SKILL.md: front matter (name, argument-hint, disable-model-invocation: true)",
-          "name: brain" in head and "argument-hint: [-i | -u | -c | -s | -r]" in head and "disable-model-invocation: true" in head, head)
+          "name: brain" in head and "argument-hint: [-i | -u | -o | -c | -c fichier | -c 1 | -s sujet | -r]" in head and "disable-model-invocation: true" in head, head)
     check("SKILL.md: pas de syntaxe !", "!`" not in text and "```!" not in text)
-    check("SKILL.md: aiguille -c -s -r vers le lot 3 et vers brain-capture", "lot 3" in text and "brain-main/skills/brain-capture/SKILL.md" in text)
+    check("SKILL.md: aiguille -c -s -r vers les scripts et vers brain-capture (plus de renvoi au lot 3)", "lot 3" not in text and "read-session.py" in text and "brain-main/skills/brain-capture/SKILL.md" in text)
     check("SKILL.md: règles de validation, délégation worker-sonnet, jamais de simulation",
           "worker-sonnet" in text and "Jamais de simulation" in text and "validation" in text)
     forbidden = ("UPPER_SNAKE_CASE", "kebab-case", "metadata_version", "SemVer", "snake_case", "TAXONOMY")
     check("SKILL.md: aucune copie de convention", not any(w in text for w in forbidden))
-    check("SKILL.md: léger (moins de 100 lignes)", len(text.splitlines()) < 100, len(text.splitlines()))
+    check("SKILL.md: léger (au plus 70 lignes)", len(text.splitlines()) <= 70, len(text.splitlines()))
+    check("SKILL.md: -o aiguille vers le skill d'onboarding, fin de -i propose -o et une nouvelle conversation",
+          "brain-main/skills/brain-onboarding/SKILL.md" in text and "/brain -o" in text and "nouvelle conversation" in text)
+    check("SKILL.md: /compact seulement pour l'interdire", all(re.search(r"jamais|Jamais|interdit", ln) for ln in text.splitlines() if "/compact" in ln))
     check("SKILL.md: __PYTHON__ présent avant installation", "__PYTHON__" in text)
-    check("VERSION: 0.1.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.1.0")
+    check("VERSION: 0.3.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.3.0")
     # chaque script est autonome : aucun import local
     local_names = {p.stem.replace("-", "_") for p in list(SCRIPTS.glob("*.py")) + list(ACCOUNT.glob("*.py"))}
     bad = []
@@ -833,6 +1043,8 @@ def main():
         except Exception:
             check("exception dans la préparation de la source", False, traceback.format_exc()[-600:])
         for name, fn in (("prepare/cancel", test_prepare_cancel), ("installation", test_install),
+                         ("racine", test_root_files), ("brain généré", test_generated_brain),
+                         ("status -o", test_status_todo), ("onboarding", test_onboarding_files),
                          ("mise à jour", test_update), ("compte", test_account), ("skill", test_skill)):
             try:
                 fn()
