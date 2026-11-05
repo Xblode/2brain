@@ -1,4 +1,4 @@
-# AGENT.md
+# AGENTS.md
 
 Point d’entrée opérationnel pour les agents IA travaillant sur **2brain** (Second Brain).
 
