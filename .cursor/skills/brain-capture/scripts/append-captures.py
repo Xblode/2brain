@@ -46,7 +46,9 @@ def run_validator(registry: Path, json_out: Path | None) -> tuple[int, str]:
     cmd = [sys.executable, str(script), str(registry), "--require-intention"]
     if json_out is not None:
         cmd.extend(["--json-out", str(json_out)])
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(
+        cmd, capture_output=True, text=True, encoding="utf-8", errors="replace"
+    )
     out = (proc.stdout or "") + (proc.stderr or "")
     return proc.returncode, out
 
@@ -260,4 +262,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="backslashreplace")
     sys.exit(main())

@@ -30,7 +30,7 @@ from registry_io import (  # noqa: E402
 
 
 def run(cmd: list[str], cwd: Path) -> tuple[int, str]:
-    proc = subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True)
+    proc = subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True, encoding="utf-8", errors="replace")
     return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
 
 

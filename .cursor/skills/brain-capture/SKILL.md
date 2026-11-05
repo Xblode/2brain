@@ -28,7 +28,7 @@ Capture conversationnelle → registre Brain (production ou test-run isolé).
 5. `brain/registry/SCHEMA.md`
 6. [references/rollback.md](references/rollback.md) si `/brain-capture 1`
 7. Le registre **cible**
-8. Contexte léger : `brain/docs/vision.md`, `project.md`, `architecture.md`, `workflow.md`, `integrations.md`
+8. Contexte léger : `brain/docs/VISION.md`, `PROJECT.md`, `ARCHITECTURE.md`, `WORKFLOW.md`, `INTEGRATIONS.md`
 
 ## Mode registre
 

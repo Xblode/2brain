@@ -419,11 +419,12 @@ def copy_byte_for_byte(src: Path, dst: Path) -> Fingerprint:
 
 
 def new_operation_id() -> str:
-    # UTC compact + pid for uniqueness
+    # UTC compact with microseconds, then zero-padded pid: lexicographic order
+    # follows chronological order (pid only breaks same-microsecond ties).
     from datetime import datetime, timezone
 
-    ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    return f"{ts}-{os.getpid()}"
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
+    return f"{ts}-{os.getpid():08d}"
 
 
 def eprint(*args: object) -> None:

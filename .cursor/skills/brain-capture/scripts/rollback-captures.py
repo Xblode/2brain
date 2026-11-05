@@ -37,7 +37,8 @@ def list_operations(history_root: Path) -> list[Path]:
     if not history_root.exists():
         return []
     ops = [p for p in history_root.iterdir() if p.is_dir() and (p / "manifest.json").exists()]
-    # Sort by directory name (timestamp-pid) then mtime
+    # Sort by directory name (UTC timestamp with microseconds, then pid):
+    # alphabetical order follows chronological order for generated ids.
     return sorted(ops, key=lambda p: p.name)
 
 
