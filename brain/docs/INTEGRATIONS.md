@@ -2,6 +2,7 @@
 
 > **Provisoire** — synthèse légère `/brain-capture`. Détail : `brain/registry/entries.jsonl`.
 > Sources : CAP-003, CAP-005, CAP-008, CAP-035–CAP-036, CAP-038, CAP-040, CAP-053–CAP-055.
+> **Attention : références obsolètes.** Les `CAP-xxx` de ce document viennent de l'ancien registre de 69 captures (commit `45ba05d`). Le registre actuel réutilise ces numéros pour d'autres contenus : ne pas les y chercher. Pour les lire : `git show 45ba05d:brain/registry/entries.jsonl`.
 
 ## Local vs ClickUp (provisoire)
 

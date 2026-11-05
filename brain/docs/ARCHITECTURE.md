@@ -2,6 +2,7 @@
 
 > **Provisoire** — synthèse légère `/brain-capture`. Détail : `brain/registry/entries.jsonl`.
 > Sources : CAP-002, CAP-009, CAP-010, CAP-016, CAP-019, CAP-022–CAP-026, CAP-043–CAP-044, CAP-058.
+> **Attention : références obsolètes.** Les `CAP-xxx` de ce document viennent de l'ancien registre de 69 captures (commit `45ba05d`). Le registre actuel réutilise ces numéros pour d'autres contenus : ne pas les y chercher. Pour les lire : `git show 45ba05d:brain/registry/entries.jsonl`.
 
 ## Brain / Brain-main (provisoire)
 
