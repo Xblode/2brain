@@ -2,7 +2,7 @@
 metadata_version: 1
 title: Adaptateur Claude Code de l'Agent Router
 description: Décrit la correspondance entre les profils de l'Agent Router et les agents Claude Code, leurs limites vérifiées et la procédure de test.
-version: "0.1.0"
+version: "0.1.1"
 status: draft
 created: "2026-11-05"
 updated: "2026-11-05"
@@ -41,7 +41,7 @@ Cet adaptateur applique `brain-main/ROUTER.md`. Les règles (rôles, sélection,
 - Workers : `omitClaudeMd: true`, `disallowedTools: mcp__*`, sans `Agent` ni `SendMessage`.
 - `worker-haiku` n'a pas `Write` : créer un fichier demande un jugement, donc le profil `standard`.
 - L'orchestrateur n'a pas de mode plan : ce mode exige d'écrire un fichier de plan. Les plans sont présentés dans la conversation et validés par `AskUserQuestion`.
-- `settings.json` (à venir) : `"agent": "orchestrator"` seulement une fois les tests réussis, et `permissions.deny` sur `Edit(.claude/**)` et `Write(.claude/**)`. Aucun hook, plugin, MCP, skill, Agent Teams ni dépendance.
+- `settings.json` (à venir) : `"agent": "orchestrator"` seulement une fois les tests réussis, et `permissions.deny` sur `Edit(.claude/**)` et `Write(.claude/**)`. Aucun hook, plugin, MCP, skill, Agent Teams ni dépendance : cette phrase concerne cet adaptateur des agents, pas le Bootstrap (documenté dans `brain-main/bootstrap/README.md`).
 
 ## Ce que `model` ne garantit pas
 
@@ -77,7 +77,7 @@ Claude Code 2.1.317 ou plus (version embarquée dans Desktop). Le CLI du PATH es
 | Worker : écrire dans `.claude/` avec `Edit` | Refusé par `deny` |
 | Parallèle, deux workers en arrière-plan | Pas de blocage sur une demande de permission |
 | Front matter METADATA dans les agents | Agents chargés sans erreur |
-| `python .cursor/skills/brain-capture/scripts/validate-registry.py brain/registry/entries.jsonl` et `git status` | Registre intact |
+| `python brain-main/skills/brain-capture/scripts/validate-registry.py brain/registry/entries.jsonl` et `git status` | Registre intact |
 | Nouvelle session Desktop avec la clé `agent` | Opus orchestrateur au démarrage ; `/status` confirme |
 
 Si Claude Code refuse les champs de métadonnées ajoutés au front matter des agents, une exception sera documentée (METADATA §10.1).

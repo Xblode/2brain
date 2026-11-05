@@ -1,4 +1,4 @@
-# Règles de capture `/brain-capture` (0.1.5)
+# Règles de capture `/brain -c` (0.1.5)
 
 Taxonomies canoniques : `brain-main/conventions/TAXONOMY.md`.
 

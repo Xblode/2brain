@@ -10,8 +10,10 @@ Ce dossier n’est **pas** la mémoire d’un projet. La mémoire et l’état d
 | --- | --- |
 | `conventions/` | Conventions transverses (taxonomies, règles partagées) |
 | `conventions/README.md` | Catalogue des conventions communes (métadonnées, nommage, taxonomies) |
+| `skills/brain-capture/` | Skill de capture (`SKILL.md`, références, scripts) |
+| `bootstrap/README.md` | Spécification du Bootstrap et de la commande `/brain` (scripts construits et testés, pas encore installés sur le compte ; `-c`, `-s`, `-r` prévus au lot 3) |
 
-Les Skills Cursor restent pour l’instant sous `.cursor/skills/` (installation outil). Leur migration complète vers `brain-main/` est hors de ce correctif.
+Le skill de capture est sous `brain-main/skills/brain-capture/`. Le Bootstrap est documenté dans `brain-main/bootstrap/README.md`.
 
 ## Principes
 

@@ -38,7 +38,7 @@ Inchangé : cibles `CAP-NNN` locales au fichier ; pas d’inter-runs.
 ## Validateur (lecture seule)
 
 ```bash
-python .cursor/skills/brain-capture/scripts/validate-registry.py path/entries.jsonl --require-intention --json-out lab/validate-015.json
+python brain-main/skills/brain-capture/scripts/validate-registry.py path/entries.jsonl --require-intention --json-out lab/validate-015.json
 ```
 
 Fichier vide + `--require-intention` = ERROR. `--json-out` **hors** du registre. Mécanique uniquement.
@@ -46,8 +46,8 @@ Fichier vide + `--require-intention` = ERROR. `--json-out` **hors** du registre.
 ## Écriture / rollback
 
 ```bash
-python .cursor/skills/brain-capture/scripts/append-captures.py --registry brain/registry/entries.jsonl --staging .../entries.jsonl --source ... --run-validator --validate-json-out lab/validate-015.json
-python .cursor/skills/brain-capture/scripts/rollback-captures.py --n 1
+python brain-main/skills/brain-capture/scripts/append-captures.py --registry brain/registry/entries.jsonl --staging .../entries.jsonl --source ... --run-validator --validate-json-out lab/validate-015.json
+python brain-main/skills/brain-capture/scripts/rollback-captures.py --n 1
 ```
 
 Voir [rollback.md](rollback.md). Relations `to` = `CAP-NNN` **local** (pas d’inter-runs).

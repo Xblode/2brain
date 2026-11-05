@@ -3,19 +3,21 @@ name: brain-capture
 version: 0.1.5
 description: >-
   Capture fidèle d'une conversation dans le registre Brain (append sécurisé,
-  empreintes SHA-256, rollback /brain-capture 1). Fenêtres, multi-passes,
+  empreintes SHA-256, rollback /brain -c 1). Fenêtres, multi-passes,
   intention→type, locators, refs, audit final. Ne jamais réécrire les anciennes
-  CAP. Utiliser pour /brain-capture, rollback 1, ou extraction registre.
+  CAP. Utiliser pour /brain -c, rollback 1, ou extraction registre.
 disable-model-invocation: true
 ---
 
-# /brain-capture
+# /brain -c
 
 Capture conversationnelle → registre Brain (production ou test-run isolé).
 
+Ce skill est appelé par `/brain -c` (commande prévue, voir `brain-main/bootstrap/README.md`) ; en attendant, la capture se fait en lisant ce fichier.
+
 **Version** : 0.1.5
 
-**Protection** : aucune exécution normale ne peut détruire, réécrire, renuméroter ou supprimer silencieusement des informations déjà présentes. Append contrôlé uniquement. Rollback explicite : `/brain-capture 1`.
+**Protection** : aucune exécution normale ne peut détruire, réécrire, renuméroter ou supprimer silencieusement des informations déjà présentes. Append contrôlé uniquement. Rollback explicite : `/brain -c 1`.
 
 **Philosophie** : collecter la matière utile avant consolidation. Une information non validée reste utile. Une proposition assistant non approuvée se conserve. La capture n'est pas une sélection des « meilleures » idées.
 
@@ -26,7 +28,7 @@ Capture conversationnelle → registre Brain (production ou test-run isolé).
 3. [references/source-attribution.md](references/source-attribution.md)
 4. `brain-main/conventions/TAXONOMY.md` (taxonomies + mapping intention→type + spaces)
 5. `brain/registry/SCHEMA.md`
-6. [references/rollback.md](references/rollback.md) si `/brain-capture 1`
+6. [references/rollback.md](references/rollback.md) si `/brain -c 1`
 7. Le registre **cible**
 8. Contexte léger : `brain/docs/VISION.md`, `PROJECT.md`, `ARCHITECTURE.md`, `WORKFLOW.md`, `INTEGRATIONS.md`
 
@@ -57,12 +59,12 @@ Jamais de génération comparative artificielle en production. Skill-direct uniq
 - `capture_ref` = `production:CAP-NNN`.
 - Test-run : **jamais** le registre de production ; cible `lab/_test-runs/<id>/entries.jsonl` uniquement.
 
-### `/brain-capture 1` (rollback)
+### `/brain -c 1` (rollback)
 
-Si l’utilisateur demande `/brain-capture 1` (ou « annuler la dernière capture ») :
+Si l’utilisateur demande `/brain -c 1` (ou « annuler la dernière capture ») :
 
 1. **Ne pas** capturer.
-2. Exécuter `python .cursor/skills/brain-capture/scripts/rollback-captures.py --n 1`.
+2. Exécuter `python brain-main/skills/brain-capture/scripts/rollback-captures.py --n 1`.
 3. Suivre [references/rollback.md](references/rollback.md). En cas de refus : ne rien supprimer.
 
 Seul `1` est supporté.
@@ -94,7 +96,7 @@ Ordre strict (ne pas inverser validation et corrections) :
 3. **Appliquer TOUTES les corrections** sur le **brouillon / staging** (pas le registre actif).
 4. Écrire uniquement les **nouvelles** lignes dans `brain/registry/_capture-staging/<operation-id>/entries.jsonl`.
 5. **Empreinte initiale** puis append sécurisé (ne pas toucher le registre autrement) :
-   `python .cursor/skills/brain-capture/scripts/append-captures.py --registry <cible>/entries.jsonl --staging <staging>/entries.jsonl --source <source> --run-validator --validate-json-out <rapport-hors-registre>`
+   `python brain-main/skills/brain-capture/scripts/append-captures.py --registry <cible>/entries.jsonl --staging <staging>/entries.jsonl --source <source> --run-validator --validate-json-out <rapport-hors-registre>`
 6. Si l’append refuse ou restaure : **arrêt** ; ne pas « réparer » les anciennes CAP.
 7. Garantir que le rapport validateur correspond au registre **après** append.
 8. Produire `AUDIT.md` ; `COMPARISON.md` si test-run ; **bilan template**.
@@ -191,7 +193,7 @@ Le validateur Python **ne fait que (1)**. « OK » ≠ qualité sémantique.
 ## Bilan attendu (obligatoire)
 
 ```markdown
-### Bilan `/brain-capture`
+### Bilan `/brain -c`
 
 | | |
 | --- | --- |

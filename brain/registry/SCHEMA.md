@@ -101,9 +101,9 @@ Conventions `lines` / `offset` / `window` : identiques à 0.1.3.
 ## Validateur
 
 ```bash
-python .cursor/skills/brain-capture/scripts/validate-registry.py brain/registry/entries.jsonl
-python .cursor/skills/brain-capture/scripts/validate-registry.py path/entries.jsonl --require-intention
-python .cursor/skills/brain-capture/scripts/validate-registry.py path/entries.jsonl --require-intention --json-out validate.json
+python brain-main/skills/brain-capture/scripts/validate-registry.py brain/registry/entries.jsonl
+python brain-main/skills/brain-capture/scripts/validate-registry.py path/entries.jsonl --require-intention
+python brain-main/skills/brain-capture/scripts/validate-registry.py path/entries.jsonl --require-intention --json-out validate.json
 ```
 
 `--require-intention` (générations ≥ 0.1.3/0.1.4) : vide = ERROR ; exige intention, position, author_confidence, grounding, run_id, capture_ref ; origin+locators ; **mapping intention→type** ; `refs` si présent doit être un tableau de strings non vides.

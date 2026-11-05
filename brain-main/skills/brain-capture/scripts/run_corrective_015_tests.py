@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent
-ROOT = SCRIPTS.parents[3]  # repo: <root>/.cursor/skills/brain-capture/scripts
+ROOT = SCRIPTS.parents[3]  # repo: <root>/brain-main/skills/brain-capture/scripts
 sys.path.insert(0, str(SCRIPTS))
 
 from registry_io import (  # noqa: E402
@@ -81,7 +81,7 @@ def write_jsonl(path: Path, entries: list[dict]) -> bytes:
 def setup_fake_repo(tmp: Path) -> Path:
     """Minimal repo layout for path checks."""
     (tmp / "brain" / "registry").mkdir(parents=True)
-    (tmp / ".cursor" / "skills" / "brain-capture" / "scripts").mkdir(parents=True)
+    (tmp / "brain-main" / "skills" / "brain-capture" / "scripts").mkdir(parents=True)
     (tmp / "lab" / "_test-runs").mkdir(parents=True)
     (tmp / "lab" / "sources").mkdir(parents=True)
     (tmp / "lab" / "sources" / "fixture.txt").write_text("hello\n", encoding="utf-8")
@@ -92,14 +92,14 @@ def setup_fake_repo(tmp: Path) -> Path:
         "rollback-captures.py",
         "validate-registry.py",
     ):
-        shutil.copy2(SCRIPTS / name, tmp / ".cursor" / "skills" / "brain-capture" / "scripts" / name)
+        shutil.copy2(SCRIPTS / name, tmp / "brain-main" / "skills" / "brain-capture" / "scripts" / name)
     return tmp
 
 
 def append_cmd(repo: Path, registry: Path, staging: Path) -> list[str]:
     return [
         sys.executable,
-        str(repo / ".cursor/skills/brain-capture/scripts/append-captures.py"),
+        str(repo / "brain-main/skills/brain-capture/scripts/append-captures.py"),
         "--registry",
         str(registry),
         "--staging",
@@ -113,7 +113,7 @@ def append_cmd(repo: Path, registry: Path, staging: Path) -> list[str]:
 def rollback_cmd(repo: Path) -> list[str]:
     return [
         sys.executable,
-        str(repo / ".cursor/skills/brain-capture/scripts/rollback-captures.py"),
+        str(repo / "brain-main/skills/brain-capture/scripts/rollback-captures.py"),
         "--n",
         "1",
     ]
@@ -485,7 +485,7 @@ def main() -> int:
             )
         )
 
-        skill = ROOT / ".cursor/skills/brain-capture"
+        skill = ROOT / "brain-main/skills/brain-capture"
         docs_ok = all(
             (skill / p).exists()
             for p in (

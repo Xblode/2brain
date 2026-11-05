@@ -1,6 +1,6 @@
 # Instructions — test manuel production séquentiel (3 sources)
 
-**Ne pas exécuter automatiquement.** L’humain (ou un agent dédié sur consigne) lance **trois** `/brain-capture` successifs.
+**Ne pas exécuter automatiquement.** L’humain (ou un agent dédié sur consigne) lance **trois** `/brain -c` successifs.
 
 ## Prérequis workspace isolé
 
@@ -14,7 +14,7 @@
 ## Appel 1 — source 1
 
 ```
-/brain-capture
+/brain -c
 ```
 
 Consigne minimale à coller :

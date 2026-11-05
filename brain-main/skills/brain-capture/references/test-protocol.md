@@ -1,4 +1,4 @@
-# Protocole de test — `/brain-capture` 0.1.5
+# Protocole de test — `/brain -c` 0.1.5
 
 ## Sources officielles
 
@@ -32,8 +32,8 @@ Un test-run **ne touche pas** la production.
 ## Smoke technique
 
 ```bash
-python .cursor/skills/brain-capture/scripts/run_corrective_015_tests.py
-python .cursor/skills/brain-capture/scripts/validate-registry.py brain/registry/entries.jsonl
+python brain-main/skills/brain-capture/scripts/run_corrective_015_tests.py
+python brain-main/skills/brain-capture/scripts/validate-registry.py brain/registry/entries.jsonl
 ```
 
 Le validateur reste **mécanique**. Il ne certifie pas la couverture sémantique.

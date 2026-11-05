@@ -1,6 +1,6 @@
 # Project
 
-> **Provisoire** — synthèse légère `/brain-capture`. Détail : `brain/registry/entries.jsonl`.
+> **Provisoire** — synthèse légère issue de la capture. Détail : `brain/registry/entries.jsonl`.
 > Sources : CAP-056 (+ contexte projet 2brain / atelier ChatGPT).
 > **Attention : références obsolètes.** Les `CAP-xxx` de ce document viennent de l'ancien registre de 69 captures (commit `45ba05d`). Le registre actuel réutilise ces numéros pour d'autres contenus : ne pas les y chercher. Pour les lire : `git show 45ba05d:brain/registry/entries.jsonl`.
 

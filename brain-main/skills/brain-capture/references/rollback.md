@@ -1,4 +1,4 @@
-# Rollback `/brain-capture 1` — Brain Capture 0.1.5
+# Rollback `/brain -c 1` — Brain Capture 0.1.5
 
 Le chiffre `1` désigne **une exécution complète** de Capture, jamais une entrée CAP. Seul `n=1` est supporté.
 
@@ -7,10 +7,10 @@ Cette commande **n’est pas** une nouvelle capture.
 ## Commande
 
 ```bash
-python .cursor/skills/brain-capture/scripts/rollback-captures.py --n 1
+python brain-main/skills/brain-capture/scripts/rollback-captures.py --n 1
 ```
 
-Équivalent Skill : `/brain-capture 1`.
+Équivalent Skill : `/brain -c 1`.
 
 ## Historique
 

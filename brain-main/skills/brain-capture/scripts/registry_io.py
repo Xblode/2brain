@@ -17,7 +17,7 @@ from typing import Any
 ID_RE = re.compile(r"^CAP-(\d+)$")
 CAP_IN_JSON_RE = re.compile(rb'"id"\s*:\s*"CAP-(\d+)"')
 
-REPO_ROOT_MARKERS = ("brain", ".cursor")
+REPO_ROOT_MARKERS = ("brain", "brain-main")
 PROD_REGISTRY_REL = Path("brain") / "registry" / "entries.jsonl"
 HISTORY_REL = Path("brain") / "registry" / "_capture-history"
 STAGING_REL = Path("brain") / "registry" / "_capture-staging"

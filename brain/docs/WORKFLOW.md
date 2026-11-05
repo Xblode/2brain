@@ -1,6 +1,6 @@
 # Workflow
 
-> **Provisoire** — synthèse légère `/brain-capture`. Détail : `brain/registry/entries.jsonl`.
+> **Provisoire** — synthèse légère issue de la capture. Détail : `brain/registry/entries.jsonl`.
 > Sources : CAP-007, CAP-011, CAP-013–CAP-014, CAP-017–CAP-018, CAP-020, CAP-027–CAP-028, CAP-031, CAP-033, CAP-039, CAP-041, CAP-045–CAP-046, CAP-050–CAP-052, CAP-061.
 > **Attention : références obsolètes.** Les `CAP-xxx` de ce document viennent de l'ancien registre de 69 captures (commit `45ba05d`). Le registre actuel réutilise ces numéros pour d'autres contenus : ne pas les y chercher. Pour les lire : `git show 45ba05d:brain/registry/entries.jsonl`.
 

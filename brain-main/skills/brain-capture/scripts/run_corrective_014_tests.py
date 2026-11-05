@@ -13,10 +13,10 @@ import sys
 import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]  # repo root (.cursor/skills/brain-capture/scripts -> +3)
-# parents: scripts=0, brain-capture=1, skills=2, .cursor=3 — wrong
-# Path: repo/.cursor/skills/brain-capture/scripts/this.py
-# parents[0]=scripts, [1]=brain-capture, [2]=skills, [3]=.cursor, [4]=repo
+ROOT = Path(__file__).resolve().parents[3]  # repo root (brain-main/skills/brain-capture/scripts -> +3)
+# parents: scripts=0, brain-capture=1, skills=2, brain-main=3 — wrong
+# Path: repo/brain-main/skills/brain-capture/scripts/this.py
+# parents[0]=scripts, [1]=brain-capture, [2]=skills, [3]=brain-main, [4]=repo
 ROOT = Path(__file__).resolve().parents[4]
 VALIDATOR = Path(__file__).resolve().parent / "validate-registry.py"
 FIXTURES = Path(__file__).resolve().parent / "fixtures"

@@ -1,4 +1,4 @@
-# Attribution des sources — `/brain-capture` 0.1.5
+# Attribution des sources — `/brain -c` 0.1.5
 
 ## Hiérarchie d’attribution
 

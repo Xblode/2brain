@@ -1,6 +1,6 @@
 # Vision
 
-> **Provisoire** — synthèse légère `/brain-capture`. Détail et preuves dans `brain/registry/entries.jsonl`.
+> **Provisoire** — synthèse légère issue de la capture. Détail et preuves dans `brain/registry/entries.jsonl`.
 > Sources : CAP-001, CAP-004, CAP-047, CAP-049, CAP-065, CAP-068.
 > **Attention : références obsolètes.** Les `CAP-xxx` de ce document viennent de l'ancien registre de 69 captures (commit `45ba05d`). Le registre actuel réutilise ces numéros pour d'autres contenus : ne pas les y chercher. Pour les lire : `git show 45ba05d:brain/registry/entries.jsonl`.
 
