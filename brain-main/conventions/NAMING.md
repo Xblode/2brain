@@ -1,3 +1,36 @@
+---
+metadata_version: 1
+
+title: "Convention de nommage"
+type: convention
+description: "Définit les principes communs de nommage des fichiers et dossiers des projets utilisant le socle de standardisation."
+summary: "Convention universelle de nommage des fichiers et dossiers : concept et responsabilité avant description, noms courts, contexte fourni par l'arborescence, casse par type de fichier, centralisation des variantes, portabilité, exceptions et règles applicables aux agents IA. Elle ne couvre pas les identifiants internes au code."
+
+version: "1.0.0"
+status: review
+
+created: "2026-11-02"
+updated: "2026-11-05"
+
+scope:
+  level: universal
+  targets:
+    - all-projects
+
+depends_on:
+  - "brain-main/conventions/METADATA.md"
+
+updated_from:
+  - "brain-main/conventions/METADATA.md"
+  - "brain-main/conventions/TAXONOMY.md"
+  - "brain-main/conventions/README.md"
+
+tags:
+  - naming
+  - files
+  - standardization
+---
+
 # NAMING — Convention de nommage
 
 ## 1. Objectifs et périmètre
@@ -15,6 +48,8 @@ Elle vise à garantir une organisation :
 - Évolutive sans multiplication inutile des règles.
 
 Le nommage doit permettre d'identifier rapidement la responsabilité d'un élément, en tenant compte de son emplacement dans l'arborescence.
+
+Conventions associées (catalogue : [README.md](README.md)) : [METADATA.md](METADATA.md) pour le front matter des fichiers Markdown, [TAXONOMY.md](TAXONOMY.md) pour les valeurs des champs de registre. Les fichiers de métadonnées associés à une ressource suivent cette convention de nommage (METADATA §6.8).
 
 ### 1.2. Périmètre
 
@@ -198,7 +233,7 @@ Les noms d'un seul mot restent privilégiés lorsqu'ils suffisent.
 
 Cette convention permet de distinguer visuellement les documents de référence des fichiers techniques et des notes ordinaires.
 
-Les noms imposés par des outils, tels que `README.md`, sont conservés.
+Les noms imposés par des outils, tels que `README.md`, `AGENTS.md`, `CLAUDE.md` ou `SKILL.md`, sont conservés.
 
 Les autres fichiers Markdown peuvent utiliser le `kebab-case` :
 
@@ -405,7 +440,7 @@ Elle ne doit toutefois pas être imposée à tous les projets.
 
 L'arborescence doit rester aussi simple que possible.
 
-Un niveau de dossier supplémentaire est justifié lorsqu'il :   //note : si on commence un projets par quelque choses de petit il faut pas non plus qu'il prévoit trop simple alors je pense qu'il faut toujours prévoir un projets moyen qui va facilement s'upgrade vers en gros, imagine que de base tu mes card.tsx dans un dossier général a la création du site car c'est une nouvelle création, bas on va devoir le déplacer plus tard//
+Un niveau de dossier supplémentaire est justifié lorsqu'il :
 
 - Regroupe plusieurs éléments cohérents.
 - Définit un domaine identifiable.
@@ -414,6 +449,8 @@ Un niveau de dossier supplémentaire est justifié lorsqu'il :   //note : si on 
 - Améliore réellement la navigation.
 
 Éviter de créer des dossiers contenant uniquement un fichier, lorsque cette séparation n'apporte aucun bénéfice.
+
+> **Note d'auteur (non normative, à arbitrer), reprise telle qu'écrite :** si on commence un projets par quelque choses de petit il faut pas non plus qu'il prévoit trop simple alors je pense qu'il faut toujours prévoir un projets moyen qui va facilement s'upgrade vers en gros, imagine que de base tu mes card.tsx dans un dossier général a la création du site car c'est une nouvelle création, bas on va devoir le déplacer plus tard
 
 ### 5.5. Singularité et pluralité
 
@@ -760,7 +797,9 @@ Ces informations peuvent être gérées par les métadonnées, le format ou la s
 
 ### 6.16. Fichiers audio et vidéo 
 
-Utiliser un nom identifiant le contenu. //note : Ici on pourrais faire un super truc, je vais souvent avoir un fichier pas nomé correctement, pour les fichier img, vidéo, audio avec des nom qui ne définise rien exemple "4df6s51f.png" quand le model voit ca dans un dossier il doit demander le contexte du contenu pour trouver un bon nom en suivant ce qui est dit en dessous//
+Utiliser un nom identifiant le contenu.
+
+> **Note d'auteur (non normative, à arbitrer), reprise telle qu'écrite :** Ici on pourrais faire un super truc, je vais souvent avoir un fichier pas nomé correctement, pour les fichier img, vidéo, audio avec des nom qui ne définise rien exemple "4df6s51f.png" quand le model voit ca dans un dossier il doit demander le contexte du contenu pour trouver un bon nom en suivant ce qui est dit en dessous
 
 Exemples :
 
@@ -1127,6 +1166,8 @@ Une adaptation cohérente peut devenir une règle de domaine plutôt qu'une succ
 ## 12. Articulation avec les conventions spécialisées
 
 ### 12.1. Héritage
+
+Les niveaux (universel, domaine, projet) et les règles d'héritage sont définis dans [METADATA.md](METADATA.md) §7. Dans ce document, « convention générale » désigne le niveau universel.
 
 La convention générale constitue le socle commun.
 

@@ -9,7 +9,7 @@ Ce dossier n’est **pas** la mémoire d’un projet. La mémoire et l’état d
 | Chemin | Rôle |
 | --- | --- |
 | `conventions/` | Conventions transverses (taxonomies, règles partagées) |
-| `conventions/taxonomy.md` | Valeurs et sémantique des champs de registre communs |
+| `conventions/README.md` | Catalogue des conventions communes (métadonnées, nommage, taxonomies) |
 
 Les Skills Cursor restent pour l’instant sous `.cursor/skills/` (installation outil). Leur migration complète vers `brain-main/` est hors de ce correctif.
 

@@ -1,29 +1,35 @@
 ---
-
 metadata_version: 1
 
-title: "Convention universelle des métadonnées"  
-type: convention  
-description: "Définit les règles communes de déclaration, de structuration, de traçabilité et de validation des métadonnées dans les projets."  
+title: "Convention universelle des métadonnées"
+type: convention
+description: "Définit les règles communes de déclaration, de structuration, de traçabilité et de validation des métadonnées dans les projets."
 summary: "Convention universelle définissant le socle de métadonnées des documents et les adaptations propres aux différents formats. Elle établit les propriétés communes, leur classification, les règles d'héritage, la traçabilité des modifications et les modalités de validation automatisée."
 
-version: "1.0.0"  
+version: "1.0.1"
 status: approved
 
-created: "2026-11-02"  
-updated: "2026-11-02"
+created: "2026-11-02"
+updated: "2026-11-05"
 
-scope:  
-level: universal  
-targets:  
-- all-projects
+scope:
+  level: universal
+  targets:
+    - all-projects
+
+depends_on:
+  - "brain-main/conventions/NAMING.md"
+  - "brain-main/conventions/TAXONOMY.md"
+
+updated_from:
+  - "brain-main/conventions/NAMING.md"
+  - "brain-main/conventions/TAXONOMY.md"
+  - "brain-main/conventions/README.md"
 
 tags:
-
-- metadata
-- documentation
-- standardization
-
+  - metadata
+  - documentation
+  - standardization
 ---
 
 # Convention universelle des métadonnées
@@ -77,6 +83,12 @@ Cette convention ne définit pas :
 - Les paramètres techniques des applications.
 
 Ces éléments peuvent être définis par des conventions complémentaires.
+
+### 1.4 Conventions associées
+
+- [NAMING.md](NAMING.md) : nommage des fichiers, y compris des fichiers associés (§6.8).
+- [TAXONOMY.md](TAXONOMY.md) : valeurs des champs de registre. Ses champs `type`, `status` et `tags` ne sont **pas** les propriétés de front matter définies ici : voir [README.md](README.md).
+- Cette convention applique son propre format (front matter ci-dessus) et celui de NAMING (nom du fichier).
 
 ---
 
@@ -141,10 +153,10 @@ scope:
     - all-projects
 
 extends:
-  - "conventions/PARENT.md"
+  - "brain-main/conventions/PARENT.md"
 
 depends_on:
-  - "conventions/DEPENDENCY.md"
+  - "brain-main/conventions/DEPENDENCY.md"
 
 updated_from:
   - "sources/reference.md"
@@ -207,6 +219,10 @@ Trois niveaux de priorité sont définis.
 | Facultatif     | Peut être utilisé selon les besoins.                |
 
 Une propriété conditionnelle peut devenir obligatoire lorsqu'une convention spécialisée le prévoit.
+
+| Classification | Signification                                                              |
+| -------------- | -------------------------------------------------------------------------- |
+| Conditionnel   | Requis uniquement lorsque la condition définie par la convention s'applique. |
 
 ### 4.2 Propriétés du socle commun
 
@@ -457,7 +473,7 @@ Exemple :
 
 ```
 extends:
-  - "conventions/METADATA.md"
+  - "brain-main/conventions/METADATA.md"
 ```
 
 Règles :
@@ -478,8 +494,8 @@ Exemple :
 
 ```
 depends_on:
-  - "conventions/TAXONOMY.md"
-  - "conventions/NAMING.md"
+  - "brain-main/conventions/TAXONOMY.md"
+  - "brain-main/conventions/NAMING.md"
 ```
 
 Différence avec `extends` :
@@ -589,7 +605,7 @@ scope:
     - web-development
 
 extends:
-  - "conventions/METADATA.md"
+  - "brain-main/conventions/METADATA.md"
 
 web:
   framework: nextjs
@@ -936,7 +952,7 @@ scope:
     - mobile-development
 
 extends:
-  - "conventions/METADATA.md"
+  - "brain-main/conventions/METADATA.md"
 ```
 
 Exemple projet :
@@ -1435,8 +1451,8 @@ scope:
     - web-development
 
 extends:
-  - "conventions/METADATA.md"
-  - "conventions/SOFTWARE.md"
+  - "brain-main/conventions/METADATA.md"
+  - "brain-main/conventions/SOFTWARE.md"
 ---
 ```
 
@@ -1539,7 +1555,7 @@ scope: "Tous les projets"
 
 ```
 extends:
-  - "conventions/UNKNOWN.md"
+  - "brain-main/conventions/UNKNOWN.md"
 ```
 
 **Non conforme :** la convention parente référencée n'existe pas.

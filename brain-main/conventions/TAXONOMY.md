@@ -1,12 +1,46 @@
+---
+metadata_version: 1
+
+title: "Taxonomies Brain (communes)"
+type: convention
+description: "Centralise les taxonomies partagées des champs de capture et de registre Brain."
+summary: "Définit les valeurs et la sémantique des champs de registre communs (intention, type, position, validation, status, space, relations, grounding, confidences, refs) et les règles de compatibilité historique. Le contrat JSON mécanique reste brain/registry/SCHEMA.md."
+
+version: "1.0.1"
+status: review
+
+created: "2026-10-31"
+updated: "2026-11-05"
+
+scope:
+  level: universal
+  targets:
+    - brain-registries
+
+depends_on:
+  - "brain-main/conventions/METADATA.md"
+
+updated_from:
+  - "brain-main/conventions/METADATA.md"
+  - "brain-main/conventions/NAMING.md"
+  - "brain-main/conventions/README.md"
+
+tags:
+  - taxonomy
+  - registry
+  - capture
+---
+
 # Taxonomies Brain (communes)
 
 | | |
 | --- | --- |
-| Version convention | 1.0.0 |
 | Compatible registre | 0.1.4 (rétrocompat 0.1.x) |
 | Évolution | Ajouter une valeur = versioning + note de compatibilité ; **ne jamais** retirer silencieusement une valeur encore présente dans des registres historiques |
 
 Ce document centralise les taxonomies partagées. Les Skills appliquent ces règles ; `brain/registry/SCHEMA.md` reste le contrat JSON mécanique.
+
+Les champs ci-dessous sont ceux des **entrées de registre**. Ils ne sont pas les propriétés de front matter de [METADATA.md](METADATA.md) (`type`, `status`, `tags` y ont un autre sens : voir [README.md](README.md)). La version de cette convention est celle de son front matter ; « Compatible registre » ci-dessous est la version du registre, pas du document. Les fichiers de registre suivent [NAMING.md](NAMING.md).
 
 ---
 

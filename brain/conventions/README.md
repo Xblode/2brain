@@ -15,4 +15,4 @@ Aucun fichier de convention d’instance n’est encore présent (pas de `clicku
 
 La standardisation documentaire reste dans [`brain/docs/README.md`](../docs/README.md) — ne pas la recopier ici.
 
-Les taxonomies communes restent dans [`brain-main/conventions/taxonomy.md`](../../brain-main/conventions/taxonomy.md).
+Les taxonomies communes restent dans [`brain-main/conventions/TAXONOMY.md`](../../brain-main/conventions/TAXONOMY.md).

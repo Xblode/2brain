@@ -1,6 +1,6 @@
 # Schéma registre — vue Skill (0.1.5)
 
-Source de vérité : `brain/registry/SCHEMA.md` + `brain-main/conventions/taxonomy.md`.
+Source de vérité : `brain/registry/SCHEMA.md` + `brain-main/conventions/TAXONOMY.md`.
 
 Compatibilité historique 0.1.x conservée. Pas de 0.1.4.1.
 

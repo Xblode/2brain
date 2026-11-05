@@ -1,5 +1,11 @@
-# CLAUDE.md
-
-Les consignes opérationnelles du projet sont dans `AGENTS.md` (source unique, partagée avec les autres agents IA).
+---
+metadata_version: 1
+title: "Chargeur Claude Code"
+type: index
+description: "Fait charger AGENTS.md par Claude Code."
+status: review
+created: "2026-11-05"
+updated: "2026-11-05"
+---
 
 @AGENTS.md
