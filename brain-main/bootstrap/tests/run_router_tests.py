@@ -134,6 +134,21 @@ def test_agents():
           "TaskStop" in tools_line and "TaskStop" in t2 and tools_line == t2, (tools_line, t2))
 
 
+PROGRESSIVE = ("Lecture progressive", "d'abord ses métadonnées et son introduction", "puis les sections utiles à la mission", "en entier seulement si nécessaire")
+PROGRESSIVE_ALT = ("progressivement", "d'abord ses métadonnées et son introduction", "puis les sections utiles à la mission", "en entier seulement si nécessaire")
+
+
+def test_progressive_readme():
+    for rel, words in (("brain-main/ROUTER.md", PROGRESSIVE), ("brain-main/adapters/claude-code/agents/worker-sonnet.md", PROGRESSIVE),
+                       ("brain-main/adapters/claude-code/agents/worker-haiku.md", PROGRESSIVE), (".claude/agents/worker-sonnet.md", PROGRESSIVE),
+                       (".claude/agents/worker-haiku.md", PROGRESSIVE), ("AGENTS.md", PROGRESSIVE_ALT), ("brain-main/README.md", PROGRESSIVE_ALT),
+                       ("brain-main/bootstrap/templates/AGENTS.md", PROGRESSIVE_ALT)):
+        t = lf(REPO / rel)
+        check("lecture progressive du README (métadonnées et introduction, sections utiles, entier si nécessaire) dans " + rel,
+              has_all(t, words) and "README le plus proche" in t, rel)
+    check("brain-main/README.md: 80 lignes au plus", len(lf(REPO / "brain-main" / "README.md").splitlines()) <= 80)
+
+
 def test_readme_and_skill():
     r = lf(ADAPTER / "README.md")
     check("README adaptateur: signaux disponibles (tool_uses, durée, contexte final, rapports) et limites",
@@ -143,6 +158,16 @@ def test_readme_and_skill():
     sc = r[r.index("## Scénarios à observer"):]
     check("README adaptateur: table de 5 scénarios (grosse mission, reprise, handoff, rapport court puis détail, partial)",
           has_all(sc, ("Grosse mission découpée", "Reprise utile", "Handoff", "Rapport court puis demande de détail", "Dépassement avec `partial`")), sc)
+    st = r[r.index("## État des vérifications"):r.index("## Ce qui n'est pas garanti")]
+    check("README adaptateur: section d'état à 3 états (observé en session, documenté seulement, non essayé) avec date et source",
+          has_all(st, ("`observé en session`", "`documenté seulement`", "`non essayé`", "2026-11-06", "`fae31ce0`", "`claude-desktop`", "38 workers",
+                       "selon l'humain, non contrôlé", "2.1.317", "2.1.318", "non vérifiée")), st)
+    check("README adaptateur: TaskStop observé en présence seule, jamais appelé ; appel réel et hook PowerShell non essayés",
+          has_all(st, ("jamais appelé", "Appel réel de `TaskStop`", "`PowerShell`", "`/brain -d`")), st)
+    check("README adaptateur: plus de « CLI 2.1.22 », de `deny` actif ni de section Maintenance",
+          "2.1.22" not in r.replace("(version", "") and "## Maintenance" not in r and "permissions.deny" not in r)
+    cr = lf(REPO / ".claude" / "README.md")
+    check("README de .claude/ identique à la source de l'adaptateur (aucun écart)", cr == r, len(cr) - len(r))
     skill = lf(BOOT / "account" / "SKILL.md")
     check("SKILL /brain: restitution de la sortie brute du worker maintenue (compatible: le brief la demande explicitement)",
           "relire sa sortie brute et la restituer sans la réécrire" in skill)
@@ -151,7 +176,7 @@ def test_readme_and_skill():
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     for name, fn in (("ROUTER.md", test_router), ("noms et plafonds", test_no_names_no_ceiling), ("agents", test_agents),
-                     ("README et skill", test_readme_and_skill)):
+                     ("README progressif", test_progressive_readme), ("README et skill", test_readme_and_skill)):
         try:
             fn()
         except Exception:

@@ -1,12 +1,12 @@
 ---
 name: brain-audit
-version: 0.1.2
+version: 0.1.3
 description: >-
   Audit en profondeur d'un projet existant : lecture seule, rapport présenté
   dans la conversation (vision, fonctionnement par dossier maître, écarts aux
   conventions comme candidats, propositions d'amélioration), puis écritures
   proposées une à une et validées une à une (rapport, registre, brain/docs/,
-  README des dossiers maîtres). Utiliser pour /brain -a.
+  README des dossiers maîtres, AGENTS.md et CLAUDE.md). Utiliser pour /brain -a.
 disable-model-invocation: true
 ---
 
@@ -21,7 +21,7 @@ Audit d'un projet qui existe déjà : le lire une première fois, en garder une 
 - Ne jamais ouvrir un fichier de secrets (`.env*`, clés, certificats, `credentials*`, `secrets*`) ; ne jamais en citer le contenu. Dire ce qui n'a pas été lu.
 - Une proposition reste une proposition : rien n'est écrit avant la validation explicite de ce qui vient d'être présenté, **écriture par écriture**. L'humain peut en refuser une et continuer ; une approbation générale ou passée ne suffit pas.
 - Le registre reste en append only (`brain-main/skills/brain-capture/SKILL.md`). Ne pas modifier un document `locked: true` sans demande explicite.
-- Sans Bash (session orchestrateur) : `worker-sonnet` fait la lecture et les écritures, avec un brief complet (il ne voit pas la conversation) : chemins, commandes, contenu validé mot pour mot, et rappel de l'append only et d'aucun commit ni push. L'orchestrateur garde les questions, la validation et le jugement. Le brief **autorise expressément**, et seulement, les chemins validés : `brain/sources/audits/`, `brain/registry/` (par `append-captures.py` et le staging prévu), `brain/docs/`, et les README validés.
+- Sans Bash (session orchestrateur) : `worker-sonnet` fait la lecture et les écritures, avec un brief complet (il ne voit pas la conversation) : chemins, commandes, contenu validé mot pour mot, et rappel de l'append only et d'aucun commit ni push. L'orchestrateur garde les questions, la validation et le jugement. Le brief **autorise expressément**, et seulement, les chemins validés : `brain/sources/audits/`, `brain/registry/` (par `append-captures.py` et le staging prévu), `brain/docs/`, les README validés, et `AGENTS.md` et `CLAUDE.md` (par `sync-agents.py`).
 
 ## Étapes
 
@@ -39,6 +39,10 @@ Audit d'un projet qui existe déjà : le lire une première fois, en garder une 
    2. **Le registre** : suivre `brain-main/skills/brain-capture/SKILL.md`, ce rapport pour source (`origin.source` = son chemin, `locators` = plages de lignes), mode `production`. Les notes restent `author: assistant`, sans approbation (`validation: none`). Chercher d'abord dans le registre existant (`/brain -s`) : pas de doublon.
    3. **`brain/docs/`** : mêmes règles que `brain-main/skills/brain-onboarding/SKILL.md` (document par document, `confirmé` seulement sur source explicite, réponse globale refusée), sans questions d'accueil : ce qui manque est renvoyé à `/brain -o`.
    4. **README des dossiers maîtres.** Présenter d'abord la liste des dossiers retenus : au plus le plafond du script (`plafond_readme`), qui vient du réglage `readme_max` de `brain/settings.json` (8 par défaut si le fichier est absent ou invalide : le dire), davantage seulement sur demande explicite de l'humain ; `/brain -m <nombre>` change le réglage, et `/brain -m` propose les README manquants. Puis le contenu de chacun, validé un par un. Un README par dossier maître, selon le modèle de `brain-main/conventions/METADATA.md` §6.9 (non recopié ici) ; **aucun README par fonctionnalité, aucun dans les sous-dossiers** : éviter le bruit. Un README existant n'est jamais remplacé : proposer une adaptation à part.
+   5. **`AGENTS.md` et `CLAUDE.md`** (valent aussi pour un projet déjà équipé), trois sous-écritures validées chacune à part, par `"<interpréteur>" -I brain-main/bootstrap/scripts/sync-agents.py --project "<dossier de travail>" --op claude|2brain|projet` (`--dry-run` pour simuler ; refus dans le dépôt source 2brain ; idempotent ; seuls `AGENTS.md` et `CLAUDE.md` sont écrits ; `brain-main/bootstrap/README.md` §6.3 donne le détail) :
+      - **`--op claude`** : si `CLAUDE.md` a un contenu autre que `@AGENTS.md`, présenter ce contenu, puis le reprendre mot pour mot dans une section délimitée de `AGENTS.md`, et remettre `CLAUDE.md` à `@AGENTS.md`. Rien ne se perd ; `CLAUDE.md` absent est créé, déjà conforme est laissé.
+      - **`--op 2brain`** : si `AGENTS.md` n'a pas les informations 2brain (repères, imports, règles), y ajouter celles du modèle `brain-main/bootstrap/templates/AGENTS.md`, sans remplacer l'existant.
+      - **`--op projet`** : rédiger d'après le rapport une section courte (identité, technologies, structure, commandes, documents, renvois à `brain/docs/`), chaque fait marqué `confirmé` ou `hypothèse`, sans invention ni copie de `brain/docs/` ; présenter le texte exact, l'écrire (fichier temporaire hors du projet, `--section-file`) seulement après validation. Une section projet déjà présente n'est jamais remplacée : proposer une adaptation à part.
 5. **Bilan.** Ce qui a été écrit, ce qui a été refusé, ce qui reste. Relancer `status.py --json` ; si des documents contiennent encore « À compléter », proposer `/brain -o`, qui repart de ce que l'audit a confirmé. Rappeler que `/brain -a` se relance : il ne proposera que ce qui a changé.
 
 ## Limites

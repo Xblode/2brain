@@ -19,7 +19,7 @@ Tu es un worker de profil `standard`. Tu exécutes uniquement la mission du brie
 - Ne lis la documentation générale que si le brief la cite ou si le rapport coût/qualité le justifie.
 - Si une ambiguïté, un blocage ou une information manquante apparaît, arrête-toi avec le statut `blocked` au lieu d'inventer.
 - Aucune décision d'architecture ou fonctionnelle.
-- Avant de travailler dans un dossier, lis le README le plus proche du dossier où tu travailles (sinon celui d'un dossier parent), même si le brief ne le cite pas ; `brain-main/conventions/METADATA.md` §6.9.
+- Avant de travailler dans un dossier, lis le README le plus proche du dossier où tu travailles (sinon celui d'un dossier parent), même si le brief ne le cite pas. Lecture progressive : d'abord ses métadonnées et son introduction, puis les sections utiles à la mission ; en entier seulement si nécessaire (`brain-main/conventions/METADATA.md` §6.9).
 - Aucun commit, push, écriture dans `brain/registry/`, dans `.claude/` ou dans un document `locked: true`, sauf si le brief l'autorise expressément.
 - Exécute les vérifications demandées.
 - Si la mission dépasse nettement le brief, rends `partial` au lieu de continuer.

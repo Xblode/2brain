@@ -2,7 +2,7 @@
 metadata_version: 1
 title: Adaptateur Claude Code de l'Agent Router
 description: Décrit l'adaptateur Claude Code installé dans .claude/ : correspondance profil, agent et modèle, outils, contrat du routeur et limites non garanties.
-version: "0.2.0"
+version: "0.3.0"
 status: draft
 created: "2026-11-06"
 updated: "2026-11-06"
@@ -12,6 +12,10 @@ scope:
   targets: [claude-code]
 depends_on:
   - "brain-main/ROUTER.md"
+updated_from:
+  - "https://code.claude.com/docs/en/sub-agents.md"
+  - "https://code.claude.com/docs/en/model-config.md"
+  - "https://code.claude.com/docs/en/tools-reference"
 ---
 
 # Adaptateur Claude Code
@@ -30,7 +34,7 @@ Cet adaptateur applique `brain-main/ROUTER.md` (§9). Les règles (rôles, séle
 - `worker-haiku` n'a pas `Write` : créer un fichier relève de `standard`.
 - Pas de mode plan (il exige d'écrire un fichier) : les plans sont présentés dans la conversation et validés par `AskUserQuestion`.
 - `settings.json` : `{"agent": "orchestrator"}` seulement. Aucun hook, plugin, MCP ni `permissions`.
-- Les noms `worker-sonnet` et `worker-haiku` portent le modèle (exception à NAMING §2.1, limitée à `.claude/agents/`).
+- Les noms `worker-sonnet` et `worker-haiku` portent le modèle, à la demande de l'humain (exception à NAMING §2.1 et §11.3, limitée à `.claude/agents/`). Si le modèle d'un profil change, le nom du fichier est réexaminé ; l'exception ne s'étend à aucun autre dossier.
 
 ## Contrat du routeur (§9)
 
@@ -42,7 +46,8 @@ Cet adaptateur applique `brain-main/ROUTER.md` (§9). Les règles (rôles, séle
 | Contexte des workers isolé | `omitClaudeMd: true` et brief autonome |
 | Format de rapport | corps des deux workers (§4) |
 | Signaux de suivi, arrêt d'un worker (§7.1) | section « Signaux de suivi » |
-| Ce qui n'est pas garanti | section suivante |
+| Ce qui est observé, documenté ou non essayé | section « État des vérifications » |
+| Ce qui n'est pas garanti | section « Ce qui n'est pas garanti » |
 
 ## Signaux de suivi
 
@@ -58,27 +63,50 @@ Ce qu'il ne peut pas surveiller : la progression d'un worker en cours, sa consom
 
 ## Scénarios à observer en session réelle
 
-| Scénario | À observer |
-| --- | --- |
-| Grosse mission découpée | L'orchestrateur découpe (§2.2), vérifie à chaque point de contrôle, lance la suite en séquence |
-| Reprise utile | Blocage ou petite suite : reprise par `SendMessage` dans les 5 minutes, sans réécriture complète du contexte |
-| Handoff | Après délai ou changement de sujet : nouveau worker avec fait, décisions, fichiers, reste à faire |
-| Rapport court puis demande de détail | Rapport sans sortie brute ; l'orchestrateur demande la commande ou le fichier cité en cas de doute |
-| Dépassement avec `partial` | Le worker s'arrête, rend `partial` et explique l'écart ; l'orchestrateur révise le plan |
+| Scénario | À observer | État |
+| --- | --- | --- |
+| Grosse mission découpée | L'orchestrateur découpe (§2.2), vérifie à chaque point de contrôle, lance la suite en séquence | non essayé |
+| Reprise utile | Blocage ou petite suite : reprise par `SendMessage` dans les 5 minutes, sans réécriture complète du contexte | reprise avec historique observée ; choix au coût non essayé |
+| Handoff | Après délai ou changement de sujet : nouveau worker avec fait, décisions, fichiers, reste à faire | non essayé |
+| Rapport court puis demande de détail | Rapport sans sortie brute ; l'orchestrateur demande la commande ou le fichier cité en cas de doute | non essayé |
+| Dépassement avec `partial` | Le worker s'arrête, rend `partial` et explique l'écart ; l'orchestrateur révise le plan | non essayé |
+
+## État des vérifications
+
+Trois états : `observé en session` (date et source), `documenté seulement` (la documentation de Claude Code le dit, rien n'a été vu), `non essayé`. Ce tableau ne s'enrichit qu'avec une preuve. Les scénarios ci-dessus portent leur état dans leur dernière colonne.
+
+| Fait | État | Date, source |
+| --- | --- | --- |
+| Démarrage en orchestrateur (Opus) par la clé `agent` | observé en session | 2026-11-06, journal de la session `fae31ce0`, entrypoint `claude-desktop` |
+| Outils de l'orchestrateur limités à sa liste | observé en session | idem |
+| Délégation aux deux workers, avec le bon modèle | observé en session | idem |
+| `omitClaudeMd` : workers sans `CLAUDE.md`, `AGENTS.md` ni mémoire, et sans MCP (38 workers) | observé en session | idem |
+| Workers en arrière-plan qui écrivent sans blocage de permission | observé en session | idem |
+| Reprise d'un worker par `SendMessage`, avec son historique | observé en session | idem |
+| Hook de commit déclenché chez un worker par `Bash` (2 commits) | observé en session | idem |
+| `TaskStop` présent dans la liste d'outils de l'orchestrateur | observé en session (présence seule, jamais appelé) | idem |
+| Routeur actif dans une nouvelle conversation d'un projet installé | selon l'humain, non contrôlé (variante de `documenté seulement` : déclaration sans preuve consultable) | - |
+| Appel réel de `TaskStop`, dont sur un worker en avant-plan | non essayé | - |
+| Hook de commit par `PowerShell`, et en session non routée | non essayé | - |
+| Application réelle des règles de rapport court, de découpage, de reprise au coût, de gestion adaptative et de README progressif | non essayé | - |
+| Statut `partial` pour dépassement du brief | non essayé | - |
+| `/brain -d` et sa suite | non essayé | - |
+
+Versions : la session observée tournait en Claude Code 2.1.317 (journal) ; `claude --version` dans le terminal donne 2.1.318 (relevé du 2026-11-06) ; la version de l'application de bureau est non vérifiée.
 
 ## Ce qui n'est pas garanti
 
 1. `Bash` chez les workers contourne toute interdiction : seules la consigne du prompt et le mode de permission s'opposent à une écriture dans `.claude/` ou à un `git commit`.
-2. Les modèles ne sont pas verrouillés. Le paramètre `model` d'un appel passe avant le champ de l'agent : l'orchestrateur pourrait surcharger un worker. La consigne est de ne jamais le passer.
+2. Les modèles ne sont pas verrouillés. Ordre documenté : paramètre `model` de l'appel, puis champ de l'agent, puis `CLAUDE_CODE_SUBAGENT_MODEL`, puis modèle du parent. L'orchestrateur pourrait donc surcharger un worker, y compris vers Opus ; la consigne est de ne jamais passer le paramètre. `availableModels` limite l'ensemble sans lier un worker à un modèle (Opus doit y rester) ; `deniedModels` est réservé aux managed settings. L'effet de `/model` sur l'agent de session n'est pas documenté.
 3. Un worker ne peut pas interroger l'orchestrateur : il s'arrête en `blocked`, et la reprise a un coût.
 4. Chaque modification passe par un aller-retour vers un worker : plus lent, et la consommation n'est pas mesurée.
 5. Le prompt de l'orchestrateur remplace le prompt par défaut : des consignes natives peuvent être perdues. Les outils propres à Desktop (liste de tâches, etc.) peuvent manquer à l'orchestrateur.
 6. Claude Code conserve les transcriptions des sous-agents dans `~/.claude/`, hors du projet.
-7. Non vérifié en session réelle : démarrage en orchestrateur, délégation depuis `/brain`, permissions des workers en arrière-plan.
+7. Non essayé en session réelle : délégation depuis `/brain` (voir « État des vérifications » pour ce qui est observé).
 8. Application dans une nouvelle conversation seulement : la clé `agent` n'a aucun effet dans la conversation d'installation (test réel : pas d'orchestrateur, `worker-sonnet` introuvable). Le constat « session non routée » (Bash, Write ou Edit disponibles alors que le routeur est configuré) est une déduction d'après les outils, sans garantie.
 9. Arrêt d'un worker par `TaskStop` non essayé en session réelle ; aucune mesure de consommation (section « Signaux de suivi »).
-10. Version cible : Claude Code 2.1.317 ou plus. Comportement inconnu avec une version plus ancienne (le CLI 2.1.22 n'a pas été essayé).
+10. Version cible : Claude Code 2.1.317 ou plus (version de la session observée). Comportement inconnu avec une version plus ancienne, non essayée.
 
 ## Retrait
 
-`/brain -d off` retire la clé `agent` de `.claude/settings.json` (`/brain -d on` la remet), puis ouvrir une nouvelle conversation ; retirer la clé à la main reste valable. Les agents restent disponibles sans effet. Un `.claude/settings.json` déjà présent n'est jamais modifié à l'installation : le routeur reste inactif jusqu'à `/brain -d on` ou à l'ajout manuel de `"agent": "orchestrator"`.
+`/brain -d off` retire la clé `agent` de `.claude/settings.json` (`/brain -d on` la remet), puis ouvrir une nouvelle conversation ; retirer la clé à la main reste valable et rend le comportement antérieur. Les agents restent disponibles sans effet. Un `.claude/settings.json` déjà présent n'est jamais modifié à l'installation : le routeur reste inactif jusqu'à `/brain -d on` ou à l'ajout manuel de `"agent": "orchestrator"`.

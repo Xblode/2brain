@@ -3,7 +3,7 @@ metadata_version: 1
 title: "Guide de brain-main"
 type: index
 description: "Guide court de 2brain pour une IA : rôle de brain-main/ et de brain/, commandes /brain, niveaux de lecture et règles."
-version: "1.4.1"
+version: "1.5.0"
 status: draft
 created: "2026-11-06"
 updated: "2026-11-06"
@@ -56,7 +56,7 @@ Les commandes s'exécutent avec le skill `/brain` du compte. Si une commande éc
 - Ne lancer ni Review ni synchronisation externe sans demande claire ; pas de commit ni de push sans demande. **Search sans demander** : avant une implémentation ou si le sujet a pu être traité, chercher dans le registre par `worker-haiku` (lecture seule), ou soi-même sans routeur ; un essai de script se fait sur une copie.
 - **Avant un commit**, relire les README des dossiers modifiés et rapporter ce qui a été relu (le hook du compte refuse une fois le `git commit` à relire ; il arrête et donne la consigne, sans garantir la lecture).
 - Ne pas modifier un document avec `locked: true` sans demande explicite.
-- **Obligatoire avant de créer ou modifier un document** : lire la convention concernée, au moins les sections utiles : `NAMING.md` pour un nom de fichier ou de dossier, `METADATA.md` pour un en-tête, une version ou une date. **Avant de travailler dans un dossier**, lire son README le plus proche (dossier courant, sinon un parent ; modèle : `METADATA.md` §6.9) et le tenir à jour.
+- **Obligatoire avant de créer ou modifier un document** : lire la convention concernée, au moins les sections utiles : `NAMING.md` pour un nom de fichier ou de dossier, `METADATA.md` pour un en-tête, une version ou une date. **Avant de travailler dans un dossier**, lire son README le plus proche (dossier courant, sinon un parent ; modèle : `METADATA.md` §6.9), progressivement : d'abord ses métadonnées et son introduction, puis les sections utiles à la mission ; en entier seulement si nécessaire ; le tenir à jour.
 
 ## Routeur actif par défaut
 

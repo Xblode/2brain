@@ -4,7 +4,7 @@ title: Agent Router
 type: specification
 description: Spécifie le routage de la délégation entre un orchestrateur unique et des workers d'exécution.
 summary: Un orchestrateur unique dialogue avec l'humain, décide, rédige des briefs, délègue à des workers et contrôle leurs rapports. Ce document fixe les rôles, les profils, les critères de sélection, le découpage des missions volumineuses, le brief minimal, le rapport décisionnel court, le contrôle, le choix entre reprise et nouveau worker, la gestion adaptative, la trace et le contrat qu'un adaptateur doit respecter. Il ne contient aucun nom d'outil ni de modèle.
-version: "0.2.0"
+version: "0.3.0"
 status: draft
 created: "2026-11-05"
 updated: "2026-11-06"
@@ -98,7 +98,7 @@ Si la mission prépare ou fait un commit, le rapport dit quels README des dossie
 
 ## 5. Connaissances
 
-L'orchestrateur répond de la distribution des connaissances, sans tout lire lui-même. Il lit les métadonnées puis les sections utiles (METADATA §9.4), ou confie l'extraction d'un long document à `light`. Il transmet au worker la règle citée et sa référence. Un worker peut lire un document précis si le rapport coût/qualité le justifie. Avant de travailler dans un dossier, tout agent, worker compris, lit le README le plus proche (dossier courant, sinon un parent), même si le brief ne le cite pas (METADATA §6.9) ; sans README, il continue.
+L'orchestrateur répond de la distribution des connaissances, sans tout lire lui-même. Il lit les métadonnées puis les sections utiles (METADATA §9.4), ou confie l'extraction d'un long document à `light`. Il transmet au worker la règle citée et sa référence. Un worker peut lire un document précis si le rapport coût/qualité le justifie. Avant de travailler dans un dossier, tout agent, worker compris, lit le README le plus proche (dossier courant, sinon un parent), même si le brief ne le cite pas (METADATA §6.9). Lecture progressive : d'abord ses métadonnées et son introduction, puis les sections utiles à la mission ; en entier seulement si nécessaire ; sans README, il continue.
 
 ## 6. Question en cours de mission
 

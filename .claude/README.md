@@ -1,10 +1,10 @@
 ---
 metadata_version: 1
 title: Adaptateur Claude Code de l'Agent Router
-description: Décrit la correspondance entre les profils de l'Agent Router et les agents Claude Code, leurs limites vérifiées et la procédure de test.
-version: "0.1.2"
+description: Décrit l'adaptateur Claude Code installé dans .claude/ : correspondance profil, agent et modèle, outils, contrat du routeur et limites non garanties.
+version: "0.3.0"
 status: draft
-created: "2026-11-05"
+created: "2026-11-06"
 updated: "2026-11-06"
 type: reference
 scope:
@@ -15,84 +15,98 @@ depends_on:
 updated_from:
   - "https://code.claude.com/docs/en/sub-agents.md"
   - "https://code.claude.com/docs/en/model-config.md"
-  - "https://code.claude.com/docs/en/permission-modes.md"
+  - "https://code.claude.com/docs/en/tools-reference"
 ---
 
 # Adaptateur Claude Code
 
-Cet adaptateur applique `brain-main/ROUTER.md`. Les règles (rôles, sélection, brief, rapport, contrôle, trace) n'y sont pas recopiées : voir ce document. Les résultats des tests de la section « Vérification » ne sont pas consignés ici ; l'état réel (non vérifié en session réelle) est dans `brain-main/adapters/claude-code/README.md`.
+Cet adaptateur applique `brain-main/ROUTER.md` (§9). Les règles (rôles, sélection, brief, rapport, contrôle, trace) n'y sont pas recopiées : voir ce document. `/brain -i` le copie dans `.claude/` du projet ; sa source est `brain-main/adapters/claude-code/`. Une nouvelle conversation démarre alors en orchestrateur, qui délègue aux workers. Décision de l'humain du 2026-11-06.
 
 ## Correspondance
 
-| Profil | Agent | Modèle |
+| Profil | Agent | Modèle | `tools` |
+| --- | --- | --- | --- |
+| `strategic` | `orchestrator` | `opus` | `Read, Grep, Glob, Agent(worker-sonnet, worker-haiku), SendMessage, TaskStop, AskUserQuestion` |
+| `standard` | `worker-sonnet` | `sonnet` | `Read, Grep, Glob, Edit, Write, Bash` |
+| `light` | `worker-haiku` | `haiku` | `Read, Grep, Glob, Edit, Bash` |
+
+- Les workers ont `omitClaudeMd: true`, `disallowedTools: mcp__*`, ni `Agent` ni `SendMessage`.
+- `worker-haiku` n'a pas `Write` : créer un fichier relève de `standard`.
+- Pas de mode plan (il exige d'écrire un fichier) : les plans sont présentés dans la conversation et validés par `AskUserQuestion`.
+- `settings.json` : `{"agent": "orchestrator"}` seulement. Aucun hook, plugin, MCP ni `permissions`.
+- Les noms `worker-sonnet` et `worker-haiku` portent le modèle, à la demande de l'humain (exception à NAMING §2.1 et §11.3, limitée à `.claude/agents/`). Si le modèle d'un profil change, le nom du fichier est réexaminé ; l'exception ne s'étend à aucun autre dossier.
+
+## Contrat du routeur (§9)
+
+| Exigence | Où |
+| --- | --- |
+| Écriture et exécution interdites à l'orchestrateur | `tools` de `orchestrator` : ni `Bash`, ni `Write`, ni `Edit` |
+| Cibles de délégation limitées | `Agent(worker-sonnet, worker-haiku)` |
+| Un modèle par profil | champ `model` de chaque agent |
+| Contexte des workers isolé | `omitClaudeMd: true` et brief autonome |
+| Format de rapport | corps des deux workers (§4) |
+| Signaux de suivi, arrêt d'un worker (§7.1) | section « Signaux de suivi » |
+| Ce qui est observé, documenté ou non essayé | section « État des vérifications » |
+| Ce qui n'est pas garanti | section « Ce qui n'est pas garanti » |
+
+## Signaux de suivi
+
+Pour la gestion adaptative (ROUTER §7.1), l'orchestrateur dispose de :
+
+- le rapport de chaque worker (statut, résultat, fichiers, tests, incertitudes) ;
+- la notification de fin d'un worker : `tool_uses`, durée et `subagent_tokens`, qui est la taille du contexte final, pas la consommation ;
+- le statut `partial` d'un worker qui constate un dépassement du brief.
+
+Ce qu'il ne peut pas surveiller : la progression d'un worker en cours, sa consommation réelle de jetons, l'état de son cache (5 minutes par défaut ; une reprise après ce délai réécrit tout le contexte). Le tarif de `haiku` est multiplié par 5 au-delà de 100 000 jetons de prompt : repère de coût, pas limite. L'orchestrateur ne lit jamais le fichier `output_file`, qui alourdit son contexte.
+
+**Arrêt d'un worker en cours : possible avec `TaskStop`.** La documentation (https://code.claude.com/docs/en/tools-reference, tableau des outils : « Stops a running background task by ID » ; https://code.claude.com/docs/en/sub-agents) nomme `TaskStop` ; il est dans les `tools` de `orchestrator` (`Read, Grep, Glob, Agent(...), SendMessage, TaskStop, AskUserQuestion`). L'orchestrateur peut arrêter un worker dont le travail devient disproportionné ou inutile ; ce qu'il a déjà écrit reste sur le disque, à contrôler (`git status`, par un worker). Recadrer par `SendMessage` ne s'applique qu'au tour suivant du worker. Constaté le 2026-11-06 d'après la documentation, non essayé en session réelle.
+
+## Scénarios à observer en session réelle
+
+| Scénario | À observer | État |
 | --- | --- | --- |
-| `strategic` | `orchestrator` | `opus` |
-| `standard` | `worker-sonnet` | `sonnet` |
-| `light` | `worker-haiku` | `haiku` |
+| Grosse mission découpée | L'orchestrateur découpe (§2.2), vérifie à chaque point de contrôle, lance la suite en séquence | non essayé |
+| Reprise utile | Blocage ou petite suite : reprise par `SendMessage` dans les 5 minutes, sans réécriture complète du contexte | reprise avec historique observée ; choix au coût non essayé |
+| Handoff | Après délai ou changement de sujet : nouveau worker avec fait, décisions, fichiers, reste à faire | non essayé |
+| Rapport court puis demande de détail | Rapport sans sortie brute ; l'orchestrateur demande la commande ou le fichier cité en cas de doute | non essayé |
+| Dépassement avec `partial` | Le worker s'arrête, rend `partial` et explique l'écart ; l'orchestrateur révise le plan | non essayé |
 
-## Outils
+## État des vérifications
 
-| Agent | `tools` |
-| --- | --- |
-| `orchestrator` | `Read, Grep, Glob, Agent(worker-sonnet, worker-haiku), SendMessage, TaskStop, AskUserQuestion` |
-| `worker-sonnet` | `Read, Grep, Glob, Edit, Write, Bash` |
-| `worker-haiku` | `Read, Grep, Glob, Edit, Bash` |
+Trois états : `observé en session` (date et source), `documenté seulement` (la documentation de Claude Code le dit, rien n'a été vu), `non essayé`. Ce tableau ne s'enrichit qu'avec une preuve. Les scénarios ci-dessus portent leur état dans leur dernière colonne.
 
-- Workers : `omitClaudeMd: true`, `disallowedTools: mcp__*`, sans `Agent` ni `SendMessage`.
-- `worker-haiku` n'a pas `Write` : créer un fichier demande un jugement, donc le profil `standard`.
-- L'orchestrateur n'a pas de mode plan : ce mode exige d'écrire un fichier de plan. Les plans sont présentés dans la conversation et validés par `AskUserQuestion`.
-- `settings.json` : `{"agent": "orchestrator"}` seulement, sans `permissions.deny` (clé active). Aucun hook, plugin, MCP, skill, Agent Teams ni dépendance : cette phrase concerne cet adaptateur des agents, pas le Bootstrap (documenté dans `brain-main/bootstrap/README.md`).
+| Fait | État | Date, source |
+| --- | --- | --- |
+| Démarrage en orchestrateur (Opus) par la clé `agent` | observé en session | 2026-11-06, journal de la session `fae31ce0`, entrypoint `claude-desktop` |
+| Outils de l'orchestrateur limités à sa liste | observé en session | idem |
+| Délégation aux deux workers, avec le bon modèle | observé en session | idem |
+| `omitClaudeMd` : workers sans `CLAUDE.md`, `AGENTS.md` ni mémoire, et sans MCP (38 workers) | observé en session | idem |
+| Workers en arrière-plan qui écrivent sans blocage de permission | observé en session | idem |
+| Reprise d'un worker par `SendMessage`, avec son historique | observé en session | idem |
+| Hook de commit déclenché chez un worker par `Bash` (2 commits) | observé en session | idem |
+| `TaskStop` présent dans la liste d'outils de l'orchestrateur | observé en session (présence seule, jamais appelé) | idem |
+| Routeur actif dans une nouvelle conversation d'un projet installé | selon l'humain, non contrôlé (variante de `documenté seulement` : déclaration sans preuve consultable) | - |
+| Appel réel de `TaskStop`, dont sur un worker en avant-plan | non essayé | - |
+| Hook de commit par `PowerShell`, et en session non routée | non essayé | - |
+| Application réelle des règles de rapport court, de découpage, de reprise au coût, de gestion adaptative et de README progressif | non essayé | - |
+| Statut `partial` pour dépassement du brief | non essayé | - |
+| `/brain -d` et sa suite | non essayé | - |
 
-## Ce que `model` ne garantit pas
+Versions : la session observée tournait en Claude Code 2.1.317 (journal) ; `claude --version` dans le terminal donne 2.1.318 (relevé du 2026-11-06) ; la version de l'application de bureau est non vérifiée.
 
-L'ordre documenté est : paramètre `model` de l'appel, puis frontmatter, puis `CLAUDE_CODE_SUBAGENT_MODEL`, puis modèle du parent. L'orchestrateur pourrait donc surcharger un worker, y compris vers Opus. `availableModels` limite l'ensemble mais ne lie pas un worker à un modèle, et Opus doit y rester. `deniedModels` est réservé aux managed settings. L'effet de `/model` sur l'agent de session n'est pas documenté. V1 : consigne de ne jamais passer `model`, et contrôle dans la mesure.
+## Ce qui n'est pas garanti
 
-## Version cible
+1. `Bash` chez les workers contourne toute interdiction : seules la consigne du prompt et le mode de permission s'opposent à une écriture dans `.claude/` ou à un `git commit`.
+2. Les modèles ne sont pas verrouillés. Ordre documenté : paramètre `model` de l'appel, puis champ de l'agent, puis `CLAUDE_CODE_SUBAGENT_MODEL`, puis modèle du parent. L'orchestrateur pourrait donc surcharger un worker, y compris vers Opus ; la consigne est de ne jamais passer le paramètre. `availableModels` limite l'ensemble sans lier un worker à un modèle (Opus doit y rester) ; `deniedModels` est réservé aux managed settings. L'effet de `/model` sur l'agent de session n'est pas documenté.
+3. Un worker ne peut pas interroger l'orchestrateur : il s'arrête en `blocked`, et la reprise a un coût.
+4. Chaque modification passe par un aller-retour vers un worker : plus lent, et la consommation n'est pas mesurée.
+5. Le prompt de l'orchestrateur remplace le prompt par défaut : des consignes natives peuvent être perdues. Les outils propres à Desktop (liste de tâches, etc.) peuvent manquer à l'orchestrateur.
+6. Claude Code conserve les transcriptions des sous-agents dans `~/.claude/`, hors du projet.
+7. Non essayé en session réelle : délégation depuis `/brain` (voir « État des vérifications » pour ce qui est observé).
+8. Application dans une nouvelle conversation seulement : la clé `agent` n'a aucun effet dans la conversation d'installation (test réel : pas d'orchestrateur, `worker-sonnet` introuvable). Le constat « session non routée » (Bash, Write ou Edit disponibles alors que le routeur est configuré) est une déduction d'après les outils, sans garantie.
+9. Arrêt d'un worker par `TaskStop` non essayé en session réelle ; aucune mesure de consommation (section « Signaux de suivi »).
+10. Version cible : Claude Code 2.1.317 ou plus (version de la session observée). Comportement inconnu avec une version plus ancienne, non essayée.
 
-Claude Code 2.1.317 ou plus (version embarquée dans Desktop). Le CLI du PATH est en 2.1.22 : à mettre à jour avant tout usage en terminal.
+## Retrait
 
-## Limites de la V1
-
-1. `Bash` chez les workers contourne les `deny` (écriture dans `.claude/`, `git commit`). Seules la consigne et le mode de permission s'y opposent, les hooks étant exclus. Le `deny` bloque aussi une session ordinaire : `.claude/` se modifie alors à la main ou après retrait temporaire de l'interdiction.
-2. Modèles non verrouillés par worker (voir plus haut).
-3. Trois points non documentés, à tester : prise en charge de `agent` par Desktop, `Agent(a, b)` avec le setting (documenté pour `--agent`), MCP chez un subagent en arrière-plan (la doc dit qu'il les garde, d'où `disallowedTools`).
-4. Le worker ne peut pas interroger l'orchestrateur en cours de mission : il s'arrête, et la reprise a un coût.
-5. Claude Code conserve les transcriptions des subagents dans `~/.claude/`, hors du dépôt. La règle « pas de raisonnement interne » vaut pour le Second Brain, pas pour ces fichiers.
-6. Le prompt de l'orchestrateur remplace le prompt par défaut : perte possible de consignes natives. Les outils propres à Desktop (liste de tâches, etc.) peuvent aussi disparaître de sa liste blanche.
-7. Un routeur par défaut modifie les conditions du test de reprise de la remise à niveau : à signaler lors de la comparaison avec la mesure de départ.
-8. CLI 2.1.22 : comportement inconnu avec cette configuration, probablement un orchestrateur sans délégation.
-
-## Vérification
-
-À faire avant d'activer la clé `agent`. Résultats non encore consignés.
-
-| Test | Attendu |
-| --- | --- |
-| Orchestrateur : demander une écriture, une commande | Refus par absence d'outil, délégation proposée |
-| Orchestrateur : appeler `Explore` ou un autre agent | Impossible ; sinon, repli natif `permissions.deny` sur `Agent(nom)` |
-| Workers : tenter un subagent | Impossible |
-| Modèle effectif de chaque agent | `opus`, `sonnet`, `haiku` dans les métadonnées de sortie |
-| Worker en arrière-plan : lister les outils MCP | Aucun |
-| Worker `blocked`, puis reprise avec `SendMessage` | Reprise avec son historique ; vérifier si `ToolSearch` est nécessaire à l'orchestrateur |
-| Worker : écrire dans `.claude/` avec `Edit` | Refusé par `deny` |
-| Parallèle, deux workers en arrière-plan | Pas de blocage sur une demande de permission |
-| Front matter METADATA dans les agents | Agents chargés sans erreur |
-| `python brain-main/skills/brain-capture/scripts/validate-registry.py brain/registry/entries.jsonl` et `git status` | Registre intact |
-| Nouvelle session Desktop avec la clé `agent` | Opus orchestrateur au démarrage ; `/status` confirme |
-
-Si Claude Code refuse les champs de métadonnées ajoutés au front matter des agents, une exception sera documentée (METADATA §10.1).
-
-## Retour arrière
-
-Retirer la clé `agent` de `settings.json` rend le comportement antérieur.
-
-## Exception de nommage
-
-- **Règle concernée** : NAMING §2.1 (nommer selon le concept et la responsabilité, ici le profil plutôt que le modèle).
-- **Périmètre** : `.claude/agents/` uniquement (`worker-sonnet`, `worker-haiku`).
-- **Justification** : les noms portent le modèle à la demande de l'humain (NAMING §11.3).
-- **Comportement attendu** : si le modèle d'un profil change, le nom du fichier est réexaminé ; l'exception ne s'étend à aucun autre dossier.
-
-## Maintenance de `.claude/`
-
-Le `deny` sur `.claude/**` bloque les modifications par les agents (voir Limites, point 1). Pour modifier ces fichiers : à la main, ou après retrait temporaire de l'interdiction dans `settings.json`, puis rétablissement.
+`/brain -d off` retire la clé `agent` de `.claude/settings.json` (`/brain -d on` la remet), puis ouvrir une nouvelle conversation ; retirer la clé à la main reste valable et rend le comportement antérieur. Les agents restent disponibles sans effet. Un `.claude/settings.json` déjà présent n'est jamais modifié à l'installation : le routeur reste inactif jusqu'à `/brain -d on` ou à l'ajout manuel de `"agent": "orchestrator"`.

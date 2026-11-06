@@ -3,7 +3,7 @@ metadata_version: 1
 title: "Instructions agents 2brain"
 type: index
 description: "Point d'entrée des agents IA : identité du projet, organisation, règles de travail et documents à lire selon la tâche."
-version: "1.11.0"
+version: "1.12.0"
 status: review
 created: "2026-10-31"
 updated: "2026-11-06"
@@ -76,7 +76,7 @@ Les références `CAP-xxx` des sections « Ancienne synthèse » des documents d
 - Ne pas modifier un document avec `locked: true` sans demande explicite.
 - Sauf consigne claire : ne pas lancer Brain Review / Sync ; ne pas commit ni push sans demande.
 - **Recherche sans demander** (décision de l'humain, 2026-11-06, CAP-452) : avant de proposer une implémentation, ou quand le sujet a pu être déjà traité, chercher dans le registre sans demander, en lançant `worker-haiku` (lecture seule : `search-registry.py` ou Grep sur le vrai registre). Sans cet agent (session non routée), lancer soi-même la recherche. Elle n'écrit rien.
-- **Avant de travailler dans un dossier** : lire son README le plus proche (dossier courant, sinon un parent) et le tenir à jour si le travail change son rôle ou ses fonctionnalités (modèle : `brain-main/conventions/METADATA.md` §6.9).
+- **Avant de travailler dans un dossier** : lire son README le plus proche (dossier courant, sinon un parent), progressivement : d'abord ses métadonnées et son introduction, puis les sections utiles à la mission ; en entier seulement si nécessaire ; le tenir à jour si le travail change son rôle ou ses fonctionnalités (modèle : `brain-main/conventions/METADATA.md` §6.9).
 - Règle immuable de l'humain (2026-11-06) : avant chaque commit, relire les README des dossiers modifiés (le plus proche de chaque fichier) et rapporter ce qui a été relu et corrigé ; un hook du compte (`brain-main/bootstrap/README.md` §9.2) arrête une fois le commit et donne la consigne, sans garantir la lecture.
 
 ## Commandes

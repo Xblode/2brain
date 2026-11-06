@@ -29,7 +29,7 @@ Outils de `/brain`. Le détail de chaque commande est dans `brain-main/bootstrap
 | --- | --- | --- | --- |
 | `brain-main/skills/brain-capture/` | Capture | `/brain -c`, `-c <fichier>`, `-c 1` | `brain-main/skills/brain-capture/SKILL.md` (références dans `references/`, scripts dans `scripts/`) |
 | `brain-main/skills/brain-onboarding/` | Onboarding | `/brain -o` | `brain-main/skills/brain-onboarding/SKILL.md` |
-| `brain-main/skills/brain-audit/` | Audit d'un projet existant | `/brain -a` | `brain-main/skills/brain-audit/SKILL.md` (script de lecture seule dans `scripts/`) |
+| `brain-main/skills/brain-audit/` | Audit d'un projet existant | `/brain -a` | `brain-main/skills/brain-audit/SKILL.md` (script de lecture seule dans `scripts/` ; la mise à jour de `AGENTS.md` et `CLAUDE.md` passe par `brain-main/bootstrap/scripts/sync-agents.py`) |
 | `brain-main/skills/brain-readme/` | README des dossiers maîtres et leur nombre maximum | `/brain -m`, `/brain -m <nombre>` | `brain-main/skills/brain-readme/SKILL.md` (lit le plafond de `brain/settings.json` ; l'inventaire passe par le script de `brain-audit`) |
 | `brain-main/skills/brain-search/` | Recherche | `/brain -s <sujet>` | Pas de `SKILL.md` : script `brain-main/skills/brain-search/scripts/search-registry.py` |
 | `brain-main/skills/brain-review/` | Review | `/brain -r` | Pas de `SKILL.md` : script `brain-main/skills/brain-review/scripts/review-registry.py` |
