@@ -223,7 +223,7 @@ brain-main/bootstrap/
   account/                part sur le compte (SKILL.md, session-start.py, commit-check.py, status.py, fetch-source.py)
   scripts/                arrivent avec brain-main/ (install-account, prepare-install, apply-install, cancel-install, update-brain-main, set-router, set-readme-max)
   templates/              CLAUDE.md, AGENTS.md, gitignore.txt (racine) ; brain/ (docs/, registry/entries.jsonl vide, settings.json)
-  tests/                  run_bootstrap_tests.py (installation, compte, racine, brain généré), run_commands_tests.py (-c, -s, -r), run_audit_tests.py (-a), run_readme_tests.py (hook des README, réglage, -m)
+  tests/                  run_bootstrap_tests.py (installation, compte, racine, brain généré), run_commands_tests.py (-c, -s, -r), run_audit_tests.py (-a), run_readme_tests.py (hook des README, réglage, -m), run_router_tests.py (routeur : ROUTER.md, agents, README de l'adaptateur)
 brain-main/registry/      SCHEMA.md (contrat du registre)
 brain-main/adapters/claude-code/  agents/ (orchestrator, worker-sonnet, worker-haiku), settings.json, README.md (copiés dans .claude/ par -i)
 brain-main/skills/
