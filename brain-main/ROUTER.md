@@ -3,8 +3,8 @@ metadata_version: 1
 title: Agent Router
 type: specification
 description: Spécifie le routage de la délégation entre un orchestrateur unique et des workers d'exécution.
-summary: Un orchestrateur unique dialogue avec l'humain, décide, rédige des briefs, délègue à des workers et contrôle leurs rapports. Ce document fixe les rôles, les profils, les critères de sélection, le format du brief et du rapport, le contrôle, la trace et le contrat qu'un adaptateur doit respecter. Il ne contient aucun nom d'outil ni de modèle.
-version: "0.1.2"
+summary: Un orchestrateur unique dialogue avec l'humain, décide, rédige des briefs, délègue à des workers et contrôle leurs rapports. Ce document fixe les rôles, les profils, les critères de sélection, le découpage des missions volumineuses, le brief minimal, le rapport décisionnel court, le contrôle, le choix entre reprise et nouveau worker, la gestion adaptative, la trace et le contrat qu'un adaptateur doit respecter. Il ne contient aucun nom d'outil ni de modèle.
+version: "0.2.0"
 status: draft
 created: "2026-11-05"
 updated: "2026-11-06"
@@ -61,31 +61,40 @@ S'arrêter au premier « oui » :
 | Contexte nécessaire | Peut-il tenir dans un brief ? |
 | Parallélisation | Indépendance réelle |
 
+### 2.2 Découpage
+
+Signes d'une mission volumineuse : beaucoup de fichiers ou de longues sources à traiter, plusieurs livrables distincts, un résultat dont dépend la suite. Dans ce cas, l'orchestrateur la divise en sous-tâches ciblées, chacune avec un périmètre et un livrable précis. Il les place en séquence quand l'une dépend de l'autre, et vérifie le résultat à chaque point de contrôle avant de lancer la suite. Pas de découpage inutile : une petite mission reste entière.
+
 ## 3. Brief
 
-Selon le besoin :
+Le strict nécessaire à cette mission, parmi :
 
 - objectif ;
 - périmètre ;
 - fichiers concernés ;
-- documents précis à lire, avec la section ;
+- documents à lire, de préférence une section plutôt que le document entier ;
 - contraintes citées avec leur référence ;
 - actions autorisées ;
-- résultat attendu et critères de réussite, dont les vérifications à exécuter.
+- résultat attendu et critères de réussite, dont les vérifications à exécuter ;
+- forme du rapport, seulement si elle diffère du format court (§4) : par exemple une sortie brute à restituer telle quelle.
 
-Pas d'historique de la conversation : le brief se suffit.
+Pas d'historique de la conversation : le brief se suffit. Il ne répète pas ce que le prompt du worker porte déjà, sauf le rappel qu'exige la règle d'un adaptateur.
 
 ## 4. Rapport
 
-Le worker rend, dans cet ordre :
+Format décisionnel court par défaut. Le worker rend :
 
 1. statut : `done`, `partial` ou `blocked` ;
-2. travail effectué ;
-3. résultats et preuves brutes ;
-4. fichiers modifiés ;
-5. difficultés, limites et points à décider.
+2. résultat ;
+3. fichiers modifiés, avec les lignes concernées ;
+4. tests : commande, code de sortie, comptes ;
+5. incertitudes et décisions à prendre.
 
-Pas de journal d'exploration. Si la mission prépare ou fait un commit, le rapport dit quels README des dossiers modifiés ont été relus et lesquels corrigés.
+La taille du rapport est proportionnelle à la mission, sans plafond chiffré. Les preuves complètes restent accessibles à la demande : commande à rejouer ou fichier temporaire cité. La sortie brute n'est jointe que si elle est décisive, en cas d'échec (l'extrait utile), ou si le brief la demande. Pas de journal d'exploration.
+
+`partial` couvre aussi le cas où le worker constate que la mission dépasse nettement le brief (volume, fichiers, difficulté) : il s'arrête, rend ce qui est fait et explique l'écart, plutôt que de continuer.
+
+Si la mission prépare ou fait un commit, le rapport dit quels README des dossiers modifiés ont été relus et lesquels corrigés.
 
 ## 5. Connaissances
 
@@ -93,13 +102,21 @@ L'orchestrateur répond de la distribution des connaissances, sans tout lire lui
 
 ## 6. Question en cours de mission
 
-Le worker s'arrête et rend `blocked` avec ses questions. L'orchestrateur répond en reprenant ce même worker. S'il n'a pas la réponse, ou si une décision humaine est nécessaire, il sollicite l'humain.
+Le worker s'arrête et rend `blocked` avec ses questions. L'orchestrateur répond, en reprenant ce même worker si la comparaison du §6.1 le justifie. S'il n'a pas la réponse, ou si une décision humaine est nécessaire, il sollicite l'humain.
+
+### 6.1 Reprise ou nouveau worker
+
+Comparer le coût estimé. Reprendre un worker coûte son contexte hérité, relu à chaque tour restant. Un nouveau worker coûte son démarrage, la relecture nécessaire et le brief. Reprendre en cas de blocage, de question ou de petite suite sur le même sujet, quand l'historique sert vraiment. Sinon, lancer un nouveau worker avec un handoff synthétique : ce qui est fait, les décisions prises, les fichiers concernés, le reste à faire. Aucune interdiction de reprendre : c'est un choix de coût.
 
 ## 7. Contrôle
 
 - Sans modification : cohérence du rapport.
-- Avec modification : vérifications exécutées dans la mission, sortie brute dans le rapport, puis lecture par l'orchestrateur des passages modifiés.
+- Avec modification : vérifications exécutées dans la mission et rapportées (commande, code, compte), puis lecture par l'orchestrateur des passages modifiés. Le contrôle repose sur des preuves vérifiables, pas sur l'affirmation du worker ; en cas de doute, l'orchestrateur demande le détail (commande à rejouer, fichier cité, sortie brute).
 - Exception (risque élevé ou résultat douteux) : contre-vérification par un second worker.
+
+### 7.1 Gestion adaptative
+
+À chaque rapport et à chaque signal disponible, l'orchestrateur compare la progression, le contexte consommé et le coût au plan. Il peut alors réviser le plan, changer de profil ou de stratégie, recadrer le worker ou arrêter. Le worker rend `partial` s'il constate que la mission dépasse nettement le brief (§4). L'orchestrateur ne surveille que les signaux que l'adaptateur expose (§9).
 
 ## 8. Trace
 
@@ -114,6 +131,7 @@ Un adaptateur doit :
 - associer chaque profil à un modèle ;
 - isoler le contexte des workers ;
 - porter le format de rapport (§4) ;
+- dire quels signaux de suivi existent (progression, contexte, coût, durée) et ce qu'on ne peut pas surveiller, ainsi que la capacité d'arrêter un worker en cours (§7.1) ;
 - écrire ce qui n'est pas garanti.
 
 Un outil sans adaptateur travaille normalement selon `AGENTS.md`, sans routage, avec les mêmes règles de registre.

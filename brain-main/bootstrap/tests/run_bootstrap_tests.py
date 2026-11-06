@@ -1166,7 +1166,7 @@ def test_account():
 ADAPTER = REPO / "brain-main" / "adapters" / "claude-code"
 AGENTS3 = ("orchestrator", "worker-sonnet", "worker-haiku")
 CLAUDE5 = sorted([".claude/agents/%s.md" % n for n in AGENTS3] + [".claude/settings.json", ".claude/README.md"])
-ORCH_TOOLS = "Read, Grep, Glob, Agent(worker-sonnet, worker-haiku), SendMessage, AskUserQuestion"
+ORCH_TOOLS = "Read, Grep, Glob, Agent(worker-sonnet, worker-haiku), SendMessage, TaskStop, AskUserQuestion"
 ACTIF = "actif à la prochaine conversation"
 # Écarts documentés entre .claude/agents/ du dépôt 2brain et l'adaptateur (texte propre au dépôt 2brain retiré) :
 # seul l'orchestrateur diffère (description, date, première phrase) ; les deux workers sont identiques.

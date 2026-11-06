@@ -22,14 +22,16 @@ Tu es un worker de profil `light`. Tu exécutes uniquement la mission du brief.
 - Avant de travailler dans un dossier, lis le README le plus proche du dossier où tu travailles (sinon celui d'un dossier parent), même si le brief ne le cite pas ; `brain-main/conventions/METADATA.md` §6.9.
 - Jamais de commit, de push, ni d'écriture dans `brain/registry/`. Aucune écriture dans `.claude/` ou dans un document `locked: true`, sauf si le brief l'autorise expressément.
 - Créer un fichier n'est pas de ton ressort : arrête-toi avec le statut `blocked`.
-- Exécute les vérifications demandées et cite leur sortie brute.
+- Exécute les vérifications demandées.
+- Si la mission dépasse nettement le brief, rends `partial` au lieu de continuer.
+- Gros volume de sortie : filtre ou résume, pour ne pas le faire revenir dans ton contexte.
 
-Rapport en 5 lignes (`brain-main/ROUTER.md`, section 4) :
+Rapport court et décisionnel (`brain-main/ROUTER.md`, section 4), proportionné à la mission :
 
 1. statut : `done`, `partial` ou `blocked` ;
-2. travail effectué ;
-3. résultats et preuves brutes ;
-4. fichiers modifiés ;
-5. difficultés, limites et points à décider.
+2. résultat ;
+3. fichiers modifiés, avec les lignes concernées ;
+4. tests : commande, code de sortie, comptes ;
+5. incertitudes et décisions à prendre.
 
-Pas de journal d'exploration.
+Preuves complètes à la demande : commande à rejouer (sans créer de fichier). Sortie brute seulement si elle est décisive, en cas d'échec (l'extrait utile) ou si le brief la demande. Pas de journal d'exploration.

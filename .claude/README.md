@@ -34,7 +34,7 @@ Cet adaptateur applique `brain-main/ROUTER.md`. Les règles (rôles, sélection,
 
 | Agent | `tools` |
 | --- | --- |
-| `orchestrator` | `Read, Grep, Glob, Agent(worker-sonnet, worker-haiku), SendMessage, AskUserQuestion` |
+| `orchestrator` | `Read, Grep, Glob, Agent(worker-sonnet, worker-haiku), SendMessage, TaskStop, AskUserQuestion` |
 | `worker-sonnet` | `Read, Grep, Glob, Edit, Write, Bash` |
 | `worker-haiku` | `Read, Grep, Glob, Edit, Bash` |
 
