@@ -2,10 +2,10 @@
 metadata_version: 1
 title: Adaptateur Claude Code de l'Agent Router
 description: Décrit la correspondance entre les profils de l'Agent Router et les agents Claude Code, leurs limites vérifiées et la procédure de test.
-version: "0.1.1"
+version: "0.1.2"
 status: draft
 created: "2026-11-05"
-updated: "2026-11-05"
+updated: "2026-11-06"
 type: reference
 scope:
   level: domain
@@ -20,7 +20,7 @@ updated_from:
 
 # Adaptateur Claude Code
 
-Cet adaptateur applique `brain-main/ROUTER.md`. Les règles (rôles, sélection, brief, rapport, contrôle, trace) n'y sont pas recopiées : voir ce document. Les tests de la section « Vérification » ne sont pas encore faits ; leurs résultats s'y ajouteront.
+Cet adaptateur applique `brain-main/ROUTER.md`. Les règles (rôles, sélection, brief, rapport, contrôle, trace) n'y sont pas recopiées : voir ce document. Les résultats des tests de la section « Vérification » ne sont pas consignés ici ; l'état réel (non vérifié en session réelle) est dans `brain-main/adapters/claude-code/README.md`.
 
 ## Correspondance
 
@@ -41,7 +41,7 @@ Cet adaptateur applique `brain-main/ROUTER.md`. Les règles (rôles, sélection,
 - Workers : `omitClaudeMd: true`, `disallowedTools: mcp__*`, sans `Agent` ni `SendMessage`.
 - `worker-haiku` n'a pas `Write` : créer un fichier demande un jugement, donc le profil `standard`.
 - L'orchestrateur n'a pas de mode plan : ce mode exige d'écrire un fichier de plan. Les plans sont présentés dans la conversation et validés par `AskUserQuestion`.
-- `settings.json` (à venir) : `"agent": "orchestrator"` seulement une fois les tests réussis, et `permissions.deny` sur `Edit(.claude/**)` et `Write(.claude/**)`. Aucun hook, plugin, MCP, skill, Agent Teams ni dépendance : cette phrase concerne cet adaptateur des agents, pas le Bootstrap (documenté dans `brain-main/bootstrap/README.md`).
+- `settings.json` : `{"agent": "orchestrator"}` seulement, sans `permissions.deny` (clé active). Aucun hook, plugin, MCP, skill, Agent Teams ni dépendance : cette phrase concerne cet adaptateur des agents, pas le Bootstrap (documenté dans `brain-main/bootstrap/README.md`).
 
 ## Ce que `model` ne garantit pas
 

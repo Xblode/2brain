@@ -6,7 +6,7 @@ type: index
 description: "Catalogue des conventions communes à toute instance Brain et règles d'articulation entre elles."
 summary: "Liste les quatre documents du dossier, la responsabilité unique de chacun, les termes à ne pas confondre entre métadonnées de document et champs de registre, et la règle de lecture (relire les quatre pour modifier une convention, sinon seulement les pertinentes)."
 
-version: "1.0.1"
+version: "1.0.2"
 status: review
 
 created: "2026-10-31"
@@ -37,7 +37,7 @@ Chaque règle a un seul document responsable. Les autres le référencent sans l
 
 | Fichier | Responsabilité |
 | --- | --- |
-| [METADATA.md](METADATA.md) | Métadonnées des documents : front matter, propriétés, versions, dates, sources de mise à jour, héritage entre conventions |
+| [METADATA.md](METADATA.md) | Métadonnées des documents : front matter, propriétés, versions, dates, sources de mise à jour, héritage entre conventions ; modèle des README de dossiers maîtres (§6.9) |
 | [NAMING.md](NAMING.md) | Nommage des fichiers et dossiers, casse, vocabulaire normatif (DOIT / DEVRAIT / PEUT), règles pour les agents |
 | [TAXONOMY.md](TAXONOMY.md) | Taxonomies des champs de capture / registres (`intention`, `type`, `position`, `status`, `space`, relations, `grounding`, confidences, `refs`) |
 
@@ -53,7 +53,7 @@ Chaque règle a un seul document responsable. Les autres le référencent sans l
 ## Lecture
 
 - Modifier une convention : relire intégralement les quatre fichiers du dossier (ce README et les trois conventions), puis mettre à jour le front matter de chacun des documents touchés ([METADATA.md](METADATA.md) §8).
-- Travailler sur une partie précise : lire uniquement les conventions pertinentes (nommage → NAMING ; front matter → METADATA ; champs de registre → TAXONOMY).
+- Travailler sur une partie précise : lire uniquement les conventions pertinentes (nommage → NAMING ; front matter ou README de dossier → METADATA ; champs de registre → TAXONOMY).
 
 ## Règles
 

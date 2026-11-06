@@ -3,8 +3,8 @@ metadata_version: 1
 title: "Instance Brain du projet"
 type: index
 description: "Oriente vers les documents et le registre de l'instance Brain du projet 2brain."
-summary: "Dossiers : docs/ (standard documentaire verrouillé, cadrage, documents provisoires), registry/ (registre de capture entries.jsonl en append only et son contrat brain/registry/SCHEMA.md), conventions/ (conventions d'instance). Ce fichier renvoie aux documents sans les recopier."
-version: "1.0.0"
+summary: "Dossiers : docs/ (standard documentaire verrouillé qui impose six documents standards : VISION, CADRAGE, PROJECT, REQUIREMENTS, ARCHITECTURE, WORKFLOW ; INTEGRATIONS est facultatif ; hors CADRAGE, les documents sont en brouillon), registry/ (registre de capture entries.jsonl en append only et son contrat brain/registry/SCHEMA.md), conventions/ (conventions d'instance). Ce fichier renvoie aux documents sans les recopier."
+version: "1.2.0"
 status: draft
 created: "2026-11-06"
 updated: "2026-11-06"
@@ -15,6 +15,7 @@ scope:
 updated_from:
   - "AGENTS.md"
   - "brain/docs/README.md"
+  - "brain/docs/CADRAGE.md"
 ---
 
 # brain/
@@ -33,9 +34,16 @@ Instance du projet 2brain : sa documentation et son registre. Le moteur (convent
 
 | Fichier | Nature | Usage |
 | --- | --- | --- |
-| `brain/docs/README.md` | Standard documentaire, verrouillé (`locked: true`) | Lecture seule : ne pas le modifier sans demande explicite |
-| `brain/docs/CADRAGE.md` | Cadrage du projet | Vision, principes, espaces : lire par sections |
-| `brain/docs/VISION.md`, `PROJECT.md`, `ARCHITECTURE.md`, `WORKFLOW.md`, `INTEGRATIONS.md` (ClickUp) | Documents provisoires | Synthèses légères, non définitives. Leurs références `CAP-xxx` pointent vers un ancien registre : voir `AGENTS.md` |
+| `brain/docs/README.md` | Standard documentaire, verrouillé (`locked: true`), six documents standards | Lecture seule : ne pas le modifier sans demande explicite (modifié une fois, le 2026-11-06, avec l'autorisation expresse de l'humain, pour ajouter `cadrage.md`) |
+| `brain/docs/CADRAGE.md` | Cadrage du projet, sixième document standard | Contexte, besoins, objectifs, périmètre, principes, espaces : lire par sections |
+| `brain/docs/VISION.md` | Vision (`status: draft`) | Pourquoi le projet existe, principes, critères de réussite renvoyés au cadrage |
+| `brain/docs/PROJECT.md` | Projet (`status: draft`) | Identité, utilisateurs, périmètre, contraintes, état actuel constaté |
+| `brain/docs/REQUIREMENTS.md` | Exigences (`status: draft`) | Exigences dites par l'humain, avec capture source et état (fait, partiel, absent) |
+| `brain/docs/ARCHITECTURE.md` | Architecture (`status: draft`) | Organisation du dépôt, où vit quoi, mécanismes et leur état |
+| `brain/docs/WORKFLOW.md` | Méthode de travail (`status: draft`) | Flux réel de `/brain`, routeur, chaînons manquants |
+| `brain/docs/INTEGRATIONS.md` | Intégrations (`status: draft`) | GitHub, registre, ClickUp (Inbox, `tasks.jsonl`), outils externes |
+
+Chacun de ces documents, sauf `REQUIREMENTS.md` (nouveau), garde son texte d'origine dans une section « Ancienne synthèse » ; les anciens numéros `CAP-xxx` (ancien registre) ne se trouvent que là, voir `AGENTS.md`. Ailleurs, les numéros renvoient au registre actuel.
 
 ## Registre (`brain/registry/`)
 

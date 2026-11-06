@@ -3,7 +3,7 @@ metadata_version: 1
 title: "Instructions agents"
 type: index
 description: "Point d'entrée des agents IA : contexte 2brain chargé à chaque session et consignes de base."
-version: "0.5.0"
+version: "0.7.0"
 status: draft
 created: "{{date}}"
 updated: "{{date}}"
@@ -32,5 +32,7 @@ Pour un outil qui n'applique pas les imports `@` : lire ces mêmes fichiers dans
 ## Consignes
 
 - **Obligatoire avant de créer ou modifier un document** : lire `brain-main/conventions/NAMING.md` pour un nom de fichier ou de dossier, et `brain-main/conventions/METADATA.md` pour un en-tête, une version ou une date (au moins les sections utiles).
+- **Avant de travailler dans un dossier** : lire son README le plus proche (dossier courant, sinon un parent), puis le tenir à jour si ton travail change son rôle ou ses fonctionnalités (modèle : `brain-main/conventions/METADATA.md` §6.9).
 - Si `brain/docs/` contient encore « À compléter » : proposer `/brain -a` si le projet a des fichiers et aucun rapport dans `brain/sources/audits/`, sinon `/brain -o`, une seule fois par session.
+- **Recherche sans demander** : avant de proposer une implémentation, ou quand le sujet a pu être déjà traité, chercher dans le registre (`brain/registry/entries.jsonl`) sans demander, en lançant `worker-haiku` (lecture seule : `brain-main/skills/brain-search/scripts/search-registry.py` ou Grep). Sans cet agent (session non routée), lancer soi-même la recherche. Elle n'écrit rien. Review et Sync restent sur demande claire ; un essai de script se fait sur une copie.
 - Ne rien modifier sans validation explicite de l'humain. Une proposition n'est pas une décision.

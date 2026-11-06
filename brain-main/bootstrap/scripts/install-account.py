@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Installe (ou retire) le skill /brain et le hook de démarrage sur le compte Claude Code.
+"""Installe (ou retire) le skill /brain et ses deux hooks (démarrage, contrôle des README au commit) sur le compte Claude Code.
 
 Usage : python -I install-account.py [--home DOSSIER] [--dry-run] [--uninstall] [--replace-probe]
 Écrit seulement sous <home>/.claude : skills/brain/, settings.json et
@@ -16,9 +16,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-ACCOUNT_FILES = ("SKILL.md", "session-start.py", "status.py", "fetch-source.py")
+ACCOUNT_FILES = ("SKILL.md", "session-start.py", "commit-check.py", "status.py", "fetch-source.py")
 PROBE_SCRIPT_TAIL = "2brain-sonde/session_start.py"
 OWN_SCRIPT_TAIL = "skills/brain/session-start.py"
+COMMIT_SCRIPT_TAIL = "skills/brain/commit-check.py"
 
 
 class Refused(Exception):
@@ -55,29 +56,31 @@ def load_settings(path):
     if hooks is not None:
         if not isinstance(hooks, dict):
             raise Refused("settings.json : « hooks » n'est pas un objet, rien n'est écrit")
-        if "SessionStart" in hooks and not isinstance(hooks["SessionStart"], list):
-            raise Refused("settings.json : « hooks.SessionStart » n'est pas une liste, rien n'est écrit")
+        for event in ("SessionStart", "PreToolUse"):
+            if event in hooks and not isinstance(hooks[event], list):
+                raise Refused("settings.json : « hooks.%s » n'est pas une liste, rien n'est écrit" % event)
     return data
 
 
-def session_groups(data, create=False):
+def session_groups(data, create=False, event="SessionStart"):
     hooks = data.get("hooks")
     if hooks is None:
         if not create:
             return []
         hooks = data["hooks"] = {}
-    if "SessionStart" not in hooks:
+    if event not in hooks:
         if not create:
             return []
-        hooks["SessionStart"] = []
-    return hooks["SessionStart"]
+        hooks[event] = []
+    return hooks[event]
 
 
 def prune_empty(data):
     hooks = data.get("hooks")
     if isinstance(hooks, dict):
-        if hooks.get("SessionStart") == []:
-            del hooks["SessionStart"]
+        for event in ("SessionStart", "PreToolUse"):
+            if hooks.get(event) == []:
+                del hooks[event]
         if not hooks:
             del data["hooks"]
 
@@ -189,10 +192,16 @@ def main():
             if args.replace_probe:
                 raise Refused("--uninstall et --replace-probe sont incompatibles")
             kept = [g for g in groups if not group_points_to(g, OWN_SCRIPT_TAIL)]
-            write_needed = len(kept) != len(groups)
-            if write_needed:
+            pre_groups = session_groups(data, event="PreToolUse")
+            pre_kept = [g for g in pre_groups if not group_points_to(g, COMMIT_SCRIPT_TAIL)]
+            write_needed = len(kept) != len(groups) or len(pre_kept) != len(pre_groups)
+            if len(kept) != len(groups):
                 actions.append("retrait du groupe hooks.SessionStart pointant vers skills/brain/session-start.py")
                 data["hooks"]["SessionStart"] = kept
+            if len(pre_kept) != len(pre_groups):
+                actions.append("retrait du groupe hooks.PreToolUse pointant vers skills/brain/commit-check.py")
+                data["hooks"]["PreToolUse"] = pre_kept
+            if write_needed:
                 prune_empty(data)
             if ours_installed:
                 actions.append("suppression de %s" % skill_dir)
@@ -249,6 +258,20 @@ def main():
             result.append(new_group)
         data["hooks"]["SessionStart"] = result
         actions.append("hook SessionStart %s (matcher startup, sans shell)" % ("mis à jour" if replaced else "ajouté"))
+        commit_entry = {"type": "command", "command": sys.executable, "args": [str(skill_dir / "commit-check.py")]}
+        commit_group = {"matcher": "Bash|PowerShell", "hooks": [commit_entry]}
+        pre_result, pre_replaced = [], False
+        for g in session_groups(data, create=True, event="PreToolUse"):
+            if group_points_to(g, COMMIT_SCRIPT_TAIL):
+                if not pre_replaced:
+                    pre_result.append(commit_group)
+                    pre_replaced = True
+                continue
+            pre_result.append(g)
+        if not pre_replaced:
+            pre_result.append(commit_group)
+        data["hooks"]["PreToolUse"] = pre_result
+        actions.append("hook PreToolUse %s (matcher Bash|PowerShell, sans shell : contrôle des README avant git commit)" % ("mis à jour" if pre_replaced else "ajouté"))
         actions.append("skill copié vers %s (VERSION %s)" % (skill_dir, version))
 
         if not args.dry_run:

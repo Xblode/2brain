@@ -15,6 +15,8 @@ from pathlib import Path
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/Xblode/2brain/master/brain-main/bootstrap/VERSION"
 MANIFEST = "manifest.json"
 DOCS = ("vision.md", "project.md", "requirements.md", "architecture.md", "workflow.md")
+# Sixième document standard (décision de l'humain, 2026-11-06). Son absence ne rend pas `brain/` partiel : les projets installés avant lui restent complets.
+DOCS_OPTIONAL = ("cadrage.md",)
 BRAIN_MAIN_REQUIRED = ("README.md", "conventions", "skills", "bootstrap")
 TECH_HINTS = (
     "package.json", "pnpm-lock.yaml", "yarn.lock", "tsconfig.json", "pyproject.toml",
@@ -135,9 +137,11 @@ def brain_state(project):
             count = 0
     else:
         missing.append("registry/entries.jsonl")
+    to_create = [d for d in DOCS_OPTIONAL if d not in present] if docs_dir.is_dir() else []
     return {
         "etat": "complet" if not missing else "partiel",
         "manquants": missing,
+        "documents_a_creer": to_create,
         "entrees_registre": count,
         "documents_a_completer": len(todo),
         "documents_a_completer_noms": todo,
@@ -152,6 +156,21 @@ def last_audit(project):
     except OSError:
         return None
     return names[-1] if names else None
+
+
+def readme_max(project):
+    """(valeur, détail) du réglage `readme_max` de brain/settings.json ; 8 par défaut si le fichier est absent ou invalide."""
+    path = project / "brain" / "settings.json"
+    if not path.is_file():
+        return 8, "brain/settings.json absent : valeur par défaut 8"
+    try:
+        data = json.loads(path.read_bytes().decode("utf-8"))
+    except Exception:
+        return 8, "brain/settings.json invalide (JSON illisible) : valeur par défaut 8"
+    value = data.get("readme_max") if isinstance(data, dict) else None
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        return 8, "brain/settings.json sans `readme_max` valide (entier supérieur ou égal à 1) : valeur par défaut 8"
+    return value, "lu dans brain/settings.json"
 
 
 def has_project_files(entries):
@@ -199,10 +218,13 @@ def build(project, home, offline):
             "%d document(s) de brain/docs/ contiennent encore « %s » : /brain -o propose de les remplir (rien n'est écrit sans validation)."
             % (brain["documents_a_completer"], TODO_MARK)
         )
+    if brain["etat"] != "absent" and brain.get("documents_a_creer"):
+        notes.append("Document standard absent de brain/docs/ : %s. /brain -o propose de le créer, après validation (brain/ reste complet ; /brain -u n'écrit pas dans brain/)." % ", ".join(brain["documents_a_creer"]))
     audit = last_audit(project)
     with_files = has_project_files(entries)
     if brain["etat"] != "absent" and with_files and audit is None:
         notes.append("Le projet a des fichiers et aucun rapport d'audit : /brain -a propose un audit en profondeur (rien n'est écrit sans validation).")
+    readme_value, readme_detail = readme_max(project)
     router = router_state(project)
     if router["etat"] == "partiel":
         notes.append("Routeur partiel (%s) : il ne sera pas appliqué." % router["raison"])
@@ -214,6 +236,8 @@ def build(project, home, offline):
         "brain": brain,
         "projet_avec_fichiers": with_files,
         "audit_dernier": audit,
+        "readme_max": readme_value,
+        "readme_max_detail": readme_detail,
         "depot_source": is_source_repo(project),
         "routeur": router["etat"],
         "routeur_raison": router["raison"],
@@ -237,6 +261,7 @@ def as_text(st):
         "brain : %s (%d entrées au registre)" % (br["etat"], br["entrees_registre"]),
         "Documents contenant encore « %s » : %d" % (TODO_MARK, br["documents_a_completer"]),
         "Dernier audit : %s" % (st["audit_dernier"] or "aucun"),
+        "Maximum de README : %d (%s)" % (st["readme_max"], st["readme_max_detail"]),
         "Dépôt source 2brain : %s" % ("oui" if st["depot_source"] else "non"),
         "Routeur (orchestrateur et workers) : %s (%s)" % (st["routeur"], st["routeur_raison"]),
         "Technologies (indices) : %s" % (", ".join(st["technologies"]) or "aucun"),

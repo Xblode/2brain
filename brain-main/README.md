@@ -3,7 +3,7 @@ metadata_version: 1
 title: "Guide de brain-main"
 type: index
 description: "Guide court de 2brain pour une IA : rôle de brain-main/ et de brain/, commandes /brain, niveaux de lecture et règles."
-version: "1.2.0"
+version: "1.4.1"
 status: draft
 created: "2026-11-06"
 updated: "2026-11-06"
@@ -16,7 +16,7 @@ Moteur 2brain : conventions, outils et règles réutilisables d'un projet à l'a
 ## Séparation stricte
 
 - `brain-main/` : le système (ce dossier). Jamais de contenu du projet ici.
-- `brain/` : le projet. `docs/` (VISION, PROJECT, REQUIREMENTS, ARCHITECTURE, WORKFLOW), `registry/entries.jsonl` (registre de capture), `sources/` (créé à la première capture ou au premier audit : `sessions/`, `audits/`). Aucune trace du système dans `brain/`.
+- `brain/` : le projet. `docs/` (VISION, CADRAGE, PROJECT, REQUIREMENTS, ARCHITECTURE, WORKFLOW), `registry/entries.jsonl` (registre de capture), `sources/` (créé à la première capture ou au premier audit : `sessions/`, `audits/`). Aucune trace du système dans `brain/`.
 
 ## Commandes `/brain`
 
@@ -33,6 +33,7 @@ Moteur 2brain : conventions, outils et règles réutilisables d'un projet à l'a
 | `/brain -s <sujet>` | Cherche dans le registre | Retrouver une information | non |
 | `/brain -r` | Review : rapport sur le registre | Sur demande seulement | non |
 | `/brain -d on\|off` | Active ou désactive la délégation (routeur) | Changer le routeur | oui, `.claude/settings.json` |
+| `/brain -m`, `/brain -m <nombre>` | README des dossiers maîtres : inventaire et propositions dans la limite `readme_max` ; avec un nombre, règle d'abord ce maximum (`brain/settings.json`, 8 par défaut) | Voir, compléter ou élargir les README | oui, chaque README validé un par un |
 
 Les commandes s'exécutent avec le skill `/brain` du compte. Si une commande échoue, relayer le message, ne rien simuler.
 
@@ -40,7 +41,7 @@ Les commandes s'exécutent avec le skill `/brain` du compte. Si une commande éc
 
 1. **Chargé à chaque session** : le README des conventions et `TAXONOMY.md`, puis ce guide.
 2. **Lu quand l'outil sert** :
-   - `brain-main/skills/brain-onboarding/SKILL.md` : `/brain -o` ; `brain-main/skills/brain-audit/SKILL.md` : `/brain -a` ;
+   - `brain-main/skills/brain-onboarding/SKILL.md` : `/brain -o` ; `brain-main/skills/brain-audit/SKILL.md` : `/brain -a` ; `brain-main/skills/brain-readme/SKILL.md` : `/brain -m` ;
    - `brain-main/skills/brain-capture/SKILL.md` : `/brain -c`, `-c <fichier>`, `-c 1` ;
    - `brain-main/registry/SCHEMA.md` : contrat des lignes du registre ;
    - `brain-main/bootstrap/README.md` : installation, mise à jour, détail de chaque commande ;
@@ -51,12 +52,11 @@ Les commandes s'exécutent avec le skill `/brain` du compte. Si une commande éc
 ## Règles
 
 - Registre `brain/registry/entries.jsonl` en append only : ne jamais réécrire ni renuméroter ; ajouter par `append-captures.py` seulement.
-- Une proposition n'est pas une décision : seule une validation explicite de l'humain décide.
-- Ne lancer ni Review, ni Search, ni synchronisation externe sans demande claire.
-- Pas de commit ni de push sans demande.
+- Une proposition n'est pas une décision : seule une validation explicite de l'humain décide ; avec `/brain -a`, `-o`, `-u`, `-i`, `-m`, rien n'est écrit avant la validation de ce qui a été présenté.
+- Ne lancer ni Review ni synchronisation externe sans demande claire ; pas de commit ni de push sans demande. **Search sans demander** : avant une implémentation ou si le sujet a pu être traité, chercher dans le registre par `worker-haiku` (lecture seule), ou soi-même sans routeur ; un essai de script se fait sur une copie.
+- **Avant un commit**, relire les README des dossiers modifiés et rapporter ce qui a été relu (le hook du compte refuse une fois le `git commit` à relire ; il arrête et donne la consigne, sans garantir la lecture).
 - Ne pas modifier un document avec `locked: true` sans demande explicite.
-- **Obligatoire avant de créer ou modifier un document** : lire la convention concernée, au moins les sections utiles : `NAMING.md` pour un nom de fichier ou de dossier, `METADATA.md` pour un en-tête, une version ou une date.
-- `/brain -a`, `-o`, `-u`, `-i` : rien n'est écrit avant la validation de ce qui a été présenté.
+- **Obligatoire avant de créer ou modifier un document** : lire la convention concernée, au moins les sections utiles : `NAMING.md` pour un nom de fichier ou de dossier, `METADATA.md` pour un en-tête, une version ou une date. **Avant de travailler dans un dossier**, lire son README le plus proche (dossier courant, sinon un parent ; modèle : `METADATA.md` §6.9) et le tenir à jour.
 
 ## Routeur actif par défaut
 
@@ -73,7 +73,7 @@ Dans Claude Code, `/brain -i` installe l'adaptateur dans `.claude/` : les conver
 | Chemin | Rôle |
 | --- | --- |
 | `conventions/` | Conventions communes (métadonnées, nommage, taxonomies) |
-| `skills/brain-capture/`, `brain-search/`, `brain-review/`, `brain-onboarding/`, `brain-audit/`, `skills/README.md` | Outils de `/brain -c`, `-s`, `-r`, `-o`, `-a` ; index des skills |
+| `skills/brain-capture/`, `brain-search/`, `brain-review/`, `brain-onboarding/`, `brain-audit/`, `brain-readme/`, `skills/README.md` | Outils de `/brain -c`, `-s`, `-r`, `-o`, `-a`, `-m` ; index des skills |
 | `registry/SCHEMA.md` | Contrat du registre |
 | `bootstrap/` | Spécification de `/brain`, scripts d'installation, tests, modèles |
 | `ROUTER.md` | Règles de délégation entre agents |

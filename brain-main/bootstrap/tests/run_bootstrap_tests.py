@@ -498,7 +498,7 @@ def test_install():
 
 
 IMPORTS = ["brain-main/conventions/README.md", "brain-main/conventions/TAXONOMY.md", "brain-main/README.md"]
-DOCS5 = ("VISION.md", "PROJECT.md", "REQUIREMENTS.md", "ARCHITECTURE.md", "WORKFLOW.md")
+DOCS5 = ("VISION.md", "CADRAGE.md", "PROJECT.md", "REQUIREMENTS.md", "ARCHITECTURE.md", "WORKFLOW.md")  # nom conservé ; six documents standards depuis le 2026-11-06
 
 
 def import_lines(text):
@@ -616,8 +616,8 @@ def test_generated_brain():
     for label, answers in (("réponses complètes", ANSWERS_FULL), ("réponses nulles", ANSWERS_NULL)):
         proj = installed_project("gen-" + label.split()[1], answers)
         files = sorted(p.relative_to(proj / "brain").as_posix() for p in (proj / "brain").rglob("*") if p.is_file())
-        check("brain/ généré (%s): seulement les 5 documents et registry/entries.jsonl" % label,
-              files == sorted(["docs/" + n for n in DOCS5] + ["registry/entries.jsonl"]), files)
+        check("brain/ généré (%s): seulement les 6 documents, registry/entries.jsonl et settings.json" % label,
+              files == sorted(["docs/" + n for n in DOCS5] + ["registry/entries.jsonl", "settings.json"]), files)
         dirs = sorted(p.relative_to(proj / "brain").as_posix() for p in (proj / "brain").rglob("*") if p.is_dir())
         check("brain/ généré (%s): seulement docs/ et registry/" % label, dirs == ["docs", "registry"], dirs)
         hits = []
@@ -644,19 +644,19 @@ def test_status_todo():
     home = new_dir("home-todo")
     proj = installed_project("todo-proj", ANSWERS_NULL)
     rc, st = status(proj, home)
-    check("status: installation neuve -> 5 documents « À compléter », -o suggéré",
-          st["brain"]["etat"] == "complet" and st["brain"]["documents_a_completer"] == 5
+    check("status: installation neuve -> 6 documents « À compléter », -o suggéré",
+          st["brain"]["etat"] == "complet" and st["brain"]["documents_a_completer"] == 6
           and any("/brain -o" in n for n in st["notes"]), st)
     rc, out, _ = run(ACCOUNT / "status.py", "--project", proj, "--home", home, "--offline")
-    check("status: sortie texte avec le nombre et la suggestion de -o", "encore « À compléter » : 5" in out and "/brain -o" in out, out)
+    check("status: sortie texte avec le nombre et la suggestion de -o", "encore « À compléter » : 6" in out and "/brain -o" in out, out)
     for n in ("VISION.md", "PROJECT.md"):
         path = proj / "brain" / "docs" / n
         path.write_text(path.read_text(encoding="utf-8").replace("À compléter", "Renseigné"), encoding="utf-8")
     rc, st = status(proj, home)
-    check("status: 2 documents remplis -> 3 restants, noms listés",
-          st["brain"]["documents_a_completer"] == 3
-          and st["brain"]["documents_a_completer_noms"] == ["ARCHITECTURE.md", "REQUIREMENTS.md", "WORKFLOW.md"], st["brain"])
-    for n in ("REQUIREMENTS.md", "ARCHITECTURE.md", "WORKFLOW.md"):
+    check("status: 2 documents remplis -> 4 restants, noms listés",
+          st["brain"]["documents_a_completer"] == 4
+          and st["brain"]["documents_a_completer_noms"] == ["ARCHITECTURE.md", "CADRAGE.md", "REQUIREMENTS.md", "WORKFLOW.md"], st["brain"])
+    for n in ("REQUIREMENTS.md", "ARCHITECTURE.md", "WORKFLOW.md", "CADRAGE.md"):
         path = proj / "brain" / "docs" / n
         path.write_text(path.read_text(encoding="utf-8").replace("À compléter", "Renseigné"), encoding="utf-8")
     before = tree(proj)
@@ -720,8 +720,8 @@ def test_onboarding_rules():
 def test_gitignore():
     tpl = BOOT / "templates/gitignore.txt"
     rules = [l for l in tpl.read_text(encoding="utf-8").splitlines() if l and not l.startswith("#")]
-    check("gitignore: modèle sous templates/gitignore.txt, deux règles exactes, commentaire d'explication",
-          rules == ["brain/registry/_capture.lock", "brain/registry/_capture-staging/"]
+    check("gitignore: modèle sous templates/gitignore.txt, trois règles exactes, commentaire d'explication",
+          rules == ["brain/registry/_capture.lock", "brain/registry/_capture-staging/", "brain/registry/_capture-history/"]
           and tpl.read_text(encoding="utf-8").startswith("#"), rules)
     stray = [p.relative_to(BOOT).as_posix() for p in (BOOT / "templates").rglob(".gitignore")]
     check("gitignore: aucun .gitignore parasite sous templates/", not stray, stray)
@@ -737,15 +737,15 @@ def test_gitignore():
     check("gitignore: absent -> créé à l'installation et au bilan",
           rc == 0 and (p0 / ".gitignore").read_bytes() == tpl.read_bytes() and data["bilan"]["gitignore"] is True, data)
     inst = sorted(p.name for p in (p0 / "brain").rglob("*") if p.is_file())
-    check("gitignore: brain/ limité aux 5 documents et au registre, sans trace du système",
-          inst == ["ARCHITECTURE.md", "PROJECT.md", "REQUIREMENTS.md", "VISION.md", "WORKFLOW.md", "entries.jsonl"], inst)
+    check("gitignore: brain/ limité aux 6 documents, au registre et à settings.json, sans trace du système",
+          inst == ["ARCHITECTURE.md", "CADRAGE.md", "PROJECT.md", "REQUIREMENTS.md", "VISION.md", "WORKFLOW.md", "entries.jsonl", "settings.json"], inst)
     # existant sans les lignes : inchangé à l'octet, lignes manquantes signalées
     raw = b"node_modules/\r\n.env\r\n"
     p1 = new_dir("gi-exist")
     (p1 / ".gitignore").write_bytes(raw)
     rc, prep = prepare(p1)
     ad = [a for a in prep["adaptations"] if a.startswith(".gitignore existe")]
-    check("gitignore: existant -> non prévu, adaptation avec les deux lignes exactes",
+    check("gitignore: existant -> non prévu, adaptation avec les trois lignes exactes",
           rc == 0 and prep["gitignore_cree"] is False and not (p1 / "EMPLACEMENT/.gitignore").exists()
           and len(ad) == 1 and ad[0].endswith(":" + NL + NL.join(rules)), prep["adaptations"])
     rc, data = apply(p1, prep["plan_sha256"])
@@ -757,8 +757,8 @@ def test_gitignore():
     (p2 / ".gitignore").write_text("  brain/registry/_capture.lock  " + NL, encoding="utf-8")
     rc, prep = prepare(p2)
     ad = [a for a in prep["adaptations"] if a.startswith(".gitignore existe")]
-    check("gitignore: une ligne déjà présente -> seule l'autre est signalée",
-          rc == 0 and len(ad) == 1 and ad[0].endswith(":" + NL + rules[1]), ad)
+    check("gitignore: une ligne déjà présente -> seules les autres sont signalées",
+          rc == 0 and len(ad) == 1 and ad[0].endswith(":" + NL + NL.join(rules[1:])), ad)
     # les lignes y sont : aucune adaptation
     p3 = new_dir("gi-full")
     (p3 / ".gitignore").write_text("a" + NL + NL.join(rules) + NL, encoding="utf-8")
@@ -1250,8 +1250,8 @@ def test_adapter():
             m = trace.search(p.read_text(encoding="utf-8"))
             if m:
                 hits.append((rel, m.group(0)))
-    check("adaptateur: brain/ limité aux 5 documents et au registre, sans trace du système ni du routeur",
-          files == sorted(["docs/" + n for n in DOCS5] + ["registry/entries.jsonl"]) and not hits, (files, hits[:3]))
+    check("adaptateur: brain/ limité aux 6 documents, au registre et à settings.json, sans trace du système ni du routeur",
+          files == sorted(["docs/" + n for n in DOCS5] + ["registry/entries.jsonl", "settings.json"]) and not hits, (files, hits[:3]))
     check("adaptateur: aucun __pycache__ ni EMPLACEMENT restant", not list(proj.rglob("__pycache__")) and not (proj / "EMPLACEMENT").exists())
     check("adaptateur: la source est aussi copiée dans brain-main/ (manifeste compris)",
           (proj / "brain-main/adapters/claude-code/settings.json").is_file()
@@ -1425,18 +1425,18 @@ def test_adapter():
     check("modèle AGENTS.md: ligne orchestrateur/ROUTER, outil sans adaptateur, pas d'import de ROUTER.md",
           "orchestrateur et applique `brain-main/ROUTER.md`" in tpl and "sans adaptateur" in tpl and "ROUTER §9" in tpl
           and not any("ROUTER" in x for x in import_lines(tpl)), import_lines(tpl))
-    check("version: 0.6.0 dans VERSION", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.6.0")
+    check("version: 0.7.0 dans VERSION", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.7.0")
     hacct = new_dir("home-adp-version")
     rc, out = runj(SCRIPTS / "install-account.py", "--home", hacct)
-    check("compte: install-account --home temporaire copie la version 0.6.0",
-          rc == 0 and (hacct / ".claude/skills/brain/VERSION").read_bytes() == b"0.6.0\n", out)
+    check("compte: install-account --home temporaire copie la version 0.7.0",
+          rc == 0 and (hacct / ".claude/skills/brain/VERSION").read_bytes() == b"0.7.0\n", out)
 
 
 def test_skill():
     text = (ACCOUNT / "SKILL.md").read_text(encoding="utf-8")
     head = text.split("---")[1]
     check("SKILL.md: front matter (name, argument-hint, disable-model-invocation: true)",
-          "name: brain" in head and "argument-hint: [-i | -u | -a | -o | -c | -c fichier | -c 1 | -s sujet | -r | -d on|off]" in head and "disable-model-invocation: true" in head, head)
+          "name: brain" in head and "argument-hint: [-i | -u | -a | -o | -c | -c fichier | -c 1 | -s sujet | -r | -d on|off | -m [nombre]]" in head and "disable-model-invocation: true" in head, head)
     check("SKILL.md: pas de syntaxe !", "!`" not in text and "```!" not in text)
     check("SKILL.md: aiguille -c -s -r vers les scripts et vers brain-capture (plus de renvoi au lot 3)", "lot 3" not in text and "read-session.py" in text and "brain-main/skills/brain-capture/SKILL.md" in text)
     check("SKILL.md: règles de validation, délégation worker-sonnet, jamais de simulation",
@@ -1451,7 +1451,7 @@ def test_skill():
           "brain-main/skills/brain-onboarding/SKILL.md" in text and "/brain -o" in text and "nouvelle conversation" in text)
     check("SKILL.md: /compact seulement pour l'interdire", all(re.search(r"jamais|Jamais|interdit", ln) for ln in text.splitlines() if "/compact" in ln))
     check("SKILL.md: __PYTHON__ présent avant installation", "__PYTHON__" in text)
-    check("VERSION: 0.6.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.6.0")
+    check("VERSION: 0.7.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.7.0")
     check("SKILL.md: Python ponctuel de lecture avec -X utf8, routeur `configuré` (pas actif) à l'état",
           "`-X utf8`" in text and "`configuré`" in text)
     # chaque script est autonome : aucun import local
@@ -1494,7 +1494,7 @@ def test_router_guard():
     rendered = (proj / "AGENTS.md").read_text(encoding="utf-8")
     check("AGENTS.md rendu dans un projet installé: consigne présente, aucun placeholder", all(w in rendered for w in needs) and "{{" not in rendered, rendered)
     files = sorted(p.relative_to(proj / "brain").as_posix() for p in (proj / "brain").rglob("*") if p.is_file())
-    check("brain/ généré: aucun nouveau fichier (5 documents et registre)", files == sorted(["docs/" + n for n in DOCS5] + ["registry/entries.jsonl"]), files)
+    check("brain/ généré: aucun nouveau fichier (6 documents, registre et settings.json)", files == sorted(["docs/" + n for n in DOCS5] + ["registry/entries.jsonl", "settings.json"]), files)
     guide = (REPO / "brain-main/README.md").read_text(encoding="utf-8")
     check("guide: au plus 80 lignes, routeur jamais appliqué à la conversation d'installation",
           len(guide.splitlines()) <= 80 and "jamais à la conversation d'installation" in guide, len(guide.splitlines()))

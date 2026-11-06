@@ -4,9 +4,9 @@ metadata_version: 1
 title: "Convention universelle des métadonnées"
 type: convention
 description: "Définit les règles communes de déclaration, de structuration, de traçabilité et de validation des métadonnées dans les projets."
-summary: "Convention universelle définissant le socle de métadonnées des documents et les adaptations propres aux différents formats. Elle établit les propriétés communes, leur classification, les règles d'héritage, la traçabilité des modifications et les modalités de validation automatisée."
+summary: "Convention universelle définissant le socle de métadonnées des documents, les adaptations propres aux différents formats et le modèle des README de dossiers maîtres. Elle établit les propriétés communes, leur classification, les règles d'héritage, la traçabilité des modifications et les modalités de validation automatisée."
 
-version: "1.0.2"
+version: "1.1.0"
 status: approved
 
 created: "2026-11-02"
@@ -22,9 +22,8 @@ depends_on:
   - "brain-main/conventions/TAXONOMY.md"
 
 updated_from:
-  - "brain-main/conventions/NAMING.md"
-  - "brain-main/conventions/TAXONOMY.md"
-  - "brain-main/conventions/README.md"
+  - "brain-main/skills/brain-audit/SKILL.md"
+  - "brain-main/bootstrap/README.md"
 
 tags:
   - metadata
@@ -364,6 +363,17 @@ Lorsque le fichier ne permet pas d'intégrer directement des métadonnées explo
 - Les chemins doivent être résolus sans ambiguïté.
 - L'index externe ne doit pas devenir une copie complète du contenu original.
 - La ressource originale reste la source de vérité pour son contenu.
+
+### 6.9 README de dossier maître
+
+Un dossier maître est un carrefour : il regroupe des fonctionnalités et l'on y décide où aller. Il porte un README, panneau de circulation de l'agent. Pas de README par fonctionnalité ni par sous-dossier ; le nombre de README d'un projet est plafonné par `readme_max` (`brain/settings.json`, 8 par défaut). Un README existant n'est jamais remplacé : une adaptation est proposée à part.
+
+- **Lecture.** Avant de travailler dans un dossier, lire le README le plus proche (dossier courant, sinon un parent). Sans README, continuer.
+- **En-tête.** Front matter du §3.1, réduit à `metadata_version`, `title`, `type: index`, `description`, `status`, `created`, `updated`. `description` dit en une phrase à quoi sert le dossier, pour qu'une IA décide d'en lire la suite ; `summary` seulement si le README est long.
+- **Corps, dans cet ordre.** (1) À quoi sert ce dossier. (2) Fonctionnalités : ce qu'il fait, par ensemble cohérent. (3) Où aller ensuite : dossier, document ou commande selon l'intention. (4) Ce qu'il ne faut pas y faire. Une section sans contenu réel est omise : le modèle n'est jamais recopié vide.
+- **Pas de liste de fichiers** : elle se périme. Renvoyer vers le dossier, le document ou la commande qui font foi.
+- **À jour.** Un travail qui change le rôle, une fonctionnalité ou la destination d'un dossier met à jour son README dans le même travail (§8.2, §8.5).
+- **Index.** Un README dont la fonction est de cataloguer des documents (par exemple `conventions/README.md`, `skills/README.md`) est un index : sa liste est son contenu, et les quatre questions ci-dessus ne lui sont pas imposées.
 
 ## 7. Hiérarchie et héritage des conventions
 

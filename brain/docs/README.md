@@ -4,9 +4,9 @@ name: Standardisation documentaire Brain
 description: Catalogue et règles du socle documentaire universel Brain (docs obligatoires, facultatifs, métadonnées, responsabilités).
 type: documentation-standard
 status: proposed
-version: 1.0.0
+version: 1.1.0
 created_at: 2026-10-30T00:00:00.000Z
-updated_at: 2026-10-30T00:00:00.000Z
+updated_at: 2026-11-06T00:00:00.000Z
 update_sources: []
 locked: true
 ---
@@ -27,7 +27,7 @@ Niveau 1 · Obligatoire
 
 Socle documentaire universel
 
-Présent dans chaque instance Brain, avec cinq documents.
+Présent dans chaque instance Brain, avec six documents.
 
 Niveau 2 · Facultatif
 
@@ -43,11 +43,12 @@ Documents propres à un domaine, module ou projet. Ils ne modifient pas le socle
 
 ## 2. Socle obligatoire
 
-Ces cinq documents sont créés lors de l'initialisation, même si certaines sections restent vides.
+Ces six documents sont créés lors de l'initialisation, même si certaines sections restent vides.
 
 | Document          | Responsabilité exclusive                                    |
 | ----------------- | ----------------------------------------------------------- |
 | `vision.md`       | Pourquoi le projet existe, objectifs et vision à long terme |
+| `cadrage.md`      | Contexte, besoins, objectifs et périmètre du projet         |
 | `project.md`      | Identité, contexte, périmètre, utilisateurs et contraintes  |
 | `requirements.md` | Ce que le projet doit accomplir : besoins et exigences      |
 | `architecture.md` | Comment le projet est organisé et conçu                     |
@@ -62,6 +63,15 @@ Ces cinq documents sont créés lors de l'initialisation, même si certaines sec
 - Objectifs et résultats recherchés.
 - Principes directeurs.
 - Critères de réussite à long terme.
+
+`cadrage.md`
+
+- Contexte et origine du projet.
+- Besoins et problèmes à résoudre.
+- Objectifs.
+- Périmètre et hors périmètre.
+- Orientations structurantes, avec leur niveau de validation.
+- Sans recopier la vision (`vision.md`).
 
 `project.md`
 
@@ -245,6 +255,7 @@ brain/
 ├── AGENTS.md
 ├── docs/
 │   ├── vision.md
+│   ├── cadrage.md
 │   ├── project.md
 │   ├── requirements.md
 │   ├── architecture.md
@@ -275,7 +286,7 @@ Les documents facultatifs ne sont créés que lorsqu'ils sont activés. `AGENTS.
 
 Les décisions suivantes sont suffisamment mûres pour être figées :
 
-1. Les cinq documents obligatoires.
+1. Les six documents obligatoires.
 2. Le catalogue facultatif initial.
 3. La séparation stricte des responsabilités.
 4. Le registre central et les fiches détaillées progressives.

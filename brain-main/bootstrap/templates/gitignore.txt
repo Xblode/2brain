@@ -2,3 +2,5 @@
 # (verrou et dossier de préparation de brain/registry/).
 brain/registry/_capture.lock
 brain/registry/_capture-staging/
+# Copies complètes du registre gardées par la capture (rollback) : restent sur le disque, hors Git.
+brain/registry/_capture-history/

@@ -3,3 +3,4 @@ __pycache__/
 _tmp_*.py
 brain/registry/_capture.lock
 brain/registry/_capture-staging/
+brain/registry/_capture-history/

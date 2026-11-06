@@ -8,6 +8,8 @@ documentation, proposer des candidats de « dossiers maîtres », signaler des c
 (front matter et noms des .md). Ce sont des candidats à examiner : ni erreurs, ni décisions.
 Les fichiers de secrets ne sont JAMAIS ouverts : seuls leur nombre et leur nom sont donnés.
 Seuls les .md non secrets, non lourds, hors dossiers exclus sont ouverts (lecture).
+Le plafond de README vient de `brain/settings.json` (clé `readme_max`, lecture seule) ; absent ou invalide : 8, et le
+résultat le dit (`reglage`). `--plafond N` l'emporte sur le réglage.
 Codes de sortie : 0 normal, 2 dossier invalide.
 """
 
@@ -60,7 +62,27 @@ def find_case_duplicates(rels):
     return [sorted(v) for v in by_dir_lower.values() if len(v) > 1]
 
 
-def scan(project, max_depth, limit, plafond, min_files):
+DEFAULT_PLAFOND = 8
+
+
+def read_readme_max(project):
+    """(valeur, état, détail) du réglage `readme_max` de brain/settings.json ; défaut 8 si absent ou invalide."""
+    path = project / "brain" / "settings.json"
+    if not path.is_file():
+        return DEFAULT_PLAFOND, "défaut", "fichier de réglages de brain/ absent : valeur par défaut %d" % DEFAULT_PLAFOND
+    try:
+        data = json.loads(path.read_bytes().decode("utf-8"))
+    except Exception:
+        return DEFAULT_PLAFOND, "défaut", "fichier de réglages de brain/ invalide (JSON illisible) : valeur par défaut %d" % DEFAULT_PLAFOND
+    if not isinstance(data, dict) or "readme_max" not in data:
+        return DEFAULT_PLAFOND, "défaut", "fichier de réglages de brain/ sans clé `readme_max` : valeur par défaut %d" % DEFAULT_PLAFOND
+    v = data["readme_max"]
+    if isinstance(v, bool) or not isinstance(v, int) or v < 1:
+        return DEFAULT_PLAFOND, "défaut", "`readme_max` invalide (entier supérieur ou égal à 1 attendu) : valeur par défaut %d" % DEFAULT_PLAFOND
+    return v, "réglage", "lu dans le fichier de réglages de brain/"
+
+
+def scan(project, max_depth, limit, plafond, min_files, reglage=None):
     dir_counts = {}
     ext_counts = {}
     secrets = []
@@ -243,7 +265,10 @@ def scan(project, max_depth, limit, plafond, min_files):
         "reperes": {"elements": found, "total": found_total, "dossier_docs": docs_dir},
         "dossiers_maitres": {"regle": RULE_MASTER, "plafond_readme": plafond, "candidats_total": len(masters),
                              "candidats": masters[:limit],
-                             "au_dela_du_plafond": max(0, len(masters) - plafond)},
+                             "au_dela_du_plafond": max(0, len(masters) - plafond),
+                             "readme_existants": sum(1 for m in masters if m["readme"]),
+                             "readme_restants": max(0, plafond - sum(1 for m in masters if m["readme"])),
+                             "reglage": reglage or {"valeur": plafond, "etat": "paramètre", "detail": "--plafond"}},
         "ecarts_candidats": {"avertissement": "Candidats d'écart mécaniques, à examiner : ni des erreurs, ni des décisions. "
                                               "Ne pas corriger sans validation explicite.",
                              "fichiers_md_examines": md_count, "total": gaps_total, "elements": gaps},
@@ -268,6 +293,8 @@ def as_text(r):
     L += ["  [%s] %s" % (e["nature"], e["chemin"]) for e in r["reperes"]["elements"]]
     dm = r["dossiers_maitres"]
     L += ["", "Dossiers maîtres candidats (%d, plafond README %d, %d au-delà) :" % (dm["candidats_total"], dm["plafond_readme"], dm["au_dela_du_plafond"]),
+          "  Plafond : %s (%s)" % (dm["reglage"]["valeur"], dm["reglage"]["detail"]),
+          "  README existants : %d, restants avant le plafond : %d" % (dm["readme_existants"], dm["readme_restants"]),
           "  Règle : " + dm["regle"]]
     L += ["  %s %s : %d fichiers, README %s" % ("*" if c["retenu"] else "-", c["chemin"], c["fichiers"], "oui" if c["readme"] else "non") for c in dm["candidats"]]
     eg = r["ecarts_candidats"]
@@ -287,14 +314,20 @@ def main():
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--max-depth", type=int, default=3, help="profondeur de l'arborescence et des repères (défaut 3)")
     ap.add_argument("--limit", type=int, default=200, help="éléments maximum par liste (défaut 200)")
-    ap.add_argument("--plafond", type=int, default=8, help="plafond_readme : dossiers maîtres retenus (défaut 8)")
+    ap.add_argument("--plafond", type=int, default=None, help="plafond_readme : dossiers maîtres retenus (défaut : brain/settings.json readme_max, sinon 8)")
     ap.add_argument("--min-fichiers", type=int, default=3, help="seuil de fichiers d'un dossier maître (défaut 3)")
     args = ap.parse_args()
     project = Path(args.project).resolve()
-    if not project.is_dir() or args.max_depth < 1 or args.limit < 1 or args.plafond < 1 or args.min_fichiers < 1:
+    if not project.is_dir() or args.max_depth < 1 or args.limit < 1 or (args.plafond is not None and args.plafond < 1) or args.min_fichiers < 1:
         sys.stderr.write("Dossier ou paramètre invalide.\n")
         return 2
-    res = scan(project, args.max_depth, args.limit, args.plafond, args.min_fichiers)
+    value, state, detail = read_readme_max(project)
+    reglage = {"valeur": value, "etat": state, "detail": detail}
+    plafond = value
+    if args.plafond is not None:
+        plafond = args.plafond
+        reglage = {"valeur": plafond, "etat": "paramètre", "detail": "--plafond l'emporte sur le réglage (%s)" % detail}
+    res = scan(project, args.max_depth, args.limit, plafond, args.min_fichiers, reglage)
     if args.json:
         sys.stdout.write(json.dumps(res, ensure_ascii=False, indent=2) + "\n")
     else:

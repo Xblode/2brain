@@ -2,8 +2,8 @@
 
 > Document de référence définissant le contexte, les objectifs, le périmètre, les besoins et les orientations structurantes du projet.
 
-**Version :** 0.1  
-**Date de rédaction :** 2 novembre 2026  
+**Version :** 0.2  
+**Date de rédaction :** 2 novembre 2026 (version 0.1) ; 2026-11-06 (version 0.2)  
 **Statut :** Cadrage en cours de consolidation
 
 ---
@@ -271,6 +271,20 @@ Le résultat attendu est un ensemble d'instructions suffisamment précis pour li
 Le système doit rester indépendant d'un fournisseur ou d'un assistant unique.
 
 Différents outils doivent pouvoir consulter les mêmes connaissances, respecter les mêmes règles et contribuer au même cycle de vie de l'information.
+
+## 5.6. Usage personnel (ajout de la version 0.2, 2026-11-06)
+
+Cette section est un ajout. Elle ne remplace et ne corrige aucun passage de ce cadrage. Elle reprend ce que l'humain a dit ensuite dans le registre, toujours en `validation: none`.
+
+- CAP-468 : le projet est « pour son utilisation personnelle », il n'a « pas vraiment pour but d'être utilisé par d'autres », et l'humain cherche « avant tout à créer son espace de travail adapté à lui et à ses besoins ». Le système « connaîtra son workflow et sera le moteur de celui-ci ».
+- CAP-469 : « plusieurs briques viendront ensuite autour du système, pour lui permettre de piloter ses activités depuis n'importe où ».
+- CAP-475 : « chacun doit créer le sien, avec ses conventions et ses règles ».
+
+Ce qui reste valable : CAP-468 ajoute que « on garde toujours les idées précédentes sur le cadrage ». Le caractère universel du système n'est donc pas retiré : CAP-407 demande que Second Brain puisse « cadrer n'importe quel type de projet », et CAP-414 accepte qu'« une même base standard (Second Brain) reste commune à tous les projets ». Ces deux captures sont aussi des accords exprimés sans validation formelle.
+
+Question ouverte : comment tenir ensemble un usage personnel et la formulation universelle du §3.1 n'est pas tranché. Aucune des deux lectures n'est retenue ici.
+
+Autre question ouverte : le critère d'un MVP n'a jamais été défini ni validé. Une proposition de cheminement faite sur le test de reprise est restée sans validation. Le §19 reste une proposition d'ordre logique, non une roadmap.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: brain-audit
-version: 0.1.0
+version: 0.1.2
 description: >-
   Audit en profondeur d'un projet existant : lecture seule, rapport présenté
   dans la conversation (vision, fonctionnement par dossier maître, écarts aux
@@ -38,7 +38,7 @@ Audit d'un projet qui existe déjà : le lire une première fois, en garder une 
    1. **Le rapport** dans `brain/sources/audits/<AAAAMMJJ-HHMM>.md` (heure locale ; dossier créé au besoin ; jamais écrasé), front matter conforme. Nécessaire aux deux écritures suivantes, à relire avant tout commit. Refusé : s'arrêter là, le registre et `brain/docs/` n'ont plus de source.
    2. **Le registre** : suivre `brain-main/skills/brain-capture/SKILL.md`, ce rapport pour source (`origin.source` = son chemin, `locators` = plages de lignes), mode `production`. Les notes restent `author: assistant`, sans approbation (`validation: none`). Chercher d'abord dans le registre existant (`/brain -s`) : pas de doublon.
    3. **`brain/docs/`** : mêmes règles que `brain-main/skills/brain-onboarding/SKILL.md` (document par document, `confirmé` seulement sur source explicite, réponse globale refusée), sans questions d'accueil : ce qui manque est renvoyé à `/brain -o`.
-   4. **README des dossiers maîtres.** Présenter d'abord la liste des dossiers retenus : au plus le plafond du script (`plafond_readme`, 8 par défaut), davantage seulement sur demande explicite de l'humain. Puis le contenu de chacun, validé un par un. Un README par dossier maître, qui explique ses fonctionnalités ; **aucun README par fonctionnalité, aucun dans les sous-dossiers** : éviter le bruit. Un README existant n'est jamais remplacé : proposer une adaptation à part.
+   4. **README des dossiers maîtres.** Présenter d'abord la liste des dossiers retenus : au plus le plafond du script (`plafond_readme`), qui vient du réglage `readme_max` de `brain/settings.json` (8 par défaut si le fichier est absent ou invalide : le dire), davantage seulement sur demande explicite de l'humain ; `/brain -m <nombre>` change le réglage, et `/brain -m` propose les README manquants. Puis le contenu de chacun, validé un par un. Un README par dossier maître, selon le modèle de `brain-main/conventions/METADATA.md` §6.9 (non recopié ici) ; **aucun README par fonctionnalité, aucun dans les sous-dossiers** : éviter le bruit. Un README existant n'est jamais remplacé : proposer une adaptation à part.
 5. **Bilan.** Ce qui a été écrit, ce qui a été refusé, ce qui reste. Relancer `status.py --json` ; si des documents contiennent encore « À compléter », proposer `/brain -o`, qui repart de ce que l'audit a confirmé. Rappeler que `/brain -a` se relance : il ne proposera que ce qui a changé.
 
 ## Limites

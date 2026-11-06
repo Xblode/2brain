@@ -294,7 +294,7 @@ def main():
                 missing = [l for l in wanted_rules if l not in present]
                 if missing:
                     adaptations.append(
-                        ".gitignore existe : il n'est pas modifié. Pour ne pas commiter le verrou et le staging de capture, "
+                        ".gitignore existe : il n'est pas modifié. Pour ne pas commiter le verrou, le staging et l'historique de capture, "
                         "ajouter exactement ces lignes :\n" + "\n".join(missing)
                     )
 
