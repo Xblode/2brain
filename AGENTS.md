@@ -3,7 +3,7 @@ metadata_version: 1
 title: "Instructions agents 2brain"
 type: index
 description: "Point d'entrée des agents IA : identité du projet, organisation, règles de travail et documents à lire selon la tâche."
-version: "1.8.1"
+version: "1.8.2"
 status: review
 created: "2026-10-31"
 updated: "2026-11-06"
@@ -23,7 +23,7 @@ Point d'entrée des agents IA sur **2brain**. Orientation seulement : le détail
 
 Principes : préserver l'historique et la provenance ; une proposition n'est pas une décision tant qu'elle n'est pas validée explicitement ; le dépôt GitHub fait foi sur l'état réel du projet ; noms courts, simplicité progressive, indépendance des outils.
 
-Mécanismes : Capture (collecte fidèle, append only) → Review (consolidation) → Search → Sync (outils externes comme ClickUp). **Capture, Search et Review sont outillés par des scripts** (`brain-main/skills/brain-capture/`, `brain-search/`, `brain-review/` ; Review en rapport seulement, Search en lecture seule) ; **Sync reste conceptuel**. La commande unique `/brain` (Bootstrap 0.6.0 sur le compte et dans le dépôt) : `-i`, `-u`, `-a` (audit en profondeur d'un projet existant : lecture seule, rapport, puis écritures validées une à une ; jamais essayé en session réelle), `-o` (remplit `brain/docs/` d'un projet, écrit seulement après validation), `-c`, `-c <fichier>`, `-c 1`, `-s`, `-r` construits et testés par scripts ; `-a` reste à confirmer en session réelle (test réel du 2026-11-06 : `-i`, `-o`, `-c`, `-s`, `-r`, `-c 1` ont abouti en session sans routeur ; le routeur n'a pas encore été observé en session). Le guide des outils, tel que le reçoit un projet installé, est `brain-main/README.md`. Sans la commande, la capture se fait en lisant `brain-main/skills/brain-capture/SKILL.md`.
+Mécanismes : Capture (collecte fidèle, append only) → Review (consolidation) → Search → Sync (outils externes comme ClickUp). **Capture, Search et Review sont outillés par des scripts** (`brain-main/skills/brain-capture/`, `brain-search/`, `brain-review/` ; Review en rapport seulement, Search en lecture seule) ; **Sync reste conceptuel**. La commande unique `/brain` (Bootstrap 0.6.0 sur le compte et dans le dépôt) : `-i`, `-u`, `-a` (audit en profondeur d'un projet existant : lecture seule, rapport, puis écritures validées une à une ; jamais essayé en session réelle), `-o` (remplit `brain/docs/` d'un projet, écrit seulement après validation), `-c`, `-c <fichier>`, `-c 1`, `-s`, `-r` construits et testés par scripts ; `-a` reste à confirmer en session réelle (test réel du 2026-11-06 : `-i`, `-o`, `-c`, `-s`, `-r`, `-c 1` ont abouti en session sans routeur ; selon l'humain, le routeur fonctionne dans une nouvelle conversation (non contrôlé)). Le guide des outils, tel que le reçoit un projet installé, est `brain-main/README.md`. Sans la commande, la capture se fait en lisant `brain-main/skills/brain-capture/SKILL.md`.
 
 Espaces logiques d'une capture : `atelier` (exploration), `referentiel` (établi), `journal` (historique), `pilotage` (tâches, jalons). Ranger n'est pas valider.
 
