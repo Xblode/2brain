@@ -3,7 +3,7 @@ metadata_version: 1
 title: "Guide de brain-main"
 type: index
 description: "Guide court de 2brain pour une IA : rôle de brain-main/ et de brain/, commandes /brain, niveaux de lecture et règles."
-version: "1.0.0"
+version: "1.1.1"
 status: draft
 created: "2026-11-06"
 updated: "2026-11-06"
@@ -56,6 +56,10 @@ Les commandes s'exécutent avec le skill `/brain` du compte. Si une commande éc
 - **Obligatoire avant de créer ou modifier un document** : lire la convention concernée, au moins les sections utiles : `NAMING.md` pour un nom de fichier ou de dossier, `METADATA.md` pour un en-tête, une version ou une date.
 - `/brain -o`, `-u`, `-i` : rien n'est écrit avant la validation de ce qui a été présenté.
 
+## Routeur actif par défaut
+
+Dans Claude Code, `/brain -i` installe l'adaptateur dans `.claude/` : la session démarre en orchestrateur, qui dialogue, décide et délègue à `worker-sonnet` et `worker-haiku`, sans Bash, Write ni Edit. Règles : `brain-main/ROUTER.md`. Correspondance et limites : `.claude/README.md`. Retrait : enlever la clé `agent` de `.claude/settings.json`, puis ouvrir une nouvelle conversation. Un `.claude/settings.json` existant n'est jamais modifié à l'installation : y ajouter `"agent": "orchestrator"` à la main.
+
 ## Sources de capture et registre
 
 - `brain/sources/sessions/` reçoit les extraits de session produits par `/brain -c`, un fichier par capture (`AAAAMMJJ-HHMM-<8 premiers caractères de l'id>.txt`). Un extrait n'est jamais réécrit : les numéros de ligne cités par le registre doivent rester valables.
@@ -67,7 +71,8 @@ Les commandes s'exécutent avec le skill `/brain` du compte. Si une commande éc
 | Chemin | Rôle |
 | --- | --- |
 | `conventions/` | Conventions communes (métadonnées, nommage, taxonomies) |
-| `skills/brain-capture/`, `brain-search/`, `brain-review/`, `brain-onboarding/` | Outils de `/brain -c`, `-s`, `-r`, `-o` |
+| `skills/brain-capture/`, `brain-search/`, `brain-review/`, `brain-onboarding/`, `skills/README.md` | Outils de `/brain -c`, `-s`, `-r`, `-o` ; index des skills |
 | `registry/SCHEMA.md` | Contrat du registre |
 | `bootstrap/` | Spécification de `/brain`, scripts d'installation, tests, modèles |
 | `ROUTER.md` | Règles de délégation entre agents |
+| `adapters/claude-code/` | Source de l'adaptateur copié dans `.claude/` |

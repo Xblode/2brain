@@ -25,6 +25,10 @@ MARKER = ".2brain-emplacement"
 PLAN = "plan.json"
 MANIFEST = "manifest.json"
 SKIP_TOP = {".git", "node_modules"}
+AGENT_NAMES = ("orchestrator", "worker-sonnet", "worker-haiku")
+ACTIVE = "actif à la prochaine conversation"
+INACTIVE = "non activé"
+CLAUDE_FILES = {".claude/settings.json", ".claude/README.md"} | {".claude/agents/%s.md" % n for n in AGENT_NAMES}
 
 
 class Refused(Exception):
@@ -85,8 +89,34 @@ def safe_rel(rel):
     p = PurePosixPath(rel)
     if p.is_absolute() or ".." in p.parts or "\\" in rel or ":" in rel.split("/")[0]:
         raise Refused("chemin dangereux dans le plan : %r" % rel, 3)
-    if p.parts[0] not in ("brain-main", "brain", "AGENTS.md", "CLAUDE.md"):
+    if p.parts[0] not in ("brain-main", "brain", "AGENTS.md", "CLAUDE.md", ".claude"):
         raise Refused("chemin inattendu dans le plan : %r" % rel, 3)
+    if p.parts[0] == ".claude" and rel not in CLAUDE_FILES:
+        raise Refused("chemin inattendu dans .claude/ : %r" % rel, 3)
+
+
+def router_report(project):
+    """État du routeur après l'installation, d'après `.claude/settings.json` et les trois agents."""
+    settings = project / ".claude" / "settings.json"
+    try:
+        data = json.loads(settings.read_text(encoding="utf-8"))
+        agent = data.get("agent") if isinstance(data, dict) else None
+        readable = isinstance(data, dict)
+    except Exception:
+        agent, readable = None, False
+    missing = [n for n in AGENT_NAMES if not (project / ".claude" / "agents" / (n + ".md")).is_file()]
+    if missing:
+        return {"etat": INACTIVE, "raison": "agents absents : %s" % ", ".join(missing), "nouvelle_conversation": False}
+    if agent == "orchestrator":
+        return {"etat": ACTIVE, "raison": "`.claude/settings.json` contient \"agent\": \"orchestrator\" et les trois agents sont présents",
+                "nouvelle_conversation": True}
+    if not readable:
+        raison = "`.claude/settings.json` absent ou illisible, non modifié : la clé `agent` n'y est pas"
+    elif agent is None:
+        raison = "`.claude/settings.json` existait déjà et n'est pas modifié : la clé `\"agent\": \"orchestrator\"` n'y est pas, à ajouter à la main"
+    else:
+        raison = "`.claude/settings.json` définit déjà `agent` = %s : conflit, non modifié" % json.dumps(agent, ensure_ascii=False)
+    return {"etat": INACTIVE, "raison": raison, "nouvelle_conversation": True}
 
 
 def out_json(obj, code):
@@ -193,6 +223,7 @@ def main():
             }, 5)
 
         rmtree(emp)
+        routeur = router_report(project)
         return out_json({
             "ok": True,
             "bilan": {
@@ -200,6 +231,12 @@ def main():
                 "brain": sorted(r for r in posed if r.startswith("brain/")),
                 "agents_md": "AGENTS.md" in posed,
                 "claude_md": "CLAUDE.md" in posed,
+                "claude": sorted(r for r in posed if r.startswith(".claude/")),
+                "claude_deja_presents": plan.get("claude_deja_presents", []),
+                "routeur": routeur,
+                "message": ("Ouvre une nouvelle conversation pour que le contexte se charge et que le routeur s'applique."
+                            if routeur["etat"] == ACTIVE else
+                            "Le routeur n'est pas activé (%s). Ouvre une nouvelle conversation pour charger le contexte." % routeur["raison"]),
                 "manifeste": "brain-main/" + MANIFEST,
                 "validateur_registre": "ok",
                 "autres_fichiers_inchanges": len(before),

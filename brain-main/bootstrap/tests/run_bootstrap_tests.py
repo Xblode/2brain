@@ -569,7 +569,7 @@ def test_root_files():
     check("racine existante: la prévisualisation n'écrit que EMPLACEMENT", tree(pe, skip=("EMPLACEMENT",)) == before)
     rc, data = apply(pe, prep["plan_sha256"])
     check("racine existante: installation ok, CLAUDE.md et AGENTS.md jamais modifiés",
-          rc == 0 and tree(pe, skip=("brain-main", "brain")) == before and data["bilan"]["adaptations"] == ad, data)
+          rc == 0 and tree(pe, skip=("brain-main", "brain", ".claude")) == before and data["bilan"]["adaptations"] == ad, data)
 
     # AGENTS.md existe seul : CLAUDE.md créé, AGENTS.md intact
     pa = mk(new_dir("root-agents"), {"AGENTS.md": "perso agents" + NL})
@@ -717,7 +717,7 @@ def test_update():
     bm = proj / "brain-main"
     man = json.loads((bm / "manifest.json").read_text(encoding="utf-8"))
     files = man["files"]
-    names = [f for f in sorted(files) if f.endswith(".md") and not f.startswith("bootstrap/")]
+    names = [f for f in sorted(files) if f.endswith(".md") and not f.startswith(("bootstrap/", "adapters/"))]
     A, B, C, D, E, F, G = [pick(files, [n]) for n in names[:7]]
     # source 2 : copie modifiée
     s2root = new_dir("upd-src2")
@@ -999,6 +999,270 @@ def test_account():
     check("compte: sans settings.json, créé avec le seul hook", rc == 0 and len(our_groups(s6)) == 1 and set(s6) == {"hooks"}, s6)
 
 
+ADAPTER = REPO / "brain-main" / "adapters" / "claude-code"
+AGENTS3 = ("orchestrator", "worker-sonnet", "worker-haiku")
+CLAUDE5 = sorted([".claude/agents/%s.md" % n for n in AGENTS3] + [".claude/settings.json", ".claude/README.md"])
+ORCH_TOOLS = "Read, Grep, Glob, Agent(worker-sonnet, worker-haiku), SendMessage, AskUserQuestion"
+ACTIF = "actif à la prochaine conversation"
+# Écarts documentés entre .claude/agents/ du dépôt 2brain et l'adaptateur (texte propre au dépôt 2brain retiré) :
+# seul l'orchestrateur diffère (description, date, première phrase) ; les deux workers sont identiques.
+ADAPTER_GAPS = {
+    "orchestrator": [
+        ("description: \"Chef d'orchestre unique de 2brain : dialogue", "description: \"Chef d'orchestre unique du projet : dialogue"),
+        ("updated: \"2026-11-05\"", "updated: \"2026-11-06\""),
+        ("Tu es l'orchestrateur de 2brain, chef d'orchestre unique.", "Tu es l'orchestrateur de ce projet, chef d'orchestre unique."),
+    ],
+    "worker-sonnet": [],
+    "worker-haiku": [],
+}
+
+
+def lf(path):
+    return Path(path).read_bytes().decode("utf-8").replace("\r\n", "\n")
+
+
+def front(path):
+    """Champs du front matter (clé: valeur sur une ligne)."""
+    head = lf(path).split("\n---\n")[0].split("\n")[1:]
+    return {l.split(":", 1)[0]: l.split(":", 1)[1].strip() for l in head if ":" in l and not l.startswith(" ")}
+
+
+def claude_files(proj):
+    root = Path(proj) / ".claude"
+    return sorted(p.relative_to(proj).as_posix() for p in root.rglob("*") if p.is_file()) if root.is_dir() else []
+
+
+def test_adapter():
+    check("adaptateur: source présente (3 agents, settings.json, README.md)",
+          all((ADAPTER / "agents" / (n + ".md")).is_file() for n in AGENTS3) and (ADAPTER / "settings.json").is_file() and (ADAPTER / "README.md").is_file())
+    check("adaptateur: settings.json = agent orchestrator seulement",
+          json.loads(lf(ADAPTER / "settings.json")) == {"agent": "orchestrator"})
+    for n in AGENTS3:
+        expected = lf(REPO / ".claude" / "agents" / (n + ".md"))
+        ok = True
+        for old, new in ADAPTER_GAPS[n]:
+            ok = ok and expected.count(old) == 1
+            expected = expected.replace(old, new)
+        check("adaptateur: %s identique à .claude/agents/ du dépôt, hors écarts documentés (%d)" % (n, len(ADAPTER_GAPS[n])),
+              ok and lf(ADAPTER / "agents" / (n + ".md")) == expected, n)
+    check("adaptateur: aucun « 2brain » restant dans l'orchestrateur", "2brain" not in lf(ADAPTER / "agents" / "orchestrator.md"))
+    readme = lf(ADAPTER / "README.md")
+    check("adaptateur: README couvre correspondance, contrat, limites non garanties et retrait",
+          all(w in readme for w in ("`opus`", "`sonnet`", "`haiku`", "§9", "Bash", "ne peut pas interroger", "aller-retour", "Desktop", "Retrait", "agent"))
+          and "non vérifié" in readme.lower() and front(ADAPTER / "README.md").get("title"))
+
+    # installation dans un projet vide
+    proj = new_dir("adp-empty")
+    rc, prep = prepare(proj)
+    plan = json.loads((proj / "EMPLACEMENT/plan.json").read_text(encoding="utf-8")) if (proj / "EMPLACEMENT/plan.json").is_file() else {"fichiers": {}}
+    check("adaptateur: prévisualisation (projet vide) liste les 5 fichiers .claude/ et le routeur actif",
+          rc == 0 and prep["claude_fichiers"] == CLAUDE5 and prep["routeur"]["etat"] == ACTIF
+          and prep["conflits"] == [] and prep["adaptations"] == [] and all(f in plan["fichiers"] for f in CLAUDE5), prep)
+    check("adaptateur: la prévisualisation n'écrit pas dans .claude/ du projet", not (proj / ".claude").exists())
+    rc, data = apply(proj, prep["plan_sha256"])
+    b = data.get("bilan", {})
+    check("adaptateur: installation (projet vide): 5 fichiers posés, bilan routeur actif et nouvelle conversation",
+          rc == 0 and claude_files(proj) == CLAUDE5 and b.get("claude") == CLAUDE5 and b["routeur"]["etat"] == ACTIF
+          and "nouvelle conversation" in b["message"], data)
+    check("adaptateur: settings.json installé contient agent: orchestrator",
+          json.loads((proj / ".claude/settings.json").read_text(encoding="utf-8")) == {"agent": "orchestrator"})
+    fm = {n: front(proj / ".claude/agents" / (n + ".md")) for n in AGENTS3}
+    check("adaptateur: agents installés avec les bons model, tools, omitClaudeMd",
+          fm["orchestrator"]["model"] == "opus" and fm["orchestrator"]["tools"] == ORCH_TOOLS and "omitClaudeMd" not in fm["orchestrator"]
+          and fm["worker-sonnet"]["model"] == "sonnet" and fm["worker-sonnet"]["tools"] == "Read, Grep, Glob, Edit, Write, Bash"
+          and fm["worker-haiku"]["model"] == "haiku" and fm["worker-haiku"]["tools"] == "Read, Grep, Glob, Edit, Bash"
+          and fm["worker-sonnet"]["omitClaudeMd"] == "true" and fm["worker-haiku"]["omitClaudeMd"] == "true"
+          and all(fm[n]["name"] == n for n in AGENTS3), fm)
+    check("adaptateur: l'orchestrateur n'a ni Bash, ni Write, ni Edit",
+          not any(w in fm["orchestrator"]["tools"] for w in ("Bash", "Write", "Edit")))
+    files = sorted(p.relative_to(proj / "brain").as_posix() for p in (proj / "brain").rglob("*") if p.is_file())
+    trace = re.compile(r"claude|router|routeur|orchestrat|worker|adapter|adaptateur|2brain|brain-main|bootstrap", re.I)
+    hits = []
+    for p in (proj / "brain").rglob("*"):
+        rel = p.relative_to(proj / "brain").as_posix()
+        if trace.search(rel):
+            hits.append((rel, "chemin"))
+        if p.is_file():
+            m = trace.search(p.read_text(encoding="utf-8"))
+            if m:
+                hits.append((rel, m.group(0)))
+    check("adaptateur: brain/ limité aux 5 documents et au registre, sans trace du système ni du routeur",
+          files == sorted(["docs/" + n for n in DOCS5] + ["registry/entries.jsonl"]) and not hits, (files, hits[:3]))
+    check("adaptateur: aucun __pycache__ ni EMPLACEMENT restant", not list(proj.rglob("__pycache__")) and not (proj / "EMPLACEMENT").exists())
+    check("adaptateur: la source est aussi copiée dans brain-main/ (manifeste compris)",
+          (proj / "brain-main/adapters/claude-code/settings.json").is_file()
+          and "adapters/claude-code/agents/orchestrator.md" in json.loads((proj / "brain-main/manifest.json").read_text(encoding="utf-8"))["files"])
+
+    # status.py : actif, absent, partiel
+    home = new_dir("home-adp")
+    rc, st = status(proj, home)
+    check("adaptateur: status.py -> routeur actif", st["routeur"] == "actif", st)
+    rc, out, _ = run(ACCOUNT / "status.py", "--project", proj, "--home", home, "--offline")
+    check("adaptateur: status.py (texte) mentionne le routeur", "Routeur" in out and "actif" in out, out)
+    variants = []
+    p1 = new_dir("adp-part1")
+    shutil.copytree(proj / ".claude", p1 / ".claude")
+    (p1 / ".claude/settings.json").write_text("{}", encoding="utf-8")
+    p2 = new_dir("adp-part2")
+    shutil.copytree(proj / ".claude", p2 / ".claude")
+    (p2 / ".claude/agents/worker-haiku.md").unlink()
+    p3 = new_dir("adp-part3")
+    shutil.copytree(proj / ".claude", p3 / ".claude")
+    (p3 / ".claude/settings.json").write_text(json.dumps({"agent": "autre"}), encoding="utf-8")
+    p4 = new_dir("adp-part4")
+    shutil.copytree(proj / ".claude", p4 / ".claude")
+    (p4 / ".claude/settings.json").write_text("{ illisible", encoding="utf-8")
+    p5 = new_dir("adp-solo")
+    (p5 / ".claude").mkdir()
+    (p5 / ".claude/settings.json").write_text('{"agent": "orchestrator"}', encoding="utf-8")
+    for q in (p1, p2, p3, p4, p5):
+        variants.append(status(q, home)[1]["routeur"])
+    check("adaptateur: status.py -> partiel (clé absente, agent manquant, autre valeur, JSON illisible, clé sans agents)", variants == ["partiel"] * 5, variants)
+    rc, st = status(p1, home)
+    check("adaptateur: status.py partiel -> raison et note", "absente" in st["routeur_raison"] and any("Routeur partiel" in n for n in st["notes"]), st)
+    pa = mk(new_dir("adp-abs"), {"README.md": "x"})
+    check("adaptateur: status.py -> routeur absent", status(pa, home)[1]["routeur"] == "absent")
+
+    # .claude/settings.json existant : jamais modifié, clé signalée
+    for label, content, etat, ad_word in (
+        ("sans clé agent", '{\r\n\t"model": "x",\r\n\t"permissions": {"allow": ["a"]}\r\n}\r\n', "non activé", '"agent": "orchestrator"'),
+        ("agent autre valeur", '{"agent": "autre"}', "non activé", "Conflit"),
+        ("agent déjà orchestrator", '{"agent": "orchestrator", "x": 1}', ACTIF, None),
+        ("JSON illisible", "{ pas du json", "non activé", '"agent": "orchestrator"'),
+    ):
+        ps = mk(new_dir("adp-settings"), {"README.md": "x"})
+        (ps / ".claude").mkdir()
+        raw = content.encode("utf-8")
+        (ps / ".claude/settings.json").write_bytes(raw)
+        rc, prep = prepare(ps)
+        pre_ok = rc == 0 and prep["routeur"]["etat"] == etat and ".claude/settings.json" not in prep["claude_fichiers"]
+        joined = "".join(prep["adaptations"])
+        if ad_word:
+            pre_ok = pre_ok and ad_word in joined
+        else:
+            pre_ok = pre_ok and prep["adaptations"] == []
+        if label == "agent autre valeur":
+            pre_ok = pre_ok and ".claude/settings.json" in prep["conflits"]
+        else:
+            pre_ok = pre_ok and prep["conflits"] == []
+        if label == "sans clé agent":
+            pre_ok = pre_ok and "pas actif tant" in joined and "n'est pas modifié" in joined
+        check("settings.json existant (%s): prévisualisation, routeur %s, clé signalée" % (label, etat), pre_ok, prep)
+        rc, data = apply(ps, prep["plan_sha256"])
+        check("settings.json existant (%s): installation, octets inchangés, autres fichiers .claude/ posés, bilan routeur %s" % (label, etat),
+              rc == 0 and (ps / ".claude/settings.json").read_bytes() == raw and data["bilan"]["routeur"]["etat"] == etat
+              and claude_files(ps) == CLAUDE5 and data["bilan"]["claude"] == [f for f in CLAUDE5 if f != ".claude/settings.json"], data)
+        if etat == "non activé":
+            check("settings.json existant (%s): le bilan donne la raison" % label,
+                  ".claude/settings.json" in data["bilan"]["routeur"]["raison"])
+
+    # agent existant différent : conflit, sans écrasement
+    pc = mk(new_dir("adp-conflict"), {"README.md": "x"})
+    (pc / ".claude/agents").mkdir(parents=True)
+    mine = "---\nname: orchestrator\n---\nà moi\n".encode("utf-8")
+    (pc / ".claude/agents/orchestrator.md").write_bytes(mine)
+    rc, prep = prepare(pc)
+    check("agent existant différent: conflit signalé, routeur non activé",
+          rc == 0 and ".claude/agents/orchestrator.md" in prep["conflits"] and prep["routeur"]["etat"] == "non activé", prep)
+    before = tree(pc, skip=("EMPLACEMENT",))
+    rc, data = apply(pc, prep["plan_sha256"])
+    check("agent existant différent: application refusée (4), rien écrasé ni posé",
+          rc == 4 and (pc / ".claude/agents/orchestrator.md").read_bytes() == mine and tree(pc, skip=("EMPLACEMENT",)) == before
+          and not (pc / "brain-main").exists() and ".claude/agents/orchestrator.md" in data["conflits"], data)
+    pr = mk(new_dir("adp-readme"), {".claude/README.md": "perso\n"})
+    rc, prep = prepare(pr)
+    check("README.md de .claude/ existant différent: conflit", rc == 0 and ".claude/README.md" in prep["conflits"], prep)
+    # agent identique : pas de conflit
+    pi = new_dir("adp-same")
+    (pi / ".claude/agents").mkdir(parents=True)
+    shutil.copyfile(Env.source / "adapters/claude-code/agents/worker-haiku.md", pi / ".claude/agents/worker-haiku.md")
+    raw_h = (pi / ".claude/agents/worker-haiku.md").read_bytes()
+    rc, prep = prepare(pi)
+    check("agent existant identique: pas de conflit, signalé déjà présent, non recopié",
+          rc == 0 and prep["conflits"] == [] and prep["claude_deja_presents"] == [".claude/agents/worker-haiku.md"]
+          and ".claude/agents/worker-haiku.md" not in prep["claude_fichiers"] and len(prep["claude_fichiers"]) == 4, prep)
+    rc, data = apply(pi, prep["plan_sha256"])
+    check("agent existant identique: installation ok, fichier inchangé, routeur actif",
+          rc == 0 and (pi / ".claude/agents/worker-haiku.md").read_bytes() == raw_h and claude_files(pi) == CLAUDE5
+          and data["bilan"]["routeur"]["etat"] == ACTIF, data)
+    pf = mk(new_dir("adp-file"), {".claude": "fichier"})
+    b0 = tree(pf)
+    rc, prep = prepare(pf)
+    check("`.claude` fichier: prévisualisation refusée, rien touché", rc == 2 and tree(pf) == b0, prep)
+    pe = mk(new_dir("adp-evil"), {"README.md": "x"})
+    rc, prep = prepare(pe)
+    (pe / "EMPLACEMENT/.claude/hooks").mkdir(parents=True)
+    (pe / "EMPLACEMENT/.claude/hooks/x.sh").write_text("x", encoding="utf-8")
+    plan_path = pe / "EMPLACEMENT/plan.json"
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    plan["fichiers"][".claude/hooks/x.sh"] = sha(pe / "EMPLACEMENT/.claude/hooks/x.sh")
+    plan_path.write_text(json.dumps(plan), encoding="utf-8")
+    rc, data = apply(pe, sha(plan_path))
+    check("plan avec un chemin .claude/ hors adaptateur: refus (3), rien posé", rc == 3 and not (pe / "brain-main").exists() and not (pe / ".claude").exists(), data)
+
+    # -u : n'écrit pas dans .claude/, signale le changement d'adaptateur
+    upd = SCRIPTS / "update-brain-main.py"
+    pu = project_with_files("adp-upd")
+    rc, prep = prepare(pu)
+    apply(pu, prep["plan_sha256"])
+    s2root = new_dir("adp-src2")
+    shutil.copytree(Env.source, s2root / "brain-main")
+    s2 = s2root / "brain-main"
+    (s2 / "adapters/claude-code/agents/worker-haiku.md").write_text("changé\n", encoding="utf-8")
+    (s2 / "bootstrap/VERSION").write_text("0.9.0\n", encoding="utf-8")
+    claude_before, all_before = tree(pu / ".claude"), tree(pu)
+    rc, plan = runj(upd, "--source", s2, "--project", pu)
+    ac = plan.get("adaptations_claude", [])
+    check("-u: le plan signale le changement d'adaptateur (.claude/ n'est pas modifié), sans écrire",
+          rc == 0 and [a["path"] for a in ac] == ["adapters/claude-code/agents/worker-haiku.md"] and ".claude/ n'est pas modifié" in ac[0]["note"]
+          and tree(pu) == all_before, plan)
+    rc, done = runj(upd, "--source", s2, "--project", pu, "--apply", "--plan-sha256", plan["plan_sha256"])
+    check("-u: --apply n'écrit que dans brain-main/, .claude/ strictement inchangé, adaptation rappelée",
+          rc == 0 and tree(pu / ".claude") == claude_before
+          and tree(pu, skip=("brain-main",)) == {k: v for k, v in all_before.items() if not k.startswith("brain-main")}
+          and (pu / "brain-main/adapters/claude-code/agents/worker-haiku.md").read_text(encoding="utf-8") == "changé\n"
+          and [a["path"] for a in done["adaptations_claude"]] == ["adapters/claude-code/agents/worker-haiku.md"], done)
+    rc, plan0 = runj(upd, "--source", Env.source, "--project", pu)
+    check("-u: source revenue à l'identique de l'installation -> adaptateur remis, seulement l'adaptateur signalé",
+          all(a["path"].startswith("adapters/claude-code/") for a in plan0["adaptations_claude"]), plan0["adaptations_claude"])
+    rc, plan1 = runj(upd, "--source", Env.source, "--project", proj)
+    check("-u: aucun changement d'adaptateur -> aucune adaptation signalée", rc == 0 and plan1["adaptations_claude"] == [], plan1)
+
+    # documents modifiés par cette décision
+    skill = lf(ACCOUNT / "SKILL.md")
+    check("SKILL.md: sans Bash général, brief complet (session substituée, contenu mot pour mot, append only), -c suit le skill de capture, au plus 70 lignes",
+          "Sans Bash" in skill and "orchestrateur du dépôt 2brain" not in skill and "${CLAUDE_SESSION_ID}` déjà substitué" in skill
+          and "mot pour mot" in skill and "append only" in skill and "validation" in skill
+          and "demande de suivre `brain-main/skills/brain-capture/SKILL.md`" in skill and len(skill.splitlines()) <= 70, len(skill.splitlines()))
+    check("SKILL.md: le brief autorise expressément les écritures de -c, -c <fichier>, -c 1 et -i, rappelle l'append only, interdit commit et push",
+          "autorise expressément" in skill and "`-c` et `-c <fichier>` : `brain/registry/` par `append-captures.py`" in skill
+          and "le staging prévu par le skill de capture" in skill and "`brain/sources/sessions/`" in skill
+          and "`-c 1` : le rollback par `rollback-captures.py`" in skill and "`-i` : l'écriture de `.claude/` par `apply-install.py`" in skill
+          and "append only" in skill and "tout commit et tout push" in skill and len(skill.splitlines()) <= 70, len(skill.splitlines()))
+    check("SKILL.md: bilan d'installation avec routeur et nouvelle conversation, -u signale l'adaptateur",
+          "`routeur`" in skill and "nouvelle conversation" in skill and "adaptations_claude" in skill)
+    onb = lf(REPO / "brain-main/skills/brain-onboarding/SKILL.md")
+    check("onboarding: formulation générale (plus « orchestrateur du dépôt 2brain »)", "orchestrateur du dépôt 2brain" not in onb and "session orchestrateur" in onb)
+    boot = lf(BOOT / "README.md")
+    check("bootstrap/README: plus d'orchestrateur propre au dépôt 2brain, section adaptateur, provenance et limites écrites",
+          "Orchestrateur du dépôt 2brain" not in boot and "### 9.1. Adaptateur Claude Code" in boot
+          and "Décision de l'humain du 2026-11-06 : « Je veux que le router soit automatiquement appliqué dès l'installation »" in boot
+          and "aucune économie de coût n'a été mesurée" in boot.lower() and "empêche l'activation automatique" in boot and "à confirmer en session" in boot)
+    guide = lf(REPO / "brain-main/README.md")
+    check("guide: routeur actif par défaut, renvois à ROUTER.md et .claude/README.md, retrait, au plus 80 lignes",
+          "Routeur actif par défaut" in guide and "brain-main/ROUTER.md" in guide and ".claude/README.md" in guide and "clé `agent`" in guide
+          and len(guide.splitlines()) <= 80, len(guide.splitlines()))
+    tpl = lf(BOOT / "templates/AGENTS.md")
+    check("modèle AGENTS.md: ligne orchestrateur/ROUTER, outil sans adaptateur, pas d'import de ROUTER.md",
+          "orchestrateur et applique `brain-main/ROUTER.md`" in tpl and "sans adaptateur" in tpl and "ROUTER §9" in tpl
+          and not any("ROUTER" in x for x in import_lines(tpl)), import_lines(tpl))
+    check("version: 0.4.0 dans VERSION", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.4.0")
+    hacct = new_dir("home-adp-version")
+    rc, out = runj(SCRIPTS / "install-account.py", "--home", hacct)
+    check("compte: install-account --home temporaire copie la version 0.4.0",
+          rc == 0 and (hacct / ".claude/skills/brain/VERSION").read_bytes() == b"0.4.0\n", out)
+
+
 def test_skill():
     text = (ACCOUNT / "SKILL.md").read_text(encoding="utf-8")
     head = text.split("---")[1]
@@ -1015,7 +1279,7 @@ def test_skill():
           "brain-main/skills/brain-onboarding/SKILL.md" in text and "/brain -o" in text and "nouvelle conversation" in text)
     check("SKILL.md: /compact seulement pour l'interdire", all(re.search(r"jamais|Jamais|interdit", ln) for ln in text.splitlines() if "/compact" in ln))
     check("SKILL.md: __PYTHON__ présent avant installation", "__PYTHON__" in text)
-    check("VERSION: 0.3.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.3.0")
+    check("VERSION: 0.4.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.4.0")
     # chaque script est autonome : aucun import local
     local_names = {p.stem.replace("-", "_") for p in list(SCRIPTS.glob("*.py")) + list(ACCOUNT.glob("*.py"))}
     bad = []
@@ -1045,7 +1309,8 @@ def main():
         for name, fn in (("prepare/cancel", test_prepare_cancel), ("installation", test_install),
                          ("racine", test_root_files), ("brain généré", test_generated_brain),
                          ("status -o", test_status_todo), ("onboarding", test_onboarding_files),
-                         ("mise à jour", test_update), ("compte", test_account), ("skill", test_skill)):
+                         ("mise à jour", test_update), ("compte", test_account), ("skill", test_skill),
+                         ("adaptateur", test_adapter)):
             try:
                 fn()
             except Exception:

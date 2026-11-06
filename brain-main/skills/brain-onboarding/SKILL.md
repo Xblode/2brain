@@ -18,7 +18,7 @@ Onboarding : proposer le contenu de `brain/docs/` d'après le projet, sans rien 
 - Ne rien décider, ne rien coder. Ne modifier ni le registre, ni `brain-main/`, ni les fichiers du projet hors `brain/docs/`.
 - Ne jamais remplacer une information confirmée sans le dire et sans accord explicite.
 - Une réponse manquante ne bloque pas : l'élément reste « À compléter. ».
-- Sans Bash (orchestrateur du dépôt 2brain) : déléguer l'écriture à l'agent `worker-sonnet` s'il existe, avec le contenu validé tel quel.
+- Sans Bash (session orchestrateur, cas normal d'un projet installé) : déléguer l'écriture à l'agent `worker-sonnet` s'il existe. Il ne voit pas la conversation : le brief donne les chemins, le contenu validé mot pour mot et les sections à mettre à jour. La validation reste chez l'orchestrateur.
 
 ## Étapes
 

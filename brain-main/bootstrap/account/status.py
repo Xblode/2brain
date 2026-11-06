@@ -73,6 +73,26 @@ def brain_main_state(project):
 
 
 TODO_MARK = "À compléter"
+AGENT_NAMES = ("orchestrator", "worker-sonnet", "worker-haiku")
+
+
+def router_state(project):
+    """Routeur Claude Code : `actif` (clé agent = orchestrator et trois agents), `absent` (ni l'un ni l'autre), sinon `partiel`."""
+    try:
+        data = json.loads((project / ".claude" / "settings.json").read_text(encoding="utf-8"))
+        key = isinstance(data, dict) and data.get("agent") == "orchestrator"
+    except Exception:
+        key = False
+    present = [n for n in AGENT_NAMES if (project / ".claude" / "agents" / (n + ".md")).is_file()]
+    if key and len(present) == len(AGENT_NAMES):
+        return {"etat": "actif", "raison": "`.claude/settings.json` : agent = orchestrator, trois agents présents"}
+    if not key and not present:
+        return {"etat": "absent", "raison": "ni la clé `agent` ni les agents dans `.claude/`"}
+    parts = []
+    parts.append("clé `agent` = orchestrator présente" if key else "clé `agent` = orchestrator absente de `.claude/settings.json`")
+    missing = [n for n in AGENT_NAMES if n not in present]
+    parts.append("agents : %s" % ("complets" if not missing else "manquants : " + ", ".join(missing)))
+    return {"etat": "partiel", "raison": "; ".join(parts)}
 
 
 def docs_to_complete(docs_dir):
@@ -153,6 +173,9 @@ def build(project, home, offline):
             "%d document(s) de brain/docs/ contiennent encore « %s » : /brain -o propose de les remplir (rien n'est écrit sans validation)."
             % (brain["documents_a_completer"], TODO_MARK)
         )
+    router = router_state(project)
+    if router["etat"] == "partiel":
+        notes.append("Routeur partiel (%s) : il n'est pas actif." % router["raison"])
     return {
         "racine": str(project),
         "premier_niveau": entries,
@@ -160,6 +183,8 @@ def build(project, home, offline):
         "brain_main": brain_main_state(project),
         "brain": brain,
         "depot_source": is_source_repo(project),
+        "routeur": router["etat"],
+        "routeur_raison": router["raison"],
         "technologies": [h for h in TECH_HINTS if (project / h).exists()],
         "bootstrap": {
             "compte": account or "inconnue",
@@ -180,6 +205,7 @@ def as_text(st):
         "brain : %s (%d entrées au registre)" % (br["etat"], br["entrees_registre"]),
         "Documents contenant encore « %s » : %d" % (TODO_MARK, br["documents_a_completer"]),
         "Dépôt source 2brain : %s" % ("oui" if st["depot_source"] else "non"),
+        "Routeur (orchestrateur et workers) : %s (%s)" % (st["routeur"], st["routeur_raison"]),
         "Technologies (indices) : %s" % (", ".join(st["technologies"]) or "aucun"),
         "Bootstrap : compte %s, projet %s, distante %s" % (
             st["bootstrap"]["compte"], st["bootstrap"]["projet"], st["bootstrap"]["distante"]),

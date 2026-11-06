@@ -713,7 +713,7 @@ def test_skill_and_account():
     check("SKILL.md: règle sans Bash (worker-sonnet) et jamais de simulation conservées", "worker-sonnet" in text and "Jamais de simulation" in text)
     check("SKILL.md: pas de syntaxe !, pas de convention copiée",
           "!`" not in text and not any(w in text for w in ("UPPER_SNAKE_CASE", "kebab-case", "metadata_version", "SemVer", "TAXONOMY")))
-    check("VERSION: 0.3.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.3.0")
+    check("VERSION: 0.4.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.4.0")
 
     # installation sur un compte temporaire
     home = new_dir("home-cmd")
@@ -723,8 +723,8 @@ def test_skill_and_account():
     real_before = sha(real_settings) if real_settings.is_file() else None
     rc, out = runj(SCRIPTS / "install-account.py", "--home", home)
     installed = home / ".claude" / "skills" / "brain"
-    check("compte: install-account --home temporaire copie la version 0.3.0 (LF) et le skill à jour",
-          rc == 0 and (installed / "VERSION").read_bytes() == b"0.3.0\n"
+    check("compte: install-account --home temporaire copie la version 0.4.0 (LF) et le skill à jour",
+          rc == 0 and (installed / "VERSION").read_bytes() == b"0.4.0\n"
           and "search-registry.py" in (installed / "SKILL.md").read_text(encoding="utf-8")
           and "__PYTHON__" not in (installed / "SKILL.md").read_text(encoding="utf-8"), out)
     check("compte: le vrai ~/.claude/settings.json est inchangé", (sha(real_settings) if real_settings.is_file() else None) == real_before)
@@ -741,7 +741,7 @@ def test_skill_and_account():
           rc == 0 and st["bootstrap"]["compte"] == "0.1.0" and st["bootstrap"]["projet"] == "0.2.0"
           and any("plus récente" in x and "install-account.py" in x for x in st["notes"]), st)
     rc, st = runj(ACCOUNT / "status.py", "--project", proj, "--home", home, "--json", "--offline")
-    check("status: compte à jour (0.3.0) -> pas de note de version", rc == 0 and not any("plus récente" in x for x in st["notes"]), st["notes"])
+    check("status: compte à jour (0.4.0) -> pas de note de version", rc == 0 and not any("plus récente" in x for x in st["notes"]), st["notes"])
 
 
 def test_files_and_docs():

@@ -3,7 +3,7 @@ metadata_version: 1
 title: "Instructions agents 2brain"
 type: index
 description: "Point d'entrée des agents IA : identité du projet, organisation, règles de travail et documents à lire selon la tâche."
-version: "1.5.0"
+version: "1.7.0"
 status: review
 created: "2026-10-31"
 updated: "2026-11-06"
@@ -23,7 +23,7 @@ Point d'entrée des agents IA sur **2brain**. Orientation seulement : le détail
 
 Principes : préserver l'historique et la provenance ; une proposition n'est pas une décision tant qu'elle n'est pas validée explicitement ; le dépôt GitHub fait foi sur l'état réel du projet ; noms courts, simplicité progressive, indépendance des outils.
 
-Mécanismes : Capture (collecte fidèle, append only) → Review (consolidation) → Search → Sync (outils externes comme ClickUp). **Capture, Search et Review sont outillés par des scripts** (`brain-main/skills/brain-capture/`, `brain-search/`, `brain-review/` ; Review en rapport seulement, Search en lecture seule) ; **Sync reste conceptuel**. La commande unique `/brain` (Bootstrap 0.3.0 dans le dépôt) : `-i`, `-u`, `-o` (remplit `brain/docs/` d'un projet, écrit seulement après validation), `-c`, `-c <fichier>`, `-c 1`, `-s`, `-r` construits et testés par scripts ; le compte porte le Bootstrap 0.1.0 (réinstallation en 0.3.0 à faire pour `-o`, `-c`, `-s`, `-r`) et la confirmation en session réelle reste à faire. Le guide des outils, tel que le reçoit un projet installé, est `brain-main/README.md`. Sans la commande, la capture se fait en lisant `brain-main/skills/brain-capture/SKILL.md`.
+Mécanismes : Capture (collecte fidèle, append only) → Review (consolidation) → Search → Sync (outils externes comme ClickUp). **Capture, Search et Review sont outillés par des scripts** (`brain-main/skills/brain-capture/`, `brain-search/`, `brain-review/` ; Review en rapport seulement, Search en lecture seule) ; **Sync reste conceptuel**. La commande unique `/brain` (Bootstrap 0.4.0 dans le dépôt) : `-i`, `-u`, `-o` (remplit `brain/docs/` d'un projet, écrit seulement après validation), `-c`, `-c <fichier>`, `-c 1`, `-s`, `-r` construits et testés par scripts ; le compte porte le Bootstrap 0.3.0 (`-i` essayé en session réelle le 2026-11-06 ; `-o`, `-c`, `-s`, `-r` présents mais pas encore essayés en session ; le routeur demande la 0.4.0, donc une réinstallation du compte). Le guide des outils, tel que le reçoit un projet installé, est `brain-main/README.md`. Sans la commande, la capture se fait en lisant `brain-main/skills/brain-capture/SKILL.md`.
 
 Espaces logiques d'une capture : `atelier` (exploration), `referentiel` (établi), `journal` (historique), `pilotage` (tâches, jalons). Ranger n'est pas valider.
 
@@ -33,13 +33,16 @@ Sources de vérité : `brain/` en local (registre JSONL) ; ClickUp est une inter
 
 | Chemin | Nature | Rôle |
 | --- | --- | --- |
+| `README.md` | Navigation racine | Index court du dépôt : oriente vers `AGENTS.md`, `brain-main/`, `brain/`, `lab/` |
+| `brain-main/skills/README.md` | Index des skills | Relie chaque commande d'outil (`-c`, `-o`, `-s`, `-r`) à son dossier et à son point d'entrée |
+| `brain/README.md` | Index de l'instance | Oriente dans `docs/`, `registry/` et `conventions/` de l'instance |
 | `brain/` | Instance projet | `docs/` (documentation), `registry/` (données : `entries.jsonl`, contrat `SCHEMA.md`), `conventions/` (conventions d'instance, aucune définie à ce jour) |
-| `brain-main/` | Moteur universel | `conventions/` communes à toute instance ; `skills/` (outils) ; `bootstrap/` (spécification de la commande `/brain`) ; `ROUTER.md` (règles de délégation entre agents) |
+| `brain-main/` | Moteur universel | `conventions/` communes à toute instance ; `skills/` (outils) ; `bootstrap/` (spécification de la commande `/brain`) ; `ROUTER.md` (règles de délégation entre agents) ; `adapters/claude-code/` (source de l'adaptateur que `/brain -i` copie dans `.claude/` des projets installés) |
 | `brain-main/skills/brain-capture/` | Outil | Skill de capture, ses références et scripts. Claude Code ne le charge pas comme skill : lire `SKILL.md` pour une capture |
 | `brain-main/skills/brain-onboarding/` | Outil | `SKILL.md` de `/brain -o`, lu quand l'outil sert |
 | `brain-main/registry/SCHEMA.md` | Contrat | Contrat du registre pour un projet installé (même contenu que `brain/registry/SCHEMA.md` du dépôt) |
 | `brain-main/skills/brain-search/`, `brain-review/` | Outils | Scripts de recherche (lecture seule) et de Review (rapport seulement), appelés par `/brain -s` et `/brain -r`. Pas de `SKILL.md` |
-| `.claude/` | Adaptateur Claude Code | Applique `brain-main/ROUTER.md` avec `agents/` (orchestrateur et workers) et `settings.json`, documenté dans `.claude/README.md` |
+| `.claude/` | Adaptateur Claude Code | Applique `brain-main/ROUTER.md` avec `agents/` (orchestrateur et workers) et `settings.json`, documenté dans `.claude/README.md` ; copie de travail de ce dépôt, comparée par test à `brain-main/adapters/claude-code/` |
 | `lab/` | Hors instance | Sources de test, `_test-runs`, `_backup`, rapports. Pas une source de vérité |
 
 ## Conventions
@@ -60,7 +63,7 @@ Dossier `brain-main/conventions/` : `README.md` (catalogue et articulation), `ME
 | Registre | `brain/registry/SCHEMA.md` |
 | Délégation entre agents | `brain-main/ROUTER.md`, `.claude/README.md` |
 | Se servir des outils 2brain | `brain-main/README.md` (guide : commandes, niveaux de lecture, règles) |
-| Commandes `/brain`, Bootstrap | `brain-main/bootstrap/README.md` (état par commande ; construits et testés par scripts, compte en 0.1.0 ; Search et Review : §8.3 et §8.4) |
+| Commandes `/brain`, Bootstrap | `brain-main/bootstrap/README.md` (état par commande ; construits et testés par scripts, compte en 0.3.0 ; Search et Review : §8.3 et §8.4) |
 | ClickUp | `brain/docs/INTEGRATIONS.md`. Aucune convention ClickUp n'existe (`brain/conventions/README.md`) : ne pas en inventer |
 
 Les références `CAP-xxx` des documents provisoires pointent vers un ancien registre : voir `git show 45ba05d:brain/registry/entries.jsonl`.

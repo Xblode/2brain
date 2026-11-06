@@ -3,7 +3,8 @@
 
 Usage : python -I prepare-install.py --source DOSSIER_BRAIN_MAIN --project DOSSIER --answers JSON_OU_FICHIER
 Ne touche à aucun autre fichier du projet. Crée EMPLACEMENT/ avec la copie prévue de
-brain-main/ et de brain/, un plan.json et le marqueur .2brain-emplacement.
+brain-main/, de brain/ et de l'adaptateur Claude Code (.claude/), un plan.json et le marqueur
+.2brain-emplacement. Un .claude/settings.json existant n'est jamais modifié.
 Sortie JSON (avec plan_sha256). Codes : 0 ok, 2 refus ou erreur.
 """
 
@@ -24,6 +25,11 @@ MARKER = ".2brain-emplacement"
 MANIFEST = "manifest.json"
 ANSWER_KEYS = ("nature", "objectif", "modules", "outils", "identite")
 TODO = "À compléter."
+ADAPTER_DIR = ("adapters", "claude-code")
+AGENT_NAMES = ("orchestrator", "worker-sonnet", "worker-haiku")
+AGENT_VALUE = "orchestrator"
+ACTIVE = "actif à la prochaine conversation"
+INACTIVE = "non activé"
 PLACEHOLDER = re.compile(r"\{\{([a-z_]+)\}\}")
 
 
@@ -103,6 +109,78 @@ def load_answers(raw):
     if not isinstance(data, dict):
         raise Refused("les réponses doivent être un objet JSON")
     return {k: data.get(k) for k in ANSWER_KEYS}
+
+
+def read_agent_key(path):
+    """(etat, valeur) de la clé `agent` : etat parmi ok, illisible. valeur None si la clé est absente."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return "illisible", None
+    if not isinstance(data, dict):
+        return "illisible", None
+    return "ok", data.get("agent")
+
+
+def plan_adapter(source, project, emplacement):
+    """Adaptateur Claude Code : copie dans EMPLACEMENT/.claude ce qui est à poser, sans toucher au projet.
+
+    Renvoie (déjà présents, conflits, adaptations, routeur). Un fichier absent est créé, un fichier identique
+    est laissé, un fichier différent est un conflit (il figure alors au plan). `.claude/settings.json` existant
+    n'est jamais modifié : la clé à ajouter est signalée.
+    """
+    src = source.joinpath(*ADAPTER_DIR)
+    present, conflicts, adaptations = [], [], []
+    if not src.is_dir():
+        return present, conflicts, adaptations, {
+            "etat": INACTIVE, "raison": "la source n'a pas d'adaptateur Claude Code", "nouvelle_conversation": False}
+    claude = project / ".claude"
+    if os.path.lexists(claude) and (claude.is_symlink() or not claude.is_dir()):
+        raise Refused(".claude existe et n'est pas un dossier : refus, rien n'y est touché")
+    wanted = {".claude/agents/%s.md" % n: src / "agents" / (n + ".md") for n in AGENT_NAMES}
+    wanted[".claude/README.md"] = src / "README.md"
+    agent_conflict = False
+    for rel, path in wanted.items():
+        target = project / rel
+        if os.path.lexists(target):
+            if target.is_file() and not target.is_symlink() and target.read_bytes() == path.read_bytes():
+                present.append(rel)
+                continue
+            if rel.startswith(".claude/agents/"):
+                agent_conflict = True
+        dest = emplacement / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(path, dest)
+    key_line = '"agent": "%s"' % AGENT_VALUE
+    settings = project / ".claude" / "settings.json"
+    if not os.path.lexists(settings):
+        dest = emplacement / ".claude" / "settings.json"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src / "settings.json", dest)
+        etat, raison = ACTIVE, "`.claude/settings.json` est créé avec %s" % key_line
+    else:
+        state, value = (read_agent_key(settings) if settings.is_file() and not settings.is_symlink() else ("illisible", None))
+        if state == "illisible":
+            etat, raison = INACTIVE, "`.claude/settings.json` existe mais n'est pas un objet JSON lisible : il n'est pas modifié"
+            adaptations.append(
+                "`.claude/settings.json` n'est pas modifié. Le routeur ne sera pas actif tant que la clé n'y est pas ajoutée "
+                "(après correction du fichier) :\n" + key_line)
+        elif value is None:
+            etat, raison = INACTIVE, "`.claude/settings.json` existe et n'est jamais modifié : la clé `agent` n'y est pas"
+            adaptations.append(
+                "`.claude/settings.json` existe : il n'est pas modifié. Le routeur ne sera pas actif tant que cette clé n'y est pas ajoutée "
+                "(au premier niveau de l'objet) :\n" + key_line)
+        elif value == AGENT_VALUE:
+            etat, raison = ACTIVE, "`.claude/settings.json` contient déjà %s" % key_line
+        else:
+            etat, raison = INACTIVE, "conflit : `.claude/settings.json` définit déjà `agent` = %s ; il n'est pas modifié" % json.dumps(value, ensure_ascii=False)
+            conflicts.append(".claude/settings.json")
+            adaptations.append(
+                "Conflit : `.claude/settings.json` définit `agent` = %s. Il n'est pas modifié et le routeur ne sera pas actif. "
+                "Pour l'activer, remplacer cette valeur par :\n%s" % (json.dumps(value, ensure_ascii=False), key_line))
+    if agent_conflict:
+        etat, raison = INACTIVE, "conflit sur un fichier de `.claude/agents/` : l'installation est suspendue tant qu'il subsiste. " + raison
+    return present, conflicts, adaptations, {"etat": etat, "raison": raison, "nouvelle_conversation": True}
 
 
 def main():
@@ -197,6 +275,9 @@ def main():
                     "CLAUDE.md existe : il n'est pas modifié. Pour qu'il charge AGENTS.md, ajouter exactement la ligne :\n@AGENTS.md"
                 )
 
+        claude_present, claude_conflicts, claude_adaptations, routeur = plan_adapter(source, project, emplacement)
+        adaptations += claude_adaptations
+
         files = {}
         for rel, path in list_files(emplacement).items():
             if rel in (MARKER,):
@@ -205,6 +286,7 @@ def main():
         for rel in files:
             if os.path.lexists(project / rel):
                 conflicts.append(rel)
+        conflicts += claude_conflicts
         plan = {
             "plan_version": 1,
             "projet": str(project),
@@ -215,6 +297,8 @@ def main():
             "fichiers": dict(sorted(files.items())),
             "conflits": conflicts,
             "adaptations": adaptations,
+            "claude_deja_presents": claude_present,
+            "routeur": routeur,
         }
         plan_bytes = (json.dumps(plan, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
         (emplacement / "plan.json").write_bytes(plan_bytes)
@@ -234,6 +318,9 @@ def main():
             "racine_creee": sorted(r for r in files if r in ("CLAUDE.md", "AGENTS.md")),
             "agents_md_cree": "AGENTS.md" in files,
             "claude_md_cree": "CLAUDE.md" in files,
+            "claude_fichiers": sorted(r for r in files if r.startswith(".claude/")),
+            "claude_deja_presents": claude_present,
+            "routeur": routeur,
             "conflits": conflicts,
             "adaptations": adaptations,
         }

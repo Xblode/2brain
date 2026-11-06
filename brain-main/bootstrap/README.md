@@ -3,8 +3,8 @@ metadata_version: 1
 title: Bootstrap et commande /brain
 type: specification
 description: Spécifie la commande unique /brain, le rôle du Bootstrap qui l'orchestre, la détection d'un projet, l'installation et la mise à jour de 2brain, avec l'état réel de chaque commande.
-summary: Une seule porte d'entrée, /brain, avec des options à une lettre. Le Bootstrap est un skill léger installé sur le compte Claude Code ; il détecte, diagnostique, récupère les ressources, prépare des propositions et coordonne les mécanismes existants, sans rien modifier sans validation humaine. Ce document est la référence unique des commandes et du Bootstrap. État réel : `/brain`, `-i`, `-u`, `-o`, `-c`, `-c <fichier>`, `-c 1`, `-s` et `-r` sont construits et testés par scripts (Bootstrap 0.3.0 dans le dépôt) ; le compte porte le Bootstrap 0.1.0 et n'a pas été réinstallé, et le chargement réel des imports reste à confirmer en session.
-version: "0.4.0"
+summary: Une seule porte d'entrée, /brain, avec des options à une lettre. Le Bootstrap est un skill léger installé sur le compte Claude Code ; il détecte, diagnostique, récupère les ressources, prépare des propositions et coordonne les mécanismes existants, sans rien modifier sans validation humaine. Ce document est la référence unique des commandes et du Bootstrap. État réel : `/brain`, `-i`, `-u`, `-o`, `-c`, `-c <fichier>`, `-c 1`, `-s` et `-r` sont construits et testés par scripts (Bootstrap 0.4.0 dans le dépôt) ; le compte porte le Bootstrap 0.3.0 (`-i` essayé en session réelle le 2026-11-06 ; `-o`, `-c`, `-s`, `-r` pas encore essayés en session) ; le routeur (adaptateur Claude Code installé par `-i`) demande la 0.4.0, donc une réinstallation du compte, et reste à confirmer en session, comme le chargement réel des imports.
+version: "0.5.0"
 status: draft
 created: "2026-11-05"
 updated: "2026-11-06"
@@ -24,23 +24,24 @@ tags:
 
 Référence unique des commandes `/brain` et du Bootstrap. Il n'y a ni `COMMANDS.md` ni `BOOTSTRAP.md`. Les sections sont numérotées pour que les autres fichiers y renvoient.
 
-**État réel (lot 4) :** le skill `/brain`, le hook de démarrage, les scripts de détection, de prévisualisation, d'installation, de mise à jour, d'extraction de session, de recherche et de Review, et le skill d'onboarding (`-o`) sont construits dans `brain-main/` et testés par scripts (`tests/run_bootstrap_tests.py` et `tests/run_commands_tests.py`, dossiers temporaires, données synthétiques). Constat du 2026-11-06 : le compte porte le Bootstrap 0.1.0 (fichier `VERSION` du skill installé) et n'a pas été réinstallé ; la version du dépôt est 0.3.0. Un test réel du 2026-11-05, avec une sonde, a confirmé dans l'onglet Code de Claude Code : le hook `SessionStart` en forme sans shell fonctionne et le skill reçoit `-i` dans `$ARGUMENTS` et `$0`. Aucune des commandes `-c`, `-s`, `-r`, `-o` n'a encore été essayée en session réelle, et le chargement réel des imports `@` de `AGENTS.md` (§6.1) reste à confirmer en session.
+**État réel (lot 4) :** le skill `/brain`, le hook de démarrage, les scripts de détection, de prévisualisation, d'installation, de mise à jour, d'extraction de session, de recherche et de Review, et le skill d'onboarding (`-o`) sont construits dans `brain-main/` et testés par scripts (`tests/run_bootstrap_tests.py` et `tests/run_commands_tests.py`, dossiers temporaires, données synthétiques). Constat du 2026-11-06 : le compte porte le Bootstrap 0.3.0 (fichier `VERSION` du skill installé) ; la version du dépôt est 0.4.0 (le routeur demande de réinstaller le compte). Un test réel du 2026-11-05, avec une sonde, a confirmé dans l'onglet Code de Claude Code : le hook `SessionStart` en forme sans shell fonctionne et le skill reçoit `-i` dans `$ARGUMENTS` et `$0`. `/brain -i` a été installé et essayé en session réelle en 0.3.0 le 2026-11-06 (conversation fournie par l'humain). Aucune des commandes `-c`, `-s`, `-r`, `-o` n'a encore été essayée en session réelle, et le chargement réel des imports `@` de `AGENTS.md` (§6.1) reste à confirmer en session.
 
 ## 1. État par commande
 
 | Commande | Fonction | État | Lot |
 | --- | --- | --- | --- |
-| `/brain` | État du projet et aide | construit et testé par scripts ; présent sur le compte en 0.1.0 | 2 |
-| `/brain -i` | Installation (analyse, questions, prévisualisation, installation) | construit et testé par scripts ; présent sur le compte en 0.1.0 | 2 |
-| `/brain -u` | Mise à jour de `brain-main/` | construit et testé par scripts ; présent sur le compte en 0.1.0 | 2 |
-| `/brain -o` | Remplissage de `brain/docs/` avec le projet | construit et testé par scripts, à réinstaller sur le compte (0.3.0), confirmation en session réelle à faire | 4 |
-| `/brain -c` | Capture de la session | construit et testé par scripts, à réinstaller sur le compte (0.3.0), confirmation en session réelle à faire | 3 |
-| `/brain -c <fichier>` | Capture d'une source externe | construit et testé par scripts, à réinstaller sur le compte (0.3.0), confirmation en session réelle à faire | 3 |
-| `/brain -c 1` | Annulation de la dernière capture | construit et testé par scripts, à réinstaller sur le compte (0.3.0), confirmation en session réelle à faire | 3 |
-| `/brain -s <sujet>` | Recherche | construit et testé par scripts, à réinstaller sur le compte (0.3.0), confirmation en session réelle à faire | 3 |
-| `/brain -r` | Review en rapport seulement | construit et testé par scripts, à réinstaller sur le compte (0.3.0), confirmation en session réelle à faire | 3 |
+| `/brain` | État du projet et aide | construit et testé par scripts ; présent sur le compte en 0.3.0 | 2 |
+| `/brain -i` | Installation (analyse, questions, prévisualisation, installation) | construit et testé par scripts ; présent sur le compte en 0.3.0, essayé en session réelle le 2026-11-06 ; l'installation du routeur demande la 0.4.0 | 2 |
+| `/brain -u` | Mise à jour de `brain-main/` | construit et testé par scripts ; présent sur le compte en 0.3.0 ; le signalement de l'adaptateur demande la 0.4.0 | 2 |
+| `/brain -o` | Remplissage de `brain/docs/` avec le projet | construit et testé par scripts, présent sur le compte en 0.3.0, confirmation en session réelle à faire | 4 |
+| `/brain -c` | Capture de la session | construit et testé par scripts, présent sur le compte en 0.3.0, confirmation en session réelle à faire | 3 |
+| `/brain -c <fichier>` | Capture d'une source externe | construit et testé par scripts, présent sur le compte en 0.3.0, confirmation en session réelle à faire | 3 |
+| `/brain -c 1` | Annulation de la dernière capture | construit et testé par scripts, présent sur le compte en 0.3.0, confirmation en session réelle à faire | 3 |
+| `/brain -s <sujet>` | Recherche | construit et testé par scripts, présent sur le compte en 0.3.0, confirmation en session réelle à faire | 3 |
+| `/brain -r` | Review en rapport seulement | construit et testé par scripts, présent sur le compte en 0.3.0, confirmation en session réelle à faire | 3 |
+| `/brain -i` (routeur) | Installe l'adaptateur Claude Code dans `.claude/` : session en orchestrateur | construit et testé par scripts ; démarrage en orchestrateur, délégation depuis `/brain` et permissions des workers en arrière-plan à confirmer en session réelle | 4 |
 
-Les mécanismes sont dans `brain-main/skills/` (`brain-capture/`, `brain-search/`, `brain-review/`) : le skill du compte ne fait qu'aiguiller vers eux, donc `/brain -u` les met à jour. Seul le skill du compte (`SKILL.md`) demande de relancer `install-account.py` pour passer en 0.3.0.
+Les mécanismes sont dans `brain-main/skills/` (`brain-capture/`, `brain-search/`, `brain-review/`) : le skill du compte ne fait qu'aiguiller vers eux, donc `/brain -u` les met à jour. Seul le skill du compte (`SKILL.md`) demande de relancer `install-account.py` pour passer en 0.4.0.
 
 ## 2. Commandes
 
@@ -102,13 +103,13 @@ L'installation suit cinq phases.
 - **B. Récupération.** Seules les ressources nécessaires sont récupérées depuis `Xblode/2brain`, branche `master`. Pas de clone aveugle.
 - **C. Préparation.** Racine par défaut, arborescence, dossier `EMPLACEMENT/` à la racine du projet. Ce n'est qu'une prévisualisation.
 - **D. Validation humaine explicite.** Emplacement, arborescence, fichiers créés, conflits, adaptations.
-- **E. Installation.** Création de `brain-main/`, puis de `brain/` généré à partir de `brain-main/`, et de `CLAUDE.md` et `AGENTS.md` à la racine s'ils sont absents. Contrôle de cohérence. Les fichiers existants sont préservés. Bilan final, puis proposition de `/brain -o`.
+- **E. Installation.** Création de `brain-main/`, puis de `brain/` généré à partir de `brain-main/`, et de `CLAUDE.md`, `AGENTS.md` et de l'adaptateur `.claude/` (§9.1) à la racine s'ils sont absents. Contrôle de cohérence. Les fichiers existants sont préservés. Bilan final, puis proposition de `/brain -o`.
 
 Après un « oui », l'utilisateur tape `/brain -i` (Claude ne peut pas lancer la commande lui-même, le skill étant à invocation manuelle). `EMPLACEMENT/` est supprimé en cas de refus. Si un conflit apparaît après la validation, l'installation est suspendue et l'accord est redemandé.
 
 ### 5.1. Scripts
 
-Appelés par le skill avec `python -I`, un fichier par script, bibliothèque standard seulement, sortie JSON. `fetch-source.py` récupère `brain-main/` dans un dossier temporaire ; `prepare-install.py` crée `EMPLACEMENT/` (copie prévue, `plan.json`, marqueur `.2brain-emplacement`) et imprime `plan_sha256` ; `apply-install.py --plan-sha256` installe seulement si le plan et l'arborescence correspondent et si aucun conflit n'est apparu (code 4 sinon), écrit `brain-main/manifest.json` (version, commit source, date, SHA-256 par fichier) et supprime `EMPLACEMENT/` ; `cancel-install.py` supprime `EMPLACEMENT/` seulement avec son marqueur. `CLAUDE.md` (une ligne : `@AGENTS.md`) et `AGENTS.md` (imports, §6.1) sont créés s'ils sont absents et figurent dans le plan (`racine_creee`). S'ils existent, ils ne sont **jamais modifiés** : l'adaptation signalée donne les lignes exactes à y ajouter (les imports et la consigne `-o` pour `AGENTS.md`, la ligne `@AGENTS.md` pour `CLAUDE.md`), et rien si elles y sont déjà. Les modèles sont dans `templates/` (`CLAUDE.md`, `AGENTS.md`, `brain/`).
+Appelés par le skill avec `python -I`, un fichier par script, bibliothèque standard seulement, sortie JSON. `fetch-source.py` récupère `brain-main/` dans un dossier temporaire ; `prepare-install.py` crée `EMPLACEMENT/` (copie prévue, `plan.json`, marqueur `.2brain-emplacement`) et imprime `plan_sha256` ; `apply-install.py --plan-sha256` installe seulement si le plan et l'arborescence correspondent et si aucun conflit n'est apparu (code 4 sinon), écrit `brain-main/manifest.json` (version, commit source, date, SHA-256 par fichier) et supprime `EMPLACEMENT/` ; `cancel-install.py` supprime `EMPLACEMENT/` seulement avec son marqueur. `CLAUDE.md` (une ligne : `@AGENTS.md`) et `AGENTS.md` (imports, §6.1) sont créés s'ils sont absents et figurent dans le plan (`racine_creee`). S'ils existent, ils ne sont **jamais modifiés** : l'adaptation signalée donne les lignes exactes à y ajouter (les imports et la consigne `-o` pour `AGENTS.md`, la ligne `@AGENTS.md` pour `CLAUDE.md`), et rien si elles y sont déjà. L'adaptateur est traité de même (§9.1). Les modèles sont dans `templates/` (`CLAUDE.md`, `AGENTS.md`, `brain/`).
 
 ## 6. Séparation de `brain-main/` et `brain/`
 
@@ -142,7 +143,7 @@ Imports d'après la documentation de Claude Code (`memory`, lue le 2026-11-06) :
 5. Obtenir une validation explicite.
 6. N'écraser aucune modification locale.
 
-Une adaptation éventuelle de `brain/` est signalée et proposée à part. `/brain -u` refuse de s'exécuter dans le dépôt source 2brain.
+Une adaptation éventuelle de `brain/` est signalée et proposée à part ; un changement de l'adaptateur Claude Code (`adapters/claude-code/`) est signalé (`adaptations_claude`) sans rien écrire : `.claude/` n'est pas modifié. `/brain -u` refuse de s'exécuter dans le dépôt source 2brain.
 
 `update-brain-main.py` compare le manifeste, le local et la source fichier par fichier, imprime un plan (sans écrire) puis, avec `--apply --plan-sha256`, applique sans jamais écraser un conflit.
 
@@ -195,6 +196,7 @@ brain-main/bootstrap/
   templates/              CLAUDE.md, AGENTS.md (racine) ; brain/ (docs/ et registry/entries.jsonl vide)
   tests/                  run_bootstrap_tests.py (installation, compte, racine, brain généré), run_commands_tests.py (-c, -s, -r)
 brain-main/registry/      SCHEMA.md (contrat du registre)
+brain-main/adapters/claude-code/  agents/ (orchestrator, worker-sonnet, worker-haiku), settings.json, README.md (copiés dans .claude/ par -i)
 brain-main/skills/
   brain-capture/scripts/  append-captures, rollback-captures, validate-registry, read-session
   brain-search/scripts/   search-registry
@@ -205,10 +207,21 @@ brain-main/skills/
 - **Emplacement sur le compte :** `~/.claude/skills/brain/` (skill, hook, scripts légers, `VERSION`), un groupe `hooks.SessionStart` (matcher `startup`, sans shell) dans `~/.claude/settings.json`, sauvegardes dans `~/.claude/2brain-bootstrap/backups/`. Installation : `python scripts/install-account.py` (options `--home`, `--dry-run`, `--uninstall`, `--replace-probe`).
 - **Retrait :** `install-account.py --uninstall` retire seulement son groupe de hooks et son dossier skill, et garde les sauvegardes.
 - **Prérequis :** Python 3 (bibliothèque standard seulement). Le chemin absolu de Python est écrit dans le skill et dans le hook à l'installation.
-- **Orchestrateur du dépôt 2brain :** il n'a ni Bash, ni Write, ni Edit. `/brain` s'y exécute, mais les commandes sont déléguées à l'agent `worker-sonnet`. Les installations et mises à jour sont refusées dans le dépôt source.
+- **Session orchestrateur :** avec le routeur actif (§9.1), la session n'a ni Bash, ni Write, ni Edit. `/brain` s'y exécute, mais les commandes sont déléguées à l'agent `worker-sonnet`, avec un brief qui contient tout (le worker ne voit pas la conversation). Les installations et mises à jour sont refusées dans le dépôt source.
 - **Limites des commandes de lot 3 :** format de session instable (voir 8.1) ; fichier de transcription pouvant être en retard ; masquage des secrets non garanti ; extraits à relire avant commit ; `read-session.py` ne lit pas les transcriptions de sous-agents ; Search et Review n'ont été essayés que sur des copies du registre et des registres synthétiques.
-- **Limites du lot 4 :** tout est testé par scripts seulement (dossiers temporaires, comptes simulés avec `--home`) ; le compte n'est pas réinstallé (0.1.0) ; le chargement réel des imports `@` et l'effet de `-o` en session restent à confirmer ; la taille de contexte chargée à chaque session n'est pas mesurée en session.
+- **Limites du lot 4 :** tout est testé par scripts seulement (dossiers temporaires, comptes simulés avec `--home`) ; le compte reste en 0.3.0 (à réinstaller pour le routeur, 0.4.0) ; le chargement réel des imports `@` et l'effet de `-o` en session restent à confirmer ; la taille de contexte chargée à chaque session n'est pas mesurée en session.
 - **Limite actuelle :** le dépôt GitHub ne contient pas le Bootstrap tant qu'il n'est pas poussé. `/brain -i` et `/brain -u` depuis GitHub échouent jusque-là, avec un message explicite de `fetch-source.py`.
+
+### 9.1. Adaptateur Claude Code (routeur)
+
+Décision de l'humain du 2026-11-06 : « Je veux que le router soit automatiquement appliqué dès l'installation ». Source : `brain-main/adapters/claude-code/` (`agents/orchestrator.md`, `worker-sonnet.md`, `worker-haiku.md`, `settings.json` = `{"agent": "orchestrator"}`, `README.md`). Règles : `brain-main/ROUTER.md` (§9), jamais recopiées ; correspondance et limites : le `README.md` de l'adaptateur, installé en `.claude/README.md`.
+
+- **Installation (`prepare-install.py`, `apply-install.py`) :** les cinq fichiers sont copiés à la racine du projet, visibles dans la prévisualisation et le bilan. Fichier absent : créé. Agent ou `README.md` existant et identique : rien à faire ; différent : conflit (comme les autres, code 4 à l'application, rien écrasé). `.claude/settings.json` existant : **jamais modifié**. Le plan donne la clé exacte à y ajouter (`"agent": "orchestrator"`) et dit que le routeur n'est pas actif tant qu'elle n'y est pas ; une autre valeur de `agent` est signalée comme conflit, non bloquant puisque le fichier n'est pas écrit. Le bilan donne `routeur` : `actif à la prochaine conversation` ou `non activé`, avec la raison, et rappelle d'ouvrir une nouvelle conversation.
+- **Mise à jour :** `-u` n'écrit que dans `brain-main/`. Si l'adaptateur a changé, la liste `adaptations_claude` le signale (« `.claude/` n'est pas modifié »).
+- **État :** `status.py` donne `routeur` : `actif` (clé `agent` = `orchestrator` et trois agents), `absent` (ni l'un ni l'autre) ou `partiel`.
+- **Retrait :** retirer la clé `agent` de `.claude/settings.json`, puis ouvrir une nouvelle conversation.
+- **`brain/` :** l'adaptateur va dans `.claude/` et `brain-main/`, jamais dans `brain/`.
+- **Limites :** aucune économie de coût n'a été mesurée. Un `.claude/settings.json` existant empêche l'activation automatique. Le fonctionnement réel est à confirmer en session : démarrage en orchestrateur, délégation depuis `/brain`, permissions des workers en arrière-plan. Les autres limites (Bash des workers, modèles non verrouillés, aller-retour pour chaque modification, outils Desktop possiblement absents) sont dans le `README.md` de l'adaptateur.
 
 ## 10. Provenance
 
@@ -226,4 +239,4 @@ Sauf CAP-327, aucune des captures ci-dessous n'est validée (`validation: none`)
 - **CAP-313**, suggestion (`validation: none`) : Review construit progressivement un graphe de connaissances plutôt qu'une simple arborescence. Source des statistiques de graphe de §8.4.
 - **CAP-327**, décision validée par l'utilisateur (`explicit_user_approval`, portée `item`), qui clarifie CAP-313 : seule de ces quatre captures à être validée.
 
-Les décisions de ce document viennent de la validation de l'humain du 2026-11-05, complétée par la décision de l'humain du 2026-11-06 : `/brain -o`, `CLAUDE.md` et `AGENTS.md` créés à l'installation, `brain/` sans trace du système, chargement de l'essentiel à chaque session (conventions puis guide), détail lu quand l'outil sert. CAP-051, CAP-061 et CAP-062 n'ont aucun pouvoir de décision. Le registre n'a pas été modifié.
+Les décisions de ce document viennent de la validation de l'humain du 2026-11-05, complétée par la décision de l'humain du 2026-11-06 : `/brain -o`, `CLAUDE.md` et `AGENTS.md` créés à l'installation, `brain/` sans trace du système, chargement de l'essentiel à chaque session (conventions puis guide), détail lu quand l'outil sert. Décision de l'humain du 2026-11-06 : le routeur est appliqué dès l'installation (§9.1). CAP-051, CAP-061 et CAP-062 n'ont aucun pouvoir de décision. Le registre n'a pas été modifié.

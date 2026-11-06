@@ -5,7 +5,7 @@ Usage :
   python -I update-brain-main.py --source DOSSIER_BRAIN_MAIN --project DOSSIER            (plan, sans écrire)
   python -I update-brain-main.py --source ... --project ... --apply --plan-sha256 EMPREINTE
 
-N'écrit jamais en dehors de brain-main/ et n'écrase jamais une modification locale en conflit.
+N'écrit jamais en dehors de brain-main/ (`.claude/` n'est jamais modifié : un changement de l'adaptateur est seulement signalé) et n'écrase jamais une modification locale en conflit.
 Sortie JSON. Codes : 0 ok, 2 refus (dépôt source, manifeste absent ou invalide, usage),
 3 le plan recalculé ne correspond pas à l'empreinte validée.
 """
@@ -21,6 +21,7 @@ from pathlib import Path, PurePosixPath
 
 MANIFEST = "manifest.json"
 TEMPLATE_PREFIXES = ("bootstrap/templates/",)
+ADAPTER_PREFIX = "adapters/claude-code/"
 
 
 class Refused(Exception):
@@ -146,6 +147,11 @@ def build_plan(source, project):
         {"path": p, "note": "le modèle de brain/ a changé : adaptation éventuelle de brain/ à proposer à part, rien n'est modifié"}
         for p in adaptations
     ]
+    plan["adaptations_claude"] = [
+        {"path": p, "note": "l'adaptateur Claude Code a changé : .claude/ n'est pas modifié, rien n'est écrit ; "
+                            "la copie de .claude/ (agents, settings.json, README.md) est à comparer et à reprendre à part"}
+        for p in touched if p.startswith(ADAPTER_PREFIX)
+    ]
     plan["versions"] = {
         "installee": manifest.get("version", "inconnue"),
         "source": read_version(source),
@@ -239,6 +245,7 @@ def main():
             "conflits_non_ecrits": plan["conflicts"],
             "conserves": plan["kept"], "supprimes_localement_conserves": plan["kept_deleted"],
             "adaptations_brain": plan["adaptations_brain"],
+            "adaptations_claude": plan["adaptations_claude"],
             "version": plan["versions"]["source"],
         }, 0)
     except Refused as exc:

@@ -3,7 +3,7 @@ metadata_version: 1
 title: "Instructions agents"
 type: index
 description: "Point d'entrée des agents IA : contexte 2brain chargé à chaque session et consignes de base."
-version: "0.2.0"
+version: "0.3.0"
 status: draft
 created: "{{date}}"
 updated: "{{date}}"
@@ -12,6 +12,10 @@ updated: "{{date}}"
 # Instructions agents
 
 Ce projet utilise 2brain. Le moteur est dans `brain-main/` (conventions, outils, guide) ; le contenu du projet est dans `brain/` (documents, registre). Le contenu du projet va dans `brain/`, jamais dans `brain-main/`.
+
+## Routeur
+
+Dans Claude Code, la session démarre en orchestrateur et applique `brain-main/ROUTER.md` (adaptateur dans `.claude/`, décrit par `.claude/README.md`). Un outil sans adaptateur travaille normalement selon ce fichier, sans routage, avec les mêmes règles de registre (ROUTER §9).
 
 ## Contexte chargé
 
