@@ -3,7 +3,7 @@ metadata_version: 1
 title: "Instructions agents"
 type: index
 description: "Point d'entrée des agents IA : contexte 2brain chargé à chaque session et consignes de base."
-version: "0.3.0"
+version: "0.4.0"
 status: draft
 created: "{{date}}"
 updated: "{{date}}"
@@ -16,6 +16,8 @@ Ce projet utilise 2brain. Le moteur est dans `brain-main/` (conventions, outils,
 ## Routeur
 
 Dans Claude Code, la session démarre en orchestrateur et applique `brain-main/ROUTER.md` (adaptateur dans `.claude/`, décrit par `.claude/README.md`). Un outil sans adaptateur travaille normalement selon ce fichier, sans routage, avec les mêmes règles de registre (ROUTER §9).
+
+Si tu as Bash, Write ou Edit alors que `.claude/settings.json` contient `"agent": "orchestrator"`, tu n'es probablement pas routé (déduction d'après tes outils) : le dire une fois par session et proposer d'ouvrir une nouvelle conversation. Aucune autre action n'est imposée.
 
 ## Contexte chargé
 

@@ -2,7 +2,7 @@
 metadata_version: 1
 title: Adaptateur Claude Code de l'Agent Router
 description: Décrit l'adaptateur Claude Code installé dans .claude/ : correspondance profil, agent et modèle, outils, contrat du routeur et limites non garanties.
-version: "0.1.0"
+version: "0.1.2"
 status: draft
 created: "2026-11-06"
 updated: "2026-11-06"
@@ -52,8 +52,9 @@ Cet adaptateur applique `brain-main/ROUTER.md` (§9). Les règles (rôles, séle
 5. Le prompt de l'orchestrateur remplace le prompt par défaut : des consignes natives peuvent être perdues. Les outils propres à Desktop (liste de tâches, etc.) peuvent manquer à l'orchestrateur.
 6. Claude Code conserve les transcriptions des sous-agents dans `~/.claude/`, hors du projet.
 7. Non vérifié en session réelle : démarrage en orchestrateur, délégation depuis `/brain`, permissions des workers en arrière-plan.
-8. Version cible : Claude Code 2.1.317 ou plus. Comportement inconnu avec une version plus ancienne (le CLI 2.1.22 n'a pas été essayé).
+8. Application dans une nouvelle conversation seulement : la clé `agent` n'a aucun effet dans la conversation d'installation (test réel : pas d'orchestrateur, `worker-sonnet` introuvable). Le constat « session non routée » (Bash, Write ou Edit disponibles alors que le routeur est configuré) est une déduction d'après les outils, sans garantie.
+9. Version cible : Claude Code 2.1.317 ou plus. Comportement inconnu avec une version plus ancienne (le CLI 2.1.22 n'a pas été essayé).
 
 ## Retrait
 
-Retirer la clé `agent` de `.claude/settings.json`, puis ouvrir une nouvelle conversation. Les agents restent disponibles sans effet. Un `.claude/settings.json` déjà présent n'est jamais modifié à l'installation : le routeur reste inactif jusqu'à l'ajout de `"agent": "orchestrator"`.
+`/brain -d off` retire la clé `agent` de `.claude/settings.json` (`/brain -d on` la remet), puis ouvrir une nouvelle conversation ; retirer la clé à la main reste valable. Les agents restent disponibles sans effet. Un `.claude/settings.json` déjà présent n'est jamais modifié à l'installation : le routeur reste inactif jusqu'à `/brain -d on` ou à l'ajout manuel de `"agent": "orchestrator"`.

@@ -3,7 +3,7 @@ metadata_version: 1
 title: "Guide de brain-main"
 type: index
 description: "Guide court de 2brain pour une IA : rôle de brain-main/ et de brain/, commandes /brain, niveaux de lecture et règles."
-version: "1.1.1"
+version: "1.1.4"
 status: draft
 created: "2026-11-06"
 updated: "2026-11-06"
@@ -31,6 +31,7 @@ Moteur 2brain : conventions, outils et règles réutilisables d'un projet à l'a
 | `/brain -c 1` | Annule la dernière capture | Capture erronée | oui, après confirmation |
 | `/brain -s <sujet>` | Cherche dans le registre | Retrouver une information | non |
 | `/brain -r` | Review : rapport sur le registre | Sur demande seulement | non |
+| `/brain -d on\|off` | Active ou désactive la délégation (routeur) | Changer le routeur | oui, `.claude/settings.json` |
 
 Les commandes s'exécutent avec le skill `/brain` du compte. Si une commande échoue, relayer le message, ne rien simuler.
 
@@ -58,7 +59,7 @@ Les commandes s'exécutent avec le skill `/brain` du compte. Si une commande éc
 
 ## Routeur actif par défaut
 
-Dans Claude Code, `/brain -i` installe l'adaptateur dans `.claude/` : la session démarre en orchestrateur, qui dialogue, décide et délègue à `worker-sonnet` et `worker-haiku`, sans Bash, Write ni Edit. Règles : `brain-main/ROUTER.md`. Correspondance et limites : `.claude/README.md`. Retrait : enlever la clé `agent` de `.claude/settings.json`, puis ouvrir une nouvelle conversation. Un `.claude/settings.json` existant n'est jamais modifié à l'installation : y ajouter `"agent": "orchestrator"` à la main.
+Dans Claude Code, `/brain -i` installe l'adaptateur dans `.claude/` : les conversations ouvertes ensuite démarrent en orchestrateur (le routeur s'applique à partir de la conversation suivant l'installation, jamais à la conversation d'installation), qui dialogue, décide et délègue à `worker-sonnet` et `worker-haiku`, sans Bash, Write ni Edit. Règles : `brain-main/ROUTER.md`. Correspondance et limites : `.claude/README.md`. Retrait ou remise : `/brain -d off` ou `/brain -d on` (effet à la conversation suivante) ; enlever la clé `agent` à la main reste valable. Un `.claude/settings.json` existant n'est jamais modifié à l'installation : `/brain -d on` y ajoute `"agent": "orchestrator"`.
 
 ## Sources de capture et registre
 

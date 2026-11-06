@@ -162,6 +162,9 @@ def report(ok, dry_run, actions, error=None):
 
 
 def main():
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--home", default=None)
     ap.add_argument("--dry-run", action="store_true")

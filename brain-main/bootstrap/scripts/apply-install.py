@@ -89,7 +89,7 @@ def safe_rel(rel):
     p = PurePosixPath(rel)
     if p.is_absolute() or ".." in p.parts or "\\" in rel or ":" in rel.split("/")[0]:
         raise Refused("chemin dangereux dans le plan : %r" % rel, 3)
-    if p.parts[0] not in ("brain-main", "brain", "AGENTS.md", "CLAUDE.md", ".claude"):
+    if p.parts[0] not in ("brain-main", "brain", "AGENTS.md", "CLAUDE.md", ".gitignore", ".claude"):
         raise Refused("chemin inattendu dans le plan : %r" % rel, 3)
     if p.parts[0] == ".claude" and rel not in CLAUDE_FILES:
         raise Refused("chemin inattendu dans .claude/ : %r" % rel, 3)
@@ -126,6 +126,9 @@ def out_json(obj, code):
 
 
 def main():
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--project", required=True)
     ap.add_argument("--plan-sha256", required=True)
@@ -161,7 +164,7 @@ def main():
         for top in ("brain-main", "brain"):
             if os.path.lexists(project / top) and not any(r.startswith(top + "/") for r in conflicts):
                 conflicts.append(top)
-        for root_file in ("AGENTS.md", "CLAUDE.md"):
+        for root_file in ("AGENTS.md", "CLAUDE.md", ".gitignore"):
             if os.path.lexists(project / root_file) and root_file in files and root_file not in conflicts:
                 conflicts.append(root_file)
         if conflicts:
@@ -231,6 +234,7 @@ def main():
                 "brain": sorted(r for r in posed if r.startswith("brain/")),
                 "agents_md": "AGENTS.md" in posed,
                 "claude_md": "CLAUDE.md" in posed,
+                "gitignore": ".gitignore" in posed,
                 "claude": sorted(r for r in posed if r.startswith(".claude/")),
                 "claude_deja_presents": plan.get("claude_deja_presents", []),
                 "routeur": routeur,

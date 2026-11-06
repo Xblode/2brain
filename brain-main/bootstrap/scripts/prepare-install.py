@@ -2,7 +2,7 @@
 """Prévisualisation de l'installation de 2brain : crée EMPLACEMENT/ à la racine du projet.
 
 Usage : python -I prepare-install.py --source DOSSIER_BRAIN_MAIN --project DOSSIER --answers JSON_OU_FICHIER
-Ne touche à aucun autre fichier du projet. Crée EMPLACEMENT/ avec la copie prévue de
+Ne touche à aucun autre fichier du projet. `.gitignore` (modèle gitignore.txt) est créé s'il est absent, jamais modifié. Crée EMPLACEMENT/ avec la copie prévue de
 brain-main/, de brain/ et de l'adaptateur Claude Code (.claude/), un plan.json et le marqueur
 .2brain-emplacement. Un .claude/settings.json existant n'est jamais modifié.
 Sortie JSON (avec plan_sha256). Codes : 0 ok, 2 refus ou erreur.
@@ -169,7 +169,7 @@ def plan_adapter(source, project, emplacement):
             etat, raison = INACTIVE, "`.claude/settings.json` existe et n'est jamais modifié : la clé `agent` n'y est pas"
             adaptations.append(
                 "`.claude/settings.json` existe : il n'est pas modifié. Le routeur ne sera pas actif tant que cette clé n'y est pas ajoutée "
-                "(au premier niveau de l'objet) :\n" + key_line)
+                "(au premier niveau de l'objet), à la main ou, une fois l'installation faite, par `/brain -d on` :\n" + key_line)
         elif value == AGENT_VALUE:
             etat, raison = ACTIVE, "`.claude/settings.json` contient déjà %s" % key_line
         else:
@@ -184,6 +184,9 @@ def plan_adapter(source, project, emplacement):
 
 
 def main():
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--source", required=True)
     ap.add_argument("--project", required=True)
@@ -275,6 +278,26 @@ def main():
                     "CLAUDE.md existe : il n'est pas modifié. Pour qu'il charge AGENTS.md, ajouter exactement la ligne :\n@AGENTS.md"
                 )
 
+        # .gitignore : créé seulement s'il est absent, jamais modifié ; les lignes manquantes sont signalées.
+        gitignore_template = templates / "gitignore.txt"
+        if gitignore_template.is_file():
+            wanted_rules = [l.strip() for l in gitignore_template.read_text(encoding="utf-8").splitlines()
+                            if l.strip() and not l.lstrip().startswith("#")]
+            if not os.path.lexists(project / ".gitignore"):
+                shutil.copyfile(gitignore_template, emplacement / ".gitignore")
+            else:
+                try:
+                    current = (project / ".gitignore").read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    current = ""
+                present = {line.strip() for line in current.splitlines()}
+                missing = [l for l in wanted_rules if l not in present]
+                if missing:
+                    adaptations.append(
+                        ".gitignore existe : il n'est pas modifié. Pour ne pas commiter le verrou et le staging de capture, "
+                        "ajouter exactement ces lignes :\n" + "\n".join(missing)
+                    )
+
         claude_present, claude_conflicts, claude_adaptations, routeur = plan_adapter(source, project, emplacement)
         adaptations += claude_adaptations
 
@@ -316,6 +339,7 @@ def main():
             "fichiers_brain_main": sum(1 for r in files if r.startswith("brain-main/")),
             "fichiers_brain": sorted(r for r in files if r.startswith("brain/")),
             "racine_creee": sorted(r for r in files if r in ("CLAUDE.md", "AGENTS.md")),
+            "gitignore_cree": ".gitignore" in files,
             "agents_md_cree": "AGENTS.md" in files,
             "claude_md_cree": "CLAUDE.md" in files,
             "claude_fichiers": sorted(r for r in files if r.startswith(".claude/")),

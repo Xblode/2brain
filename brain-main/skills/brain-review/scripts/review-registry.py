@@ -326,6 +326,9 @@ def as_text(rep_json, limit):
 
 
 def main():
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--project", default=".", help="racine du projet (défaut : dossier courant)")
     ap.add_argument("--registry", help="registre à lire (défaut : brain/registry/entries.jsonl du projet)")

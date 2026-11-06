@@ -215,6 +215,9 @@ def out_json(obj, code):
 
 
 def main():
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--source", required=True)
     ap.add_argument("--project", required=True)

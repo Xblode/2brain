@@ -77,19 +77,29 @@ AGENT_NAMES = ("orchestrator", "worker-sonnet", "worker-haiku")
 
 
 def router_state(project):
-    """Routeur Claude Code : `actif` (clé agent = orchestrator et trois agents), `absent` (ni l'un ni l'autre), sinon `partiel`."""
+    """Routeur Claude Code : `configuré` (clé agent = orchestrator et trois agents ; la configuration est lue, pas la session en cours), `désactivé` (agents présents, clé `agent` absente), `absent` (ni l'un ni l'autre), sinon `partiel`."""
     try:
         data = json.loads((project / ".claude" / "settings.json").read_text(encoding="utf-8"))
         key = isinstance(data, dict) and data.get("agent") == "orchestrator"
+        other = data.get("agent") if isinstance(data, dict) and "agent" in data and not key else None
+        has_key = isinstance(data, dict) and "agent" in data
+        readable = isinstance(data, dict)
+    except FileNotFoundError:
+        key, other, has_key, readable = False, None, False, True
     except Exception:
-        key = False
+        key, other, has_key, readable = False, None, False, False
     present = [n for n in AGENT_NAMES if (project / ".claude" / "agents" / (n + ".md")).is_file()]
     if key and len(present) == len(AGENT_NAMES):
-        return {"etat": "actif", "raison": "`.claude/settings.json` : agent = orchestrator, trois agents présents"}
+        return {"etat": "configuré", "raison": "`.claude/settings.json` contient \"agent\": \"orchestrator\" et les trois agents sont présents ; s'applique aux conversations ouvertes après l'installation, sans dire si la session courante est routée"}
+    if readable and not has_key and len(present) == len(AGENT_NAMES):
+        return {"etat": "désactivé", "raison": "les trois agents sont présents mais `.claude/settings.json` n'a pas de clé `agent` : `/brain -d on` active le routeur (à la conversation suivante)"}
     if not key and not present:
         return {"etat": "absent", "raison": "ni la clé `agent` ni les agents dans `.claude/`"}
     parts = []
-    parts.append("clé `agent` = orchestrator présente" if key else "clé `agent` = orchestrator absente de `.claude/settings.json`")
+    parts.append("clé `agent` = orchestrator présente" if key else
+                 "clé `agent` = %s dans `.claude/settings.json` (autre valeur que orchestrator)" % json.dumps(other, ensure_ascii=False) if has_key else
+                 "clé `agent` = orchestrator absente de `.claude/settings.json`" if readable else
+                 "`.claude/settings.json` illisible ou n'est pas un objet JSON")
     missing = [n for n in AGENT_NAMES if n not in present]
     parts.append("agents : %s" % ("complets" if not missing else "manquants : " + ", ".join(missing)))
     return {"etat": "partiel", "raison": "; ".join(parts)}
@@ -175,7 +185,7 @@ def build(project, home, offline):
         )
     router = router_state(project)
     if router["etat"] == "partiel":
-        notes.append("Routeur partiel (%s) : il n'est pas actif." % router["raison"])
+        notes.append("Routeur partiel (%s) : il ne sera pas appliqué." % router["raison"])
     return {
         "racine": str(project),
         "premier_niveau": entries,
@@ -215,6 +225,9 @@ def as_text(st):
 
 
 def main():
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--project", default=".")
     ap.add_argument("--json", action="store_true")
@@ -228,10 +241,8 @@ def main():
     home = Path(args.home) if args.home else Path.home()
     st = build(project, home, args.offline)
     if args.json:
-        sys.stdout.reconfigure(encoding="utf-8")
         sys.stdout.write(json.dumps(st, ensure_ascii=False, indent=2) + "\n")
     else:
-        sys.stdout.reconfigure(encoding="utf-8")
         sys.stdout.write(as_text(st) + "\n")
     return 0
 

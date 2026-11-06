@@ -713,7 +713,7 @@ def test_skill_and_account():
     check("SKILL.md: règle sans Bash (worker-sonnet) et jamais de simulation conservées", "worker-sonnet" in text and "Jamais de simulation" in text)
     check("SKILL.md: pas de syntaxe !, pas de convention copiée",
           "!`" not in text and not any(w in text for w in ("UPPER_SNAKE_CASE", "kebab-case", "metadata_version", "SemVer", "TAXONOMY")))
-    check("VERSION: 0.4.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.4.0")
+    check("VERSION: 0.5.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.5.0")
 
     # installation sur un compte temporaire
     home = new_dir("home-cmd")
@@ -723,8 +723,8 @@ def test_skill_and_account():
     real_before = sha(real_settings) if real_settings.is_file() else None
     rc, out = runj(SCRIPTS / "install-account.py", "--home", home)
     installed = home / ".claude" / "skills" / "brain"
-    check("compte: install-account --home temporaire copie la version 0.4.0 (LF) et le skill à jour",
-          rc == 0 and (installed / "VERSION").read_bytes() == b"0.4.0\n"
+    check("compte: install-account --home temporaire copie la version 0.5.0 (LF) et le skill à jour",
+          rc == 0 and (installed / "VERSION").read_bytes() == b"0.5.0\n"
           and "search-registry.py" in (installed / "SKILL.md").read_text(encoding="utf-8")
           and "__PYTHON__" not in (installed / "SKILL.md").read_text(encoding="utf-8"), out)
     check("compte: le vrai ~/.claude/settings.json est inchangé", (sha(real_settings) if real_settings.is_file() else None) == real_before)
@@ -741,7 +741,7 @@ def test_skill_and_account():
           rc == 0 and st["bootstrap"]["compte"] == "0.1.0" and st["bootstrap"]["projet"] == "0.2.0"
           and any("plus récente" in x and "install-account.py" in x for x in st["notes"]), st)
     rc, st = runj(ACCOUNT / "status.py", "--project", proj, "--home", home, "--json", "--offline")
-    check("status: compte à jour (0.4.0) -> pas de note de version", rc == 0 and not any("plus récente" in x for x in st["notes"]), st["notes"])
+    check("status: compte à jour (0.5.0) -> pas de note de version", rc == 0 and not any("plus récente" in x for x in st["notes"]), st["notes"])
 
 
 def test_files_and_docs():
@@ -780,8 +780,15 @@ def test_files_and_docs():
     check("templates: plus de sources/ ni de conventions/ dans templates/brain/",
           not (BOOT / "templates" / "brain" / "sources").exists() and not (BOOT / "templates" / "brain" / "conventions").exists())
     boot = (BOOT / "README.md").read_text(encoding="utf-8")
-    check("README Bootstrap: état de -c, -c <fichier>, -c 1, -s, -r et références CAP",
-          all(w in boot for w in ("confirmation en session réelle à faire", "CAP-077", "CAP-263", "CAP-313", "CAP-327")) and "prévu | 3" not in boot)
+    import re as _re
+    sec1 = boot.split("## 1. État par commande", 1)[1].split("\n## 2.", 1)[0]
+    rows = [l for l in sec1.splitlines() if l.startswith("| `/brain")]
+    check("README Bootstrap §1: 11 lignes de commande, chacune dit ce qui reste à confirmer en session réelle",
+          len(rows) == 11 and all("construit et testé par scripts" in r and "reste à confirmer en session réelle" in r for r in rows), len(rows))
+    check("README Bootstrap §1: aucune ligne du tableau n'annonce de version de compte",
+          not any(_re.search(r"\d+\.\d+\.\d+|sur le compte|du compte", r) for r in rows))
+    check("README Bootstrap: références CAP conservées et pas de ligne « prévu »",
+          all(w in boot for w in ("CAP-077", "CAP-263", "CAP-313", "CAP-327")) and "prévu | 3" not in boot)
     agents = (REPO / "AGENTS.md").read_text(encoding="utf-8")
     check("AGENTS.md: Search et Review outillés, Sync conceptuel, règle « ne pas lancer » conservée",
           "Seule Capture est outillée" not in agents and "Sync" in agents and "ne pas lancer Brain Review / Sync / Search" in agents)

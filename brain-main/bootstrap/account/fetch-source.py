@@ -114,6 +114,9 @@ def copy_dir(src_root, dest):
 
 
 def main():
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dest", required=True)
     ap.add_argument("--source-url", default=None)

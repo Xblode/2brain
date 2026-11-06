@@ -204,6 +204,9 @@ def as_text(report):
 
 
 def main():
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mots", nargs="*")
     ap.add_argument("--any", action="store_true", help="un seul mot suffit")

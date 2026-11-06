@@ -569,7 +569,7 @@ def test_root_files():
     check("racine existante: la prévisualisation n'écrit que EMPLACEMENT", tree(pe, skip=("EMPLACEMENT",)) == before)
     rc, data = apply(pe, prep["plan_sha256"])
     check("racine existante: installation ok, CLAUDE.md et AGENTS.md jamais modifiés",
-          rc == 0 and tree(pe, skip=("brain-main", "brain", ".claude")) == before and data["bilan"]["adaptations"] == ad, data)
+          rc == 0 and tree(pe, skip=("brain-main", "brain", ".claude", ".gitignore")) == before and data["bilan"]["adaptations"] == ad, data)
 
     # AGENTS.md existe seul : CLAUDE.md créé, AGENTS.md intact
     pa = mk(new_dir("root-agents"), {"AGENTS.md": "perso agents" + NL})
@@ -700,6 +700,170 @@ def test_onboarding_files():
           and "/compact" not in guide)
     check("guide: aucune copie de convention", not any(w in guide for w in ("UPPER_SNAKE_CASE", "kebab-case", "SemVer")))
     check("guide: aucune mention de documents inexistants", "COMMANDS.md" not in guide and "BOOTSTRAP.md" not in guide)
+
+
+def test_onboarding_rules():
+    text = (REPO / "brain-main/skills/brain-onboarding/SKILL.md").read_text(encoding="utf-8")
+    flat = " ".join(text.split())
+    check("onboarding: confirmé seulement si la source le dit explicitement, le déduit est une hypothèse",
+          "seulement si la source le dit explicitement" in flat and "tout ce qui est déduit" in flat
+          and "l'absence d'un fichier" in flat and "script" in flat)
+    check("onboarding: les questions restent posées, une réponse brève ne dispense pas, seul l'humain arrête, reste « À compléter. »",
+          "Les questions restent posées" in flat and "ne dispense pas des suivantes" in flat
+          and "seul l'humain peut demander explicitement d'arrêter" in flat and "« À compléter. »" in flat)
+    check("onboarding: validation document par document, une réponse globale n'est pas une validation",
+          "Valider, document par document" in flat and "Nommer chaque document" in flat
+          and "Une réponse globale" in flat and "n'est pas une validation" in flat)
+    check("onboarding: au plus 80 lignes (règles ajoutées)", len(text.splitlines()) <= 80, len(text.splitlines()))
+
+
+def test_gitignore():
+    tpl = BOOT / "templates/gitignore.txt"
+    rules = [l for l in tpl.read_text(encoding="utf-8").splitlines() if l and not l.startswith("#")]
+    check("gitignore: modèle sous templates/gitignore.txt, deux règles exactes, commentaire d'explication",
+          rules == ["brain/registry/_capture.lock", "brain/registry/_capture-staging/"]
+          and tpl.read_text(encoding="utf-8").startswith("#"), rules)
+    stray = [p.relative_to(BOOT).as_posix() for p in (BOOT / "templates").rglob(".gitignore")]
+    check("gitignore: aucun .gitignore parasite sous templates/", not stray, stray)
+    # absent : créé
+    p0 = mk(new_dir("gi-absent"), {"README.md": "x" + NL})
+    rc, prep = prepare(p0)
+    emp_gi = p0 / "EMPLACEMENT" / ".gitignore"
+    check("gitignore: absent -> prévisualisation le prévoit, contenu du modèle, aucune adaptation",
+          rc == 0 and prep["gitignore_cree"] is True and emp_gi.is_file() and emp_gi.read_bytes() == tpl.read_bytes()
+          and ".gitignore" in json.loads((p0 / "EMPLACEMENT/plan.json").read_text(encoding="utf-8"))["fichiers"]
+          and not any(".gitignore" in a for a in prep["adaptations"]), prep)
+    rc, data = apply(p0, prep["plan_sha256"])
+    check("gitignore: absent -> créé à l'installation et au bilan",
+          rc == 0 and (p0 / ".gitignore").read_bytes() == tpl.read_bytes() and data["bilan"]["gitignore"] is True, data)
+    inst = sorted(p.name for p in (p0 / "brain").rglob("*") if p.is_file())
+    check("gitignore: brain/ limité aux 5 documents et au registre, sans trace du système",
+          inst == ["ARCHITECTURE.md", "PROJECT.md", "REQUIREMENTS.md", "VISION.md", "WORKFLOW.md", "entries.jsonl"], inst)
+    # existant sans les lignes : inchangé à l'octet, lignes manquantes signalées
+    raw = b"node_modules/\r\n.env\r\n"
+    p1 = new_dir("gi-exist")
+    (p1 / ".gitignore").write_bytes(raw)
+    rc, prep = prepare(p1)
+    ad = [a for a in prep["adaptations"] if a.startswith(".gitignore existe")]
+    check("gitignore: existant -> non prévu, adaptation avec les deux lignes exactes",
+          rc == 0 and prep["gitignore_cree"] is False and not (p1 / "EMPLACEMENT/.gitignore").exists()
+          and len(ad) == 1 and ad[0].endswith(":" + NL + NL.join(rules)), prep["adaptations"])
+    rc, data = apply(p1, prep["plan_sha256"])
+    check("gitignore: existant -> inchangé à l'octet après installation, bilan sans création",
+          rc == 0 and (p1 / ".gitignore").read_bytes() == raw and data["bilan"]["gitignore"] is False
+          and data["bilan"]["adaptations"] == prep["adaptations"], data)
+    # une seule ligne présente : seule la manquante est signalée
+    p2 = new_dir("gi-one")
+    (p2 / ".gitignore").write_text("  brain/registry/_capture.lock  " + NL, encoding="utf-8")
+    rc, prep = prepare(p2)
+    ad = [a for a in prep["adaptations"] if a.startswith(".gitignore existe")]
+    check("gitignore: une ligne déjà présente -> seule l'autre est signalée",
+          rc == 0 and len(ad) == 1 and ad[0].endswith(":" + NL + rules[1]), ad)
+    # les lignes y sont : aucune adaptation
+    p3 = new_dir("gi-full")
+    (p3 / ".gitignore").write_text("a" + NL + NL.join(rules) + NL, encoding="utf-8")
+    rc, prep = prepare(p3)
+    check("gitignore: lignes déjà présentes -> aucune adaptation, rien créé",
+          rc == 0 and not any(".gitignore" in a for a in prep["adaptations"]) and prep["gitignore_cree"] is False, prep["adaptations"])
+    # mise à jour : modèle traité comme les autres, rien hors de brain-main/
+    proj = installed_project("gi-upd", ANSWERS_FULL)
+    src = new_dir("gi-upd-src")
+    shutil.copytree(Env.source, src / "brain-main")
+    (src / "brain-main/bootstrap/templates/gitignore.txt").write_text(tpl.read_text(encoding="utf-8") + "# plus tard" + NL, encoding="utf-8")
+    before = tree(proj, skip=("brain-main",))
+    rc, plan = runj(SCRIPTS / "update-brain-main.py", "--source", src / "brain-main", "--project", proj)
+    check("gitignore: -u signale le changement du modèle comme adaptation, sans écrire",
+          rc == 0 and any(a["path"] == "bootstrap/templates/gitignore.txt" for a in plan["adaptations_brain"])
+          and tree(proj, skip=("brain-main",)) == before, plan)
+    rc, done = runj(SCRIPTS / "update-brain-main.py", "--source", src / "brain-main", "--project", proj,
+                    "--apply", "--plan-sha256", plan["plan_sha256"])
+    check("gitignore: -u --apply n'écrit rien hors de brain-main/ (projet inchangé)",
+          rc == 0 and tree(proj, skip=("brain-main",)) == before, done)
+
+
+NON_ASCII = re.compile(r"[^\x00-\x7f]")
+
+
+def run_cp1252(script, *args, inp=None):
+    """Lance `python -I` dans un environnement forcé en cp1252 et PYTHONUTF8=0 (-I les ignore : le script doit s'en passer)."""
+    env = dict(os.environ, PYTHONIOENCODING="cp1252", PYTHONUTF8="0")
+    p = subprocess.run([sys.executable, "-I", "-B", str(script), *[str(a) for a in args]],
+                       capture_output=True, input=inp, env=env, timeout=180)
+    return p.returncode, p.stdout, p.stderr
+
+
+def decode_utf8(data):
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+
+
+def test_utf8_output():
+    cap = REPO / "brain-main/skills/brain-capture/scripts"
+    search = REPO / "brain-main/skills/brain-search/scripts/search-registry.py"
+    review = REPO / "brain-main/skills/brain-review/scripts/review-registry.py"
+    proj = mk(new_dir("u8-proj"), {"README.md": "x"})
+    home = new_dir("u8-home")
+    empty = new_dir("u8-empty")
+    reg = mk(new_dir("u8-reg"), {"entries.jsonl": ""}) / "entries.jsonl"
+    # (nom, script, arguments) : un cas qui imprime un caractère non ASCII, sinon --help
+    cases = [
+        ("status.py", ACCOUNT / "status.py", ["--project", proj, "--home", home, "--offline"]),
+        ("fetch-source.py", ACCOUNT / "fetch-source.py", ["--help"]),
+        ("install-account.py", SCRIPTS / "install-account.py", ["--home", home, "--dry-run"]),
+        ("prepare-install.py", SCRIPTS / "prepare-install.py", ["--source", Env.source, "--project", proj, "--answers", "pas du json"]),
+        ("apply-install.py", SCRIPTS / "apply-install.py", ["--project", proj, "--plan-sha256", "abc"]),
+        ("cancel-install.py", SCRIPTS / "cancel-install.py", ["--project", proj]),
+        ("set-router.py", SCRIPTS / "set-router.py", ["--project", proj, "--state", "on"]),
+        ("update-brain-main.py", SCRIPTS / "update-brain-main.py", ["--source", empty, "--project", proj]),
+        ("read-session.py", cap / "read-session.py", ["--session-id", "zzz", "--project", proj, "--config-dir", home]),
+        ("append-captures.py", cap / "append-captures.py", ["--help"]),
+        ("rollback-captures.py", cap / "rollback-captures.py", ["--n", "2"]),
+        ("validate-registry.py", cap / "validate-registry.py", [reg]),
+        ("search-registry.py", search, ["--project", proj]),
+        ("review-registry.py", review, ["--limit", "-1", "--project", proj]),
+    ]
+    for name, script, args in cases:
+        rc, out, err = run_cp1252(script, *args)
+        text = decode_utf8(out + err)
+        check("utf-8 sous cp1252: %s sans UnicodeEncodeError, sortie décodable en UTF-8, caractère non ASCII imprimé" % name,
+              b"UnicodeEncodeError" not in err and b"Traceback" not in err and text is not None and NON_ASCII.search(text), (rc, err[-300:], out[:200]))
+    # tous les --help (descriptions accentuées), sans erreur d'encodage
+    helped = [(n, s) for n, s, _ in cases] + [("rollback-captures.py", cap / "rollback-captures.py")]
+    for name, script in dict(helped).items():
+        rc, out, err = run_cp1252(script, "--help")
+        check("utf-8 sous cp1252: %s --help sans erreur d'encodage" % name,
+              rc == 0 and b"UnicodeEncodeError" not in err and decode_utf8(out + err) is not None, (rc, err[-300:]))
+    # le hook reste en JSON ASCII
+    d = new_dir("u8-hook")
+    rc, out, err = run_cp1252(ACCOUNT / "session-start.py", inp=json.dumps({"cwd": str(d), "source": "startup"}).encode("utf-8"))
+    try:
+        payload = json.loads(out.decode("ascii"))
+    except Exception:
+        payload = None
+    check("utf-8 sous cp1252: le hook sort un JSON ASCII, rien sur stderr, code 0",
+          rc == 0 and err == b"" and payload and "installer 2brain" in payload["hookSpecificOutput"]["additionalContext"], (rc, out[:200], err))
+    # hook : cwd non ASCII lu sur stdin (octets UTF-8 bruts), cp1252 et PYTHONUTF8=0
+    for label, content in (("vide", None), ("avec fichier", "x")):
+        d = new_dir("u8-hook-é-" + label.replace(" ", "-"))
+        if content is not None:
+            (d / "note.txt").write_text(content, encoding="utf-8")
+        inp = json.dumps({"source": "startup", "cwd": str(d)}, ensure_ascii=False).encode("utf-8")
+        rc, out, err = run_cp1252(ACCOUNT / "session-start.py", inp=inp)
+        try:
+            payload = json.loads(out.decode("ascii"))
+        except Exception:
+            payload = None
+        phrase = "Avant de commencer, souhaites-tu installer 2brain dans ce projet ?"
+        if content is None:
+            check("utf-8 sous cp1252: hook, dossier vide au nom accentué (%s) : JSON avec la question, code 0" % d.name,
+                  "é" in d.name and rc == 0 and err == b"" and payload is not None
+                  and phrase in payload["hookSpecificOutput"]["additionalContext"], (rc, out[:200], err))
+        else:
+            check("utf-8 sous cp1252: hook, dossier non vide au nom accentué (%s) : rien sur stdout ni stderr, code 0" % d.name,
+                  "é" in d.name and rc == 0 and out == b"" and err == b"", (rc, out[:200], err))
+        rmtree(d)
 
 
 def pick(manifest_files, prefix_list):
@@ -1096,9 +1260,10 @@ def test_adapter():
     # status.py : actif, absent, partiel
     home = new_dir("home-adp")
     rc, st = status(proj, home)
-    check("adaptateur: status.py -> routeur actif", st["routeur"] == "actif", st)
+    check("adaptateur: status.py -> routeur configuré (et non actif), avec la raison", st["routeur"] == "configuré"
+          and "s'applique aux conversations ouvertes après l'installation" in st["routeur_raison"] and "session courante" in st["routeur_raison"], st)
     rc, out, _ = run(ACCOUNT / "status.py", "--project", proj, "--home", home, "--offline")
-    check("adaptateur: status.py (texte) mentionne le routeur", "Routeur" in out and "actif" in out, out)
+    check("adaptateur: status.py (texte) mentionne le routeur", "Routeur" in out and "configuré" in out and "actif" not in out, out)
     variants = []
     p1 = new_dir("adp-part1")
     shutil.copytree(proj / ".claude", p1 / ".claude")
@@ -1117,9 +1282,13 @@ def test_adapter():
     (p5 / ".claude/settings.json").write_text('{"agent": "orchestrator"}', encoding="utf-8")
     for q in (p1, p2, p3, p4, p5):
         variants.append(status(q, home)[1]["routeur"])
-    check("adaptateur: status.py -> partiel (clé absente, agent manquant, autre valeur, JSON illisible, clé sans agents)", variants == ["partiel"] * 5, variants)
+    check("adaptateur: status.py -> désactivé (agents présents, clé absente) puis partiel (agent manquant, autre valeur, JSON illisible, clé sans agents)",
+          variants == ["désactivé"] + ["partiel"] * 4, variants)
     rc, st = status(p1, home)
-    check("adaptateur: status.py partiel -> raison et note", "absente" in st["routeur_raison"] and any("Routeur partiel" in n for n in st["notes"]), st)
+    check("adaptateur: status.py désactivé -> raison qui suggère /brain -d on", "`/brain -d on`" in st["routeur_raison"], st)
+    rc, st = status(p3, home)
+    check("adaptateur: status.py partiel (autre valeur de agent) -> raison qui la signale, et note", "autre valeur" in st["routeur_raison"] and "\"autre\"" in st["routeur_raison"]
+          and any("Routeur partiel" in n for n in st["notes"]), st)
     pa = mk(new_dir("adp-abs"), {"README.md": "x"})
     check("adaptateur: status.py -> routeur absent", status(pa, home)[1]["routeur"] == "absent")
 
@@ -1256,18 +1425,18 @@ def test_adapter():
     check("modèle AGENTS.md: ligne orchestrateur/ROUTER, outil sans adaptateur, pas d'import de ROUTER.md",
           "orchestrateur et applique `brain-main/ROUTER.md`" in tpl and "sans adaptateur" in tpl and "ROUTER §9" in tpl
           and not any("ROUTER" in x for x in import_lines(tpl)), import_lines(tpl))
-    check("version: 0.4.0 dans VERSION", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.4.0")
+    check("version: 0.5.0 dans VERSION", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.5.0")
     hacct = new_dir("home-adp-version")
     rc, out = runj(SCRIPTS / "install-account.py", "--home", hacct)
-    check("compte: install-account --home temporaire copie la version 0.4.0",
-          rc == 0 and (hacct / ".claude/skills/brain/VERSION").read_bytes() == b"0.4.0\n", out)
+    check("compte: install-account --home temporaire copie la version 0.5.0",
+          rc == 0 and (hacct / ".claude/skills/brain/VERSION").read_bytes() == b"0.5.0\n", out)
 
 
 def test_skill():
     text = (ACCOUNT / "SKILL.md").read_text(encoding="utf-8")
     head = text.split("---")[1]
     check("SKILL.md: front matter (name, argument-hint, disable-model-invocation: true)",
-          "name: brain" in head and "argument-hint: [-i | -u | -o | -c | -c fichier | -c 1 | -s sujet | -r]" in head and "disable-model-invocation: true" in head, head)
+          "name: brain" in head and "argument-hint: [-i | -u | -o | -c | -c fichier | -c 1 | -s sujet | -r | -d on|off]" in head and "disable-model-invocation: true" in head, head)
     check("SKILL.md: pas de syntaxe !", "!`" not in text and "```!" not in text)
     check("SKILL.md: aiguille -c -s -r vers les scripts et vers brain-capture (plus de renvoi au lot 3)", "lot 3" not in text and "read-session.py" in text and "brain-main/skills/brain-capture/SKILL.md" in text)
     check("SKILL.md: règles de validation, délégation worker-sonnet, jamais de simulation",
@@ -1279,7 +1448,9 @@ def test_skill():
           "brain-main/skills/brain-onboarding/SKILL.md" in text and "/brain -o" in text and "nouvelle conversation" in text)
     check("SKILL.md: /compact seulement pour l'interdire", all(re.search(r"jamais|Jamais|interdit", ln) for ln in text.splitlines() if "/compact" in ln))
     check("SKILL.md: __PYTHON__ présent avant installation", "__PYTHON__" in text)
-    check("VERSION: 0.4.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.4.0")
+    check("VERSION: 0.5.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.5.0")
+    check("SKILL.md: Python ponctuel de lecture avec -X utf8, routeur `configuré` (pas actif) à l'état",
+          "`-X utf8`" in text and "`configuré`" in text)
     # chaque script est autonome : aucun import local
     local_names = {p.stem.replace("-", "_") for p in list(SCRIPTS.glob("*.py")) + list(ACCOUNT.glob("*.py"))}
     bad = []
@@ -1290,6 +1461,169 @@ def test_skill():
                 if mod in local_names:
                     bad.append((p.name, line))
     check("scripts: aucun import local (autonomes)", not bad, bad)
+
+
+def test_router_guard():
+    text = (ACCOUNT / "SKILL.md").read_text(encoding="utf-8")
+    step8 = text.split("8. Fin :")[1].split("## Parcours `-u`")[0]
+    check("fin de -i: routeur installé mais pas appliqué à cette conversation, nouvelle conversation, puis /brain -o",
+          "ne s'applique pas à cette conversation" in step8 and "nouvelle conversation" in step8 and "`/brain -o`" in step8 and "`actif à la prochaine conversation`" in step8, step8)
+    check("fin de -i: question explicite (ouvre la nouvelle conversation ou continue ici sans routeur), aucune suite d'office",
+          "question explicite" in step8 and "continuer ici sans routeur" in step8 and "Ne lancer aucune suite de soi-même" in step8, step8)
+    check("fin de -i: `non activé` donne la raison et les lignes à ajouter, une nouvelle conversation seule ne suffit pas",
+          "`non activé`" in step8 and "la raison et les lignes à ajouter" in step8 and "ne suffit pas" in step8, step8)
+    guard = text.split("## Garde-fou : session non routée")[1].split("## Parcours `-i`")[0]
+    check("garde-fou: Bash, Write ou Edit + `routeur: configuré` => non routée, présenté comme déduction, orchestrateur inchangé",
+          "Bash, Write ou Edit" in guard and "`routeur: configuré`" in guard and "déduction" in guard and "inchangée" in guard and "dépôt source" in guard, guard)
+    check("garde-fou: /brain signale que la session n'est pas routée et qu'il faut une nouvelle conversation",
+          "**`/brain`**" in guard and "n'est probablement pas routée" in guard and "nouvelle conversation" in guard, guard)
+    check("garde-fou: -o, -c, -c <fichier>, -c 1, -u demandent une confirmation explicite avant d'écrire, sinon arrêt",
+          all(("`%s`" % c) in guard.split("**`-s`")[0] for c in ("-o", "-c", "-c <fichier>", "-c 1", "-u"))
+          and "confirmation explicite" in guard and "s'arrêter" in guard, guard)
+    check("garde-fou: -s et -r signalent en une ligne et continuent",
+          "**`-s`, `-r`**" in guard and "en une ligne et continuer" in guard, guard)
+    lines = len(text.splitlines())
+    check("SKILL.md du compte: au plus 70 lignes (garde-fou inclus)", lines <= 70, lines)
+    tpl = (BOOT / "templates/AGENTS.md").read_text(encoding="utf-8")
+    needs = ("Bash, Write ou Edit", '"agent": "orchestrator"', "probablement pas routé", "déduction", "une fois par session", "nouvelle conversation", "Aucune autre action")
+    check("modèle AGENTS.md: consigne de session non routée", all(w in tpl for w in needs), tpl)
+    proj = installed_project("guard-proj", ANSWERS_FULL)
+    rendered = (proj / "AGENTS.md").read_text(encoding="utf-8")
+    check("AGENTS.md rendu dans un projet installé: consigne présente, aucun placeholder", all(w in rendered for w in needs) and "{{" not in rendered, rendered)
+    files = sorted(p.relative_to(proj / "brain").as_posix() for p in (proj / "brain").rglob("*") if p.is_file())
+    check("brain/ généré: aucun nouveau fichier (5 documents et registre)", files == sorted(["docs/" + n for n in DOCS5] + ["registry/entries.jsonl"]), files)
+    guide = (REPO / "brain-main/README.md").read_text(encoding="utf-8")
+    check("guide: au plus 80 lignes, routeur jamais appliqué à la conversation d'installation",
+          len(guide.splitlines()) <= 80 and "jamais à la conversation d'installation" in guide, len(guide.splitlines()))
+    adr = (ADAPTER / "README.md").read_text(encoding="utf-8")
+    check("adaptateur README: nouvelle conversation seulement, session non routée = déduction sans garantie",
+          "nouvelle conversation seulement" in adr and "est une déduction d'après les outils, sans garantie" in adr)
+
+
+def test_set_router():
+    sr = SCRIPTS / "set-router.py"
+
+    def proj_with(name, settings_bytes, with_agents=True):
+        d = new_dir(name)
+        (d / ".claude/agents").mkdir(parents=True)
+        if with_agents:
+            for n in AGENTS3:
+                (d / ".claude/agents" / (n + ".md")).write_text("x\n", encoding="utf-8")
+        if settings_bytes is not None:
+            (d / ".claude/settings.json").write_bytes(settings_bytes)
+        return d
+
+    def raw(d):
+        f = d / ".claude/settings.json"
+        return f.read_bytes() if f.is_file() else None
+
+    def go(d, state, *extra):
+        return runj(sr, "--project", d, "--state", state, *extra)
+
+    # on : crée si absent
+    d = proj_with("sr-create", None)
+    rc, out = go(d, "on")
+    check("set-router on: crée settings.json (2 espaces, LF, retour final) avec la seule clé agent",
+          rc == 0 and out.get("ecrit") is True and raw(d) == b'{\n  "agent": "orchestrator"\n}\n', (rc, out, raw(d)))
+    check("set-router: le JSON dit que l'effet est pour la conversation suivante, jamais la conversation en cours",
+          "conversation suivante" in out.get("conversation_suivante", "") and "jamais à la conversation en cours" in out.get("conversation_suivante", ""), out)
+    # on : ajoute, conserve autres clés et format (tabulations, CRLF, sans retour final)
+    orig = b'{\r\n\t"model": "x",\r\n\t"permissions": {"allow": ["a"]}\r\n}'
+    d = proj_with("sr-add", orig)
+    rc, out = go(d, "on")
+    check("set-router on: ajoute la clé, garde autres clés, ordre, tabulations, CRLF, absence de retour final",
+          rc == 0 and raw(d) == b'{\r\n\t"model": "x",\r\n\t"permissions": {\r\n\t\t"allow": [\r\n\t\t\t"a"\r\n\t\t]\r\n\t},\r\n\t"agent": "orchestrator"\r\n}', (rc, raw(d)))
+    before = raw(d)
+    rc, out = go(d, "on")
+    check("set-router on: déjà actif, rien à écrire, dit", rc == 0 and out.get("ecrit") is False and out.get("action") == "aucune" and "déjà activé" in out.get("message", "") and raw(d) == before, out)
+    rc, out = go(d, "off")
+    check("set-router off: retire seulement la clé agent, format conservé (tabulations, CRLF, sans retour final)",
+          rc == 0 and out.get("ecrit") is True and json.loads(raw(d)) == {"model": "x", "permissions": {"allow": ["a"]}}
+          and b"\r\n\t" in raw(d) and not raw(d).endswith(b"\n"), (rc, raw(d)))
+    before = raw(d)
+    rc, out = go(d, "off")
+    check("set-router off: déjà inactif, rien à écrire, dit", rc == 0 and out.get("ecrit") is False and "déjà désactivé" in out.get("message", "") and raw(d) == before, out)
+    # on / off / on
+    d = proj_with("sr-cycle", b'{\n    "a": 1,\n    "b": [2]\n}\n')
+    base = raw(d)
+    r1 = go(d, "on")[0]
+    s1 = raw(d)
+    r2 = go(d, "off")[0]
+    s2 = raw(d)
+    r3 = go(d, "on")[0]
+    check("set-router: on puis off puis on (indentation 4 conservée, off rend la structure d'origine, on rétablit l'état de on)",
+          (r1, r2, r3) == (0, 0, 0) and json.loads(s2) == json.loads(base) and raw(d) == s1 and b'    "agent": "orchestrator"' in s1, (s1, s2))
+    d = proj_with("sr-empty", b'{"agent": "orchestrator"}')
+    rc, out = go(d, "off")
+    check("set-router off: objet vide mais fichier conservé", rc == 0 and (d / ".claude/settings.json").is_file() and json.loads(raw(d)) == {}, raw(d))
+    # refus : octets inchangés
+    d = proj_with("sr-noagents", b'{"x": 1}', with_agents=False)
+    before = raw(d)
+    rc, out = go(d, "on")
+    check("set-router on: agents absents, refus sans écrire, message d'adaptateur et d'installation",
+          rc == 2 and out.get("ok") is False and raw(d) == before and "brain-main/adapters/claude-code/" in out.get("erreur", "") and "installation" in out.get("erreur", ""), out)
+    d = proj_with("sr-noagents2", None, with_agents=False)
+    rc, out = go(d, "on")
+    check("set-router on: agents absents et settings absent, refus, aucun fichier créé", rc == 2 and raw(d) is None, out)
+    for label, content in (("autre valeur", b'{"agent": "autre", "x": 1}'), ("JSON invalide", b"{ pas du json"), ("non-objet", b"[1, 2]")):
+        for state in ("on", "off"):
+            d = proj_with("sr-refus", content)
+            rc, out = go(d, state)
+            check("set-router %s: %s, refus sans changement à l'octet" % (state, label), rc == 2 and out.get("ok") is False and raw(d) == content, (rc, out))
+    d = proj_with("sr-off-nofile", None)
+    rc, out = go(d, "off")
+    check("set-router off: settings absent, rien à écrire, fichier non créé", rc == 0 and out.get("ecrit") is False and raw(d) is None, out)
+    # dry-run
+    d = proj_with("sr-dry", b'{"x": 1}')
+    before = raw(d)
+    rc, out = go(d, "on", "--dry-run")
+    d2 = proj_with("sr-dry2", None)
+    rc2, out2 = go(d2, "on", "--dry-run")
+    check("set-router --dry-run: n'écrit rien (fichier existant intact, fichier absent non créé)",
+          rc == 0 and rc2 == 0 and raw(d) == before and raw(d2) is None and out.get("ecrit") is False and out.get("dry_run") is True, (out, out2))
+    # dépôt source simulé
+    d = fake_source_repo("sr-source")
+    (d / ".claude/agents").mkdir(parents=True)
+    for n in AGENTS3:
+        (d / ".claude/agents" / (n + ".md")).write_text("x\n", encoding="utf-8")
+    rc, out = go(d, "on")
+    check("set-router: dépôt source simulé, refus sans écrire", rc == 2 and "dépôt source" in out.get("erreur", "") and raw(d) is None, out)
+    # seul .claude/settings.json change
+    d = proj_with("sr-only", b'{"x": 1}')
+    (d / "README.md").write_text("r\n", encoding="utf-8")
+    t0 = tree(d)
+    go(d, "on")
+    t1 = tree(d)
+    changed = sorted(k for k in set(t0) | set(t1) if t0.get(k) != t1.get(k))
+    check("set-router: seul .claude/settings.json change", changed == [".claude/settings.json"], changed)
+    # status.py : désactivé après off, configuré après on
+    home = new_dir("sr-home")
+    d = installed_project("sr-installed", ANSWERS_FULL)
+    st0 = status(d, home)[1]["routeur"]
+    rc, off = go(d, "off")
+    cfg_off = (d / ".claude/settings.json").read_text(encoding="utf-8")
+    st1 = status(d, home)[1]
+    rc, on = go(d, "on")
+    cfg_on = (d / ".claude/settings.json").read_text(encoding="utf-8")
+    st2 = status(d, home)[1]["routeur"]
+    check("status.py: configuré à l'installation, désactivé après off (suggère /brain -d on), configuré après on",
+          st0 == "configuré" and st1["routeur"] == "désactivé" and "/brain -d on" in st1["routeur_raison"] and st2 == "configuré", (st0, st1["routeur"], st2))
+    if os.environ.get("SHOW_SET_ROUTER"):
+        print("-- INFO set-router on (projet installé) --")
+        print(json.dumps(on, ensure_ascii=False, indent=2))
+        print("-- INFO set-router off (projet installé) --")
+        print(json.dumps(off, ensure_ascii=False, indent=2))
+        print("-- INFO settings.json après off --" + NL + cfg_off + "-- INFO settings.json après on --" + NL + cfg_on)
+    skill = (ACCOUNT / "SKILL.md").read_text(encoding="utf-8")
+    check("SKILL.md: -d on|off (aide, aiguillage), autorisation expresse de settings.json par set-router.py, conversation suivante, pas de garde-fou, refus avec aide",
+          "-d on|off" in skill and "set-router.py" in skill and "`-d` : l'écriture de `.claude/settings.json` par `set-router.py` seul" in skill
+          and "conversation suivante" in skill and "jamais concerné" in skill and "refuser et afficher l'aide" in skill
+          and "sans seconde validation" in skill and len(skill.splitlines()) <= 70, len(skill.splitlines()))
+    guide = (REPO / "brain-main/README.md").read_text(encoding="utf-8")
+    check("guide: /brain -d on|off présent, au plus 80 lignes", "/brain -d on" in guide and "/brain -d off" in guide and len(guide.splitlines()) <= 80, len(guide.splitlines()))
+    check("projet installé: set-router.py présent (copie du moteur)", (d / "brain-main/bootstrap/scripts/set-router.py").is_file())
+    ad = "".join(prepare(mk(new_dir("sr-adapt"), {"README.md": "x", ".claude/settings.json": '{"model": "x"}'}))[1]["adaptations"])
+    check("adaptation à l'installation (settings.json existant): mentionne /brain -d on", "/brain -d on" in ad and '"agent": "orchestrator"' in ad, ad)
 
 
 def main():
@@ -1310,7 +1644,9 @@ def main():
                          ("racine", test_root_files), ("brain généré", test_generated_brain),
                          ("status -o", test_status_todo), ("onboarding", test_onboarding_files),
                          ("mise à jour", test_update), ("compte", test_account), ("skill", test_skill),
-                         ("adaptateur", test_adapter)):
+                         ("adaptateur", test_adapter), ("garde-fou routeur", test_router_guard), ("set-router", test_set_router),
+                         ("règles d'onboarding", test_onboarding_rules), ("gitignore", test_gitignore),
+                         ("sortie UTF-8", test_utf8_output)):
             try:
                 fn()
             except Exception:

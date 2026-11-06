@@ -21,6 +21,11 @@ MESSAGE = (
 
 
 def main():
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8")
+    if hasattr(sys.stdin, "reconfigure"):
+        sys.stdin.reconfigure(encoding="utf-8")
     data = json.loads(sys.stdin.read() or "{}")
     if not isinstance(data, dict) or data.get("source") != "startup":
         return
