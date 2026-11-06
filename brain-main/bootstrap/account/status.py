@@ -73,6 +73,7 @@ def brain_main_state(project):
 
 
 TODO_MARK = "À compléter"
+SYSTEM_ENTRIES = (".git", "brain", "brain-main", ".claude", "AGENTS.md", "CLAUDE.md", ".gitignore", "EMPLACEMENT")
 AGENT_NAMES = ("orchestrator", "worker-sonnet", "worker-haiku")
 
 
@@ -143,6 +144,21 @@ def brain_state(project):
     }
 
 
+def last_audit(project):
+    """Nom du dernier rapport de brain/sources/audits/ (ordre des noms AAAAMMJJ-HHMM.md), sinon None."""
+    d = project / "brain" / "sources" / "audits"
+    try:
+        names = sorted(p.name for p in d.glob("*.md") if p.is_file())
+    except OSError:
+        return None
+    return names[-1] if names else None
+
+
+def has_project_files(entries):
+    """Vrai si le premier niveau contient autre chose que les fichiers et dossiers de 2brain."""
+    return any(e not in SYSTEM_ENTRIES for e in entries)
+
+
 def remote_version(offline):
     if offline:
         return None
@@ -183,6 +199,10 @@ def build(project, home, offline):
             "%d document(s) de brain/docs/ contiennent encore « %s » : /brain -o propose de les remplir (rien n'est écrit sans validation)."
             % (brain["documents_a_completer"], TODO_MARK)
         )
+    audit = last_audit(project)
+    with_files = has_project_files(entries)
+    if brain["etat"] != "absent" and with_files and audit is None:
+        notes.append("Le projet a des fichiers et aucun rapport d'audit : /brain -a propose un audit en profondeur (rien n'est écrit sans validation).")
     router = router_state(project)
     if router["etat"] == "partiel":
         notes.append("Routeur partiel (%s) : il ne sera pas appliqué." % router["raison"])
@@ -192,6 +212,8 @@ def build(project, home, offline):
         "dossier_vide": all(e == ".git" for e in entries),
         "brain_main": brain_main_state(project),
         "brain": brain,
+        "projet_avec_fichiers": with_files,
+        "audit_dernier": audit,
         "depot_source": is_source_repo(project),
         "routeur": router["etat"],
         "routeur_raison": router["raison"],
@@ -214,6 +236,7 @@ def as_text(st):
         "brain-main : %s%s" % (bm["etat"], " (version %s)" % bm["version_installee"] if bm.get("version_installee") else ""),
         "brain : %s (%d entrées au registre)" % (br["etat"], br["entrees_registre"]),
         "Documents contenant encore « %s » : %d" % (TODO_MARK, br["documents_a_completer"]),
+        "Dernier audit : %s" % (st["audit_dernier"] or "aucun"),
         "Dépôt source 2brain : %s" % ("oui" if st["depot_source"] else "non"),
         "Routeur (orchestrateur et workers) : %s (%s)" % (st["routeur"], st["routeur_raison"]),
         "Technologies (indices) : %s" % (", ".join(st["technologies"]) or "aucun"),

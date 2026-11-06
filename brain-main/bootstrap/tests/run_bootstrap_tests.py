@@ -589,7 +589,7 @@ def test_root_files():
           and len(prep["adaptations"]) == 1 and prep["adaptations"][0].endswith("@AGENTS.md"), prep)
 
     # déjà conforme : aucune adaptation
-    done = "".join("@" + r + NL for r in IMPORTS) + "- Si `brain/docs/` contient encore « À compléter », proposer `/brain -o` une seule fois par session." + NL
+    done = "".join("@" + r + NL for r in IMPORTS) + "- Si `brain/docs/` contient encore « À compléter » : proposer `/brain -a` si le projet a des fichiers et aucun rapport dans `brain/sources/audits/`, sinon `/brain -o`, une seule fois par session." + NL
     pd = mk(new_dir("root-done"), {"CLAUDE.md": "@AGENTS.md" + NL, "AGENTS.md": done})
     rc, prep = prepare(pd)
     check("racine déjà conforme: aucune adaptation, rien créé", rc == 0 and prep["adaptations"] == [] and prep["racine_creee"] == [], prep)
@@ -1425,18 +1425,18 @@ def test_adapter():
     check("modèle AGENTS.md: ligne orchestrateur/ROUTER, outil sans adaptateur, pas d'import de ROUTER.md",
           "orchestrateur et applique `brain-main/ROUTER.md`" in tpl and "sans adaptateur" in tpl and "ROUTER §9" in tpl
           and not any("ROUTER" in x for x in import_lines(tpl)), import_lines(tpl))
-    check("version: 0.5.0 dans VERSION", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.5.0")
+    check("version: 0.6.0 dans VERSION", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.6.0")
     hacct = new_dir("home-adp-version")
     rc, out = runj(SCRIPTS / "install-account.py", "--home", hacct)
-    check("compte: install-account --home temporaire copie la version 0.5.0",
-          rc == 0 and (hacct / ".claude/skills/brain/VERSION").read_bytes() == b"0.5.0\n", out)
+    check("compte: install-account --home temporaire copie la version 0.6.0",
+          rc == 0 and (hacct / ".claude/skills/brain/VERSION").read_bytes() == b"0.6.0\n", out)
 
 
 def test_skill():
     text = (ACCOUNT / "SKILL.md").read_text(encoding="utf-8")
     head = text.split("---")[1]
     check("SKILL.md: front matter (name, argument-hint, disable-model-invocation: true)",
-          "name: brain" in head and "argument-hint: [-i | -u | -o | -c | -c fichier | -c 1 | -s sujet | -r | -d on|off]" in head and "disable-model-invocation: true" in head, head)
+          "name: brain" in head and "argument-hint: [-i | -u | -a | -o | -c | -c fichier | -c 1 | -s sujet | -r | -d on|off]" in head and "disable-model-invocation: true" in head, head)
     check("SKILL.md: pas de syntaxe !", "!`" not in text and "```!" not in text)
     check("SKILL.md: aiguille -c -s -r vers les scripts et vers brain-capture (plus de renvoi au lot 3)", "lot 3" not in text and "read-session.py" in text and "brain-main/skills/brain-capture/SKILL.md" in text)
     check("SKILL.md: règles de validation, délégation worker-sonnet, jamais de simulation",
@@ -1444,11 +1444,14 @@ def test_skill():
     forbidden = ("UPPER_SNAKE_CASE", "kebab-case", "metadata_version", "SemVer", "snake_case", "TAXONOMY")
     check("SKILL.md: aucune copie de convention", not any(w in text for w in forbidden))
     check("SKILL.md: léger (au plus 70 lignes)", len(text.splitlines()) <= 70, len(text.splitlines()))
+    check("SKILL.md: YAHOU ! après -u seulement si --apply code 0, sans conflit_non_ecrits, avec updated, added ou deleted non vide ; au plus 70 lignes",
+          "YAHOU !" in text and "code 0" in text and "conflits_non_ecrits" in text and "`updated`, `added` ou `deleted`" in text
+          and "jamais s'il n'y a rien" in text and len(text.splitlines()) <= 70, len(text.splitlines()))
     check("SKILL.md: -o aiguille vers le skill d'onboarding, fin de -i propose -o et une nouvelle conversation",
           "brain-main/skills/brain-onboarding/SKILL.md" in text and "/brain -o" in text and "nouvelle conversation" in text)
     check("SKILL.md: /compact seulement pour l'interdire", all(re.search(r"jamais|Jamais|interdit", ln) for ln in text.splitlines() if "/compact" in ln))
     check("SKILL.md: __PYTHON__ présent avant installation", "__PYTHON__" in text)
-    check("VERSION: 0.5.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.5.0")
+    check("VERSION: 0.6.0", (BOOT / "VERSION").read_text(encoding="utf-8").strip() == "0.6.0")
     check("SKILL.md: Python ponctuel de lecture avec -X utf8, routeur `configuré` (pas actif) à l'état",
           "`-X utf8`" in text and "`configuré`" in text)
     # chaque script est autonome : aucun import local

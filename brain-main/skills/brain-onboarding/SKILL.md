@@ -1,6 +1,6 @@
 ---
 name: brain-onboarding
-version: 0.2.0
+version: 0.3.0
 description: >-
   Remplit brain/docs/ (VISION, PROJECT, REQUIREMENTS, ARCHITECTURE, WORKFLOW)
   avec le projet, par propositions marquées confirmé, hypothèse ou à compléter,
@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 # /brain -o
 
-Onboarding : proposer le contenu de `brain/docs/` d'après le projet, sans rien décider. Ce skill est appelé par `/brain -o` (voir `brain-main/bootstrap/README.md`). Il ne reprend aucune convention : `brain-main/conventions/METADATA.md` se lit avant toute écriture (voir l'étape 7).
+Onboarding : proposer le contenu de `brain/docs/` d'après le projet, sans rien décider. Ce skill est appelé par `/brain -o` (voir `brain-main/bootstrap/README.md`). Pour lire un projet existant en profondeur d'abord : `/brain -a` (`brain-main/skills/brain-audit/SKILL.md`). Il ne reprend aucune convention : `brain-main/conventions/METADATA.md` se lit avant toute écriture (voir l'étape 7).
 
 ## Garde-fous
 
@@ -24,7 +24,7 @@ Onboarding : proposer le contenu de `brain/docs/` d'après le projet, sans rien 
 
 1. **État.** Lire `status.py --json` (lancé par le skill du compte). Si `brain` est `absent` : dire de faire `/brain -i` et s'arrêter. Noter les documents listés dans `documents_a_completer_noms`. Si le compteur est 0 et que rien n'est à reprendre : le dire et s'arrêter.
 2. **Lire les documents.** Lire les 5 documents de `brain/docs/` : réponses déjà notées en section 3 (« Informations confirmées »), manques restants. Ce qui est déjà confirmé n'est pas refait.
-3. **Projet avec des fichiers.** Lecture ciblée, sans parcours exhaustif : README, manifestes (`package.json`, `pyproject.toml`, `Cargo.toml`, etc.), structure de premier niveau, documentation existante (`docs/`, `AGENTS.md`, `CLAUDE.md`). Chaque fait relevé garde sa source (fichier).
+3. **Projet avec des fichiers.** S'il existe un rapport dans `brain/sources/audits/` (`audit_dernier` de `status.py`), lire le dernier et repartir de ce qui y est `confirmé`, sans le redemander ; ce qui y est `hypothèse` ou `à compléter` reste à valider. Sinon, ou pour le reste : lecture ciblée, sans parcours exhaustif : README, manifestes (`package.json`, `pyproject.toml`, `Cargo.toml`, etc.), structure de premier niveau, documentation existante (`docs/`, `AGENTS.md`, `CLAUDE.md`). Chaque fait relevé garde sa source (fichier).
 4. **Projet vide.** Poser des questions adaptées, par document, en partant des réponses déjà notées. Les poser par petits groupes. Ne pas inventer de réponse.
 5. **Proposer, document par document.** Pour chacun des 5 documents, présenter le contenu proposé par section. Chaque élément porte l'un de ces marqueurs :
    - `confirmé` : seulement si la source le dit explicitement, soit une citation d'un fichier lu, soit une réponse de l'humain ;

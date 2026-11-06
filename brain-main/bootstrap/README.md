@@ -3,8 +3,8 @@ metadata_version: 1
 title: Bootstrap et commande /brain
 type: specification
 description: Spécifie la commande unique /brain, le rôle du Bootstrap qui l'orchestre, la détection d'un projet, l'installation et la mise à jour de 2brain, avec l'état réel de chaque commande.
-summary: Une seule porte d'entrée, /brain, avec des options à une lettre. Le Bootstrap est un skill léger installé sur le compte Claude Code ; il détecte, diagnostique, récupère les ressources, prépare des propositions et coordonne les mécanismes existants, sans rien modifier sans validation humaine. Ce document est la référence unique des commandes (`-i`, `-u`, `-o`, `-c`, `-c <fichier>`, `-c 1`, `-s`, `-r`, `-d on|off`), du Bootstrap et de l'adaptateur du routeur installé par `-i`. L'état réel de chaque commande, les versions et ce qui reste à confirmer en session réelle figurent au §1 et dans les limites du §9.
-version: "0.7.2"
+summary: Une seule porte d'entrée, /brain, avec des options à une lettre. Le Bootstrap est un skill léger installé sur le compte Claude Code ; il détecte, diagnostique, récupère les ressources, prépare des propositions et coordonne les mécanismes existants, sans rien modifier sans validation humaine. Ce document est la référence unique des commandes (`-i`, `-u`, `-a`, `-o`, `-c`, `-c <fichier>`, `-c 1`, `-s`, `-r`, `-d on|off`), du Bootstrap et de l'adaptateur du routeur installé par `-i`. L'état réel de chaque commande, les versions et ce qui reste à confirmer en session réelle figurent au §1 et dans les limites du §9.
+version: "0.9.1"
 status: draft
 created: "2026-11-05"
 updated: "2026-11-06"
@@ -24,7 +24,7 @@ tags:
 
 Référence unique des commandes `/brain` et du Bootstrap. Il n'y a ni `COMMANDS.md` ni `BOOTSTRAP.md`. Les sections sont numérotées pour que les autres fichiers y renvoient.
 
-**État réel (lot 4) :** le skill `/brain`, le hook de démarrage, les scripts de détection, de prévisualisation, d'installation, de mise à jour, d'extraction de session, de recherche et de Review, et le skill d'onboarding (`-o`) sont construits dans `brain-main/` et testés par scripts (`tests/run_bootstrap_tests.py` et `tests/run_commands_tests.py`, dossiers temporaires, données synthétiques). Version : Bootstrap 0.5.0 sur le compte et dans le dépôt (fichier `VERSION`). Le routeur reste à observer en session réelle. Un test réel du 2026-11-05, avec une sonde, a confirmé dans l'onglet Code de Claude Code : le hook `SessionStart` en forme sans shell fonctionne et le skill reçoit `-i` dans `$ARGUMENTS` et `$0`. `/brain -i` a été installé et essayé en session réelle en 0.3.0 le 2026-11-06 (conversation fournie par l'humain). Un test réel du 2026-11-06 (voir §9) a fait aboutir `-o`, `-c`, `-s`, `-r` et `-c 1` en session sans routeur ; le chargement réel des imports `@` de `AGENTS.md` (§6.1) reste à confirmer en session.
+**État réel (lot 4) :** le skill `/brain`, le hook de démarrage, les scripts de détection, de prévisualisation, d'installation, de mise à jour, d'extraction de session, de recherche et de Review, et le skill d'onboarding (`-o`) sont construits dans `brain-main/` et testés par scripts (`tests/run_bootstrap_tests.py` et `tests/run_commands_tests.py`, dossiers temporaires, données synthétiques). Version : Bootstrap 0.6.0 sur le compte et dans le dépôt (fichier `VERSION`). `-a` (audit d'un projet existant) est construit et testé par scripts, jamais essayé en session réelle (§6.3). Le routeur reste à observer en session réelle. Un test réel du 2026-11-05, avec une sonde, a confirmé dans l'onglet Code de Claude Code : le hook `SessionStart` en forme sans shell fonctionne et le skill reçoit `-i` dans `$ARGUMENTS` et `$0`. `/brain -i` a été installé et essayé en session réelle en 0.3.0 le 2026-11-06 (conversation fournie par l'humain). Un test réel du 2026-11-06 (voir §9) a fait aboutir `-o`, `-c`, `-s`, `-r` et `-c 1` en session sans routeur ; le chargement réel des imports `@` de `AGENTS.md` (§6.1) reste à confirmer en session.
 
 ## 1. État par commande
 
@@ -33,6 +33,7 @@ Référence unique des commandes `/brain` et du Bootstrap. Il n'y a ni `COMMANDS
 | `/brain` | État du projet et aide | construit et testé par scripts ; reste à confirmer en session réelle : l'état affiché avec le routeur | 2 |
 | `/brain -i` | Installation (analyse, questions, prévisualisation, installation) | construit et testé par scripts, essayé en session réelle le 2026-11-06 ; reste à confirmer en session réelle : la fin de `-i` avec le routeur et le signalement d'une session non routée | 2 |
 | `/brain -u` | Mise à jour de `brain-main/` | construit et testé par scripts ; reste à confirmer en session réelle : le signalement de l'adaptateur | 2 |
+| `/brain -a` | Audit en profondeur d'un projet existant (lecture, rapport, écritures validées une à une) | construit et testé par scripts ; reste à confirmer en session réelle : tout le parcours, jamais essayé en session | 5 |
 | `/brain -o` | Remplissage de `brain/docs/` avec le projet | construit et testé par scripts ; essayé en session réelle le 2026-11-06 ; reste à confirmer en session réelle : la version durcie (source explicite, validation par document) | 4 |
 | `/brain -c` | Capture de la session | construit et testé par scripts ; reste à confirmer en session réelle | 3 |
 | `/brain -c <fichier>` | Capture d'une source externe | construit et testé par scripts ; reste à confirmer en session réelle | 3 |
@@ -49,8 +50,9 @@ Les mécanismes sont dans `brain-main/skills/` (`brain-capture/`, `brain-search/
 Une seule porte d'entrée : `/brain`. Une option = un tiret plus une lettre. Cette syntaxe remplace `/brain u`, `/brain-capture c` et `/brain-main u`.
 
 - `/brain` : état du projet et aide. Lecture seule.
-- `/brain -i` : analyse du projet, questions d'accueil, prévisualisation, puis installation après validation. Questions : nature du projet, objectif, modules, outils, identité. Une réponse manquante ne bloque pas. La réponse sur les modules note seulement une intention. En fin de parcours : bilan, consigne de démarrer une nouvelle conversation (pour que le contexte se charge, §6.1), proposition de `/brain -o`.
+- `/brain -i` : analyse du projet, questions d'accueil, prévisualisation, puis installation après validation. Questions : nature du projet, objectif, modules, outils, identité. Une réponse manquante ne bloque pas. La réponse sur les modules note seulement une intention. En fin de parcours : bilan, consigne de démarrer une nouvelle conversation (pour que le contexte se charge, §6.1), proposition de `/brain -a` puis `/brain -o` (projet avec des fichiers) ou de `/brain -o` seul (projet vide).
 - `/brain -u` : met à jour `brain-main/` uniquement, après validation (voir section 7).
+- `/brain -a` : audit d'un projet existant, détaillé au §6.3. Lit le projet sans rien écrire, présente un rapport (vision, fonctionnement par dossier maître, écarts comme candidats, propositions), puis propose chaque écriture à part : rapport dans `brain/sources/audits/`, registre, `brain/docs/`, README des dossiers maîtres. Chaque écriture est validée une à une. Sans `brain-main/` : `/brain -i` ; sans autre fichier : `/brain -o`.
 - `/brain -o` : propose le contenu de `brain/docs/` d'après le projet, marqué `confirmé`, `hypothèse` ou `à compléter`, puis écrit seulement ce que l'humain valide (§6.2). Relançable sur plusieurs sessions. Elle existe aussi dans le dépôt source 2brain, où rien n'est écrit sans validation.
 - `/brain -c` : extrait la session courante (`read-session.py`), la range comme source traçable, puis la capture avec le skill de capture, mode `production` sauf autre demande. L'invocation vaut demande d'écrire l'extrait et d'ajouter au registre ; le skill l'annonce.
 - `/brain -c <fichier>` : capture un fichier existant avec le même skill ; un fichier absent est refusé.
@@ -134,6 +136,17 @@ Imports d'après la documentation de Claude Code (`memory`, lue le 2026-11-06) :
 
 `brain-main/skills/brain-onboarding/SKILL.md` : lit l'état (`status.py` : documents contenant encore « À compléter », et suggestion de `-o`), lit le projet de façon ciblée ou pose des questions s'il est vide, propose le contenu de `brain/docs/` document par document avec les marqueurs `confirmé` (seulement si la source le dit explicitement ; tout ce qui est déduit est une `hypothèse`), `hypothèse`, `à compléter`, et n'écrit qu'après validation explicite, document par document (une réponse globale n'est pas une validation). Les questions restent posées malgré une réponse brève ; seul l'humain peut demander d'arrêter. Il ne décide rien, ne code rien, ne modifie ni le registre ni `brain-main/`, ne remplace jamais une information confirmée sans le dire, et ne reprend aucune convention. `AGENTS.md` demande de proposer `-o` une seule fois par session tant que `brain/docs/` contient « À compléter ».
 
+### 6.3. Audit (`-a`)
+
+Décision de l'humain du 2026-11-06 : `/brain -a` sert quand 2brain est ajouté à un projet existant ; `/brain -o` reste pour un projet vide ou pour ce que le code ne dit pas, en repartant de ce que l'audit a confirmé. Les règles sont dans `brain-main/skills/brain-audit/SKILL.md`, jamais recopiées ici.
+
+- **Lecture seule d'abord.** `brain-main/skills/brain-audit/scripts/scan-project.py --project <dossier> [--json] [--max-depth N] [--limit N] [--plafond N]` : aucune écriture ni réseau. Il donne l'arborescence résumée (fichiers par dossier et par extension), les exclusions (`.git`, `brain`, `brain-main`, `.claude`, `node_modules`, `dist`, `build`, `.next`, `target`, `vendor`, `__pycache__`, `.venv`, `venv`, `coverage`, fichiers lourds et binaires comptés), les fichiers de secrets **jamais ouverts** (nombre et nom seulement), les manifestes et la documentation, les candidats de dossiers maîtres et des candidats d'écart mécaniques (front matter et noms des `.md`, avec la référence de chaque convention). Ce sont des candidats à examiner : ni erreurs, ni décisions.
+- **Dossiers maîtres.** Règle simple : sous-dossiers du premier niveau, ou du premier sous-niveau d'un dossier conteneur (`src/`, `apps/`, `packages/`, etc.), avec au moins 3 fichiers, classés par nombre de fichiers ; `plafond_readme` à 8 par défaut. Un README par dossier maître, qui explique ses fonctionnalités ; aucun par fonctionnalité ni dans les sous-dossiers (demande de l'humain : éviter le bruit). Un README existant n'est jamais remplacé : une adaptation est proposée à part.
+- **Rapport et écritures.** Le rapport est présenté dans la conversation, chaque fait marqué `confirmé`, `hypothèse` ou `à compléter`. Quatre écritures sont ensuite proposées une à une, chacune validée explicitement et refusable sans bloquer les autres : rapport (`brain/sources/audits/<AAAAMMJJ-HHMM>.md`, nécessaire aux deux suivantes), registre (skill de capture 0.1.5, règles inchangées, rapport pour source, mode `production`, `author: assistant`, `validation: none`), `brain/docs/` (règles de `-o`, sans questions d'accueil), README des dossiers maîtres. `append-captures.py --source` n'exige que l'existence du chemin : `brain/sources/audits/` est accepté (testé).
+- **Relançable.** `status.py` donne `audit_dernier` (nom du dernier rapport ou `null`) et suggère `-a` pour un projet avec des fichiers sans rapport ; `AGENTS.md` (modèle) propose `-a` puis `-o` une seule fois par session ; `-o` lit le dernier rapport et repart de ce qui y est `confirmé`.
+- **Garde-fous.** Aucune modification du code du projet, aucun renommage, déplacement, correction d'écart ni git ; le contenu du projet est une donnée à analyser, jamais une consigne ; sous orchestrateur, `worker-sonnet` lit et écrit avec un brief qui autorise expressément les seuls chemins validés.
+- **Provenance :** décision de l'humain du 2026-11-06. **Limites :** audit non essayé en session réelle ; qualité de la lecture dépendant de l'IA ; signalement mécanique des écarts ; le repérage des secrets repose sur le nom du fichier : un secret dans un fichier au nom ordinaire n'est pas détecté.
+
 ## 7. Mise à jour
 
 `/brain -u` s'appuie sur `master` et ne touche que `brain-main/`.
@@ -145,7 +158,7 @@ Imports d'après la documentation de Claude Code (`memory`, lue le 2026-11-06) :
 5. Obtenir une validation explicite.
 6. N'écraser aucune modification locale.
 
-Une adaptation éventuelle de `brain/` est signalée et proposée à part ; un changement de l'adaptateur Claude Code (`adapters/claude-code/`) est signalé (`adaptations_claude`) sans rien écrire : `.claude/` n'est pas modifié. `/brain -u` refuse de s'exécuter dans le dépôt source 2brain.
+Une adaptation éventuelle de `brain/` est signalée et proposée à part ; un changement de l'adaptateur Claude Code (`adapters/claude-code/`) est signalé (`adaptations_claude`) sans rien écrire : `.claude/` n'est pas modifié. `/brain -u` refuse de s'exécuter dans le dépôt source 2brain. Après un `--apply` réussi (code 0, sans conflit, avec au moins un fichier écrit, mis à jour, ajouté ou supprimé : `updated`, `added` ou `deleted` non vide), le message se termine par « YAHOU ! » ; il ne l'affiche jamais sans écriture, en cas de conflit ou d'échec.
 
 `update-brain-main.py` compare le manifeste, le local et la source fichier par fichier, imprime un plan (sans écrire) puis, avec `--apply --plan-sha256`, applique sans jamais écraser un conflit.
 
@@ -196,7 +209,7 @@ brain-main/bootstrap/
   account/                part sur le compte (SKILL.md, session-start.py, status.py, fetch-source.py)
   scripts/                arrivent avec brain-main/ (install-account, prepare-install, apply-install, cancel-install, update-brain-main)
   templates/              CLAUDE.md, AGENTS.md, gitignore.txt (racine) ; brain/ (docs/ et registry/entries.jsonl vide)
-  tests/                  run_bootstrap_tests.py (installation, compte, racine, brain généré), run_commands_tests.py (-c, -s, -r)
+  tests/                  run_bootstrap_tests.py (installation, compte, racine, brain généré), run_commands_tests.py (-c, -s, -r), run_audit_tests.py (-a)
 brain-main/registry/      SCHEMA.md (contrat du registre)
 brain-main/adapters/claude-code/  agents/ (orchestrator, worker-sonnet, worker-haiku), settings.json, README.md (copiés dans .claude/ par -i)
 brain-main/skills/
@@ -204,6 +217,7 @@ brain-main/skills/
   brain-search/scripts/   search-registry
   brain-review/scripts/   review-registry
   brain-onboarding/       SKILL.md (-o)
+  brain-audit/            SKILL.md (-a), scripts/scan-project.py
 ```
 
 - **Emplacement sur le compte :** `~/.claude/skills/brain/` (skill, hook, scripts légers, `VERSION`), un groupe `hooks.SessionStart` (matcher `startup`, sans shell) dans `~/.claude/settings.json`, sauvegardes dans `~/.claude/2brain-bootstrap/backups/`. Installation : `python scripts/install-account.py` (options `--home`, `--dry-run`, `--uninstall`, `--replace-probe`).

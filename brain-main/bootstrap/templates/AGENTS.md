@@ -3,7 +3,7 @@ metadata_version: 1
 title: "Instructions agents"
 type: index
 description: "Point d'entrée des agents IA : contexte 2brain chargé à chaque session et consignes de base."
-version: "0.4.0"
+version: "0.5.0"
 status: draft
 created: "{{date}}"
 updated: "{{date}}"
@@ -32,5 +32,5 @@ Pour un outil qui n'applique pas les imports `@` : lire ces mêmes fichiers dans
 ## Consignes
 
 - **Obligatoire avant de créer ou modifier un document** : lire `brain-main/conventions/NAMING.md` pour un nom de fichier ou de dossier, et `brain-main/conventions/METADATA.md` pour un en-tête, une version ou une date (au moins les sections utiles).
-- Si `brain/docs/` contient encore « À compléter », proposer `/brain -o` une seule fois par session.
+- Si `brain/docs/` contient encore « À compléter » : proposer `/brain -a` si le projet a des fichiers et aucun rapport dans `brain/sources/audits/`, sinon `/brain -o`, une seule fois par session.
 - Ne rien modifier sans validation explicite de l'humain. Une proposition n'est pas une décision.
